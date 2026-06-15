@@ -14,6 +14,15 @@ import {
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { DuellioLogo } from './DuellioLogo';
+import { 
+  auth, 
+  googleProvider, 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  updateProfile 
+} from '../firebase';
+
 
 interface AuthEntrancePortalProps {
   onLoginSuccess: (user: UserProfile) => void;
@@ -54,7 +63,48 @@ export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({
     'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80'
   ];
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoginError(null);
+      setRegError(null);
+      const result = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = result.user;
+      
+      const raw = localStorage.getItem('duellio-users');
+      let usersList: (UserProfile & { password?: string })[] = [];
+      if (raw) {
+        try { usersList = JSON.parse(raw); } catch (e) {}
+      }
+
+      let matched = usersList.find(u => u.uid === firebaseUser.uid || u.email.trim().toLowerCase() === firebaseUser.email?.trim().toLowerCase());
+      if (!matched) {
+        const newProfile: UserProfile = {
+          uid: firebaseUser.uid,
+          username: firebaseUser.displayName || `Gamer_${firebaseUser.uid.substring(0, 5)}`,
+          email: firebaseUser.email || '',
+          avatar: firebaseUser.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          coins: 1000,
+          status: 'online'
+        };
+        usersList.push(newProfile);
+        localStorage.setItem('duellio-users', JSON.stringify(usersList));
+        onRegisterSuccess(newProfile);
+      } else {
+        if (matched.uid !== firebaseUser.uid) {
+          matched.uid = firebaseUser.uid;
+          localStorage.setItem('duellio-users', JSON.stringify(usersList));
+        }
+        onLoginSuccess(matched);
+      }
+    } catch (err: any) {
+      setLoginError(err.message || 'Failed to sign in with Google.');
+    }
+  };
+
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
 
@@ -63,37 +113,49 @@ export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({
       return;
     }
 
-    const raw = localStorage.getItem('duellio-users');
-    if (raw) {
-      try {
-        const users = JSON.parse(raw) as (UserProfile & { password?: string })[];
-        const matched = users.find(
-          u => u.username.toLowerCase() === loginIdentifier.toLowerCase().trim() || 
-               u.email.toLowerCase() === loginIdentifier.toLowerCase().trim()
-        );
-
-        if (!matched) {
-          setLoginError('No user found matching those credentials.');
-          return;
-        }
-
-        const storedPassword = matched.password || 'password123';
-        if (storedPassword !== loginPassword) {
-          setLoginError('Incorrect password. Please try again.');
-          return;
-        }
-
-        // Success login
-        onLoginSuccess(matched);
-      } catch (err) {
-        setLoginError('Failed to parse user credentials database.');
+    let emailToAuth = loginIdentifier.trim();
+    if (!emailToAuth.includes('@')) {
+      const matchedLocal = allProfiles.find(
+        p => p.username.toLowerCase() === emailToAuth.toLowerCase()
+      );
+      if (matchedLocal) {
+        emailToAuth = matchedLocal.email;
       }
-    } else {
-      setLoginError('No user profiles are registered on this client yet.');
+    }
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, emailToAuth, loginPassword);
+      const firebaseUser = userCredential.user;
+
+      const raw = localStorage.getItem('duellio-users');
+      let usersList: (UserProfile & { password?: string })[] = [];
+      if (raw) {
+        try { usersList = JSON.parse(raw); } catch (e) {}
+      }
+
+      let matched = usersList.find(u => u.uid === firebaseUser.uid || u.email.trim().toLowerCase() === firebaseUser.email?.trim().toLowerCase());
+      if (!matched) {
+        matched = {
+          uid: firebaseUser.uid,
+          username: firebaseUser.displayName || `Gamer_${firebaseUser.uid.substring(0, 5)}`,
+          email: firebaseUser.email || emailToAuth,
+          avatar: firebaseUser.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          coins: 1000,
+          status: 'online'
+        };
+        usersList.push(matched);
+        localStorage.setItem('duellio-users', JSON.stringify(usersList));
+      }
+      onLoginSuccess(matched);
+    } catch (err: any) {
+      setLoginError(err.message || 'Login failed. Please verify your credentials.');
     }
   };
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegError(null);
     setRegSuccess(null);
@@ -108,20 +170,47 @@ export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({
       return;
     }
 
-    const res = onAddProfile(username.trim(), email.trim(), password, selectedAvatar);
-    if (res.success && res.user) {
-      setRegSuccess('🎉 Success! Your profile is registered and initialized with 1,000 Coins starting gift!');
-      setTimeout(() => {
-        if (res.user) onRegisterSuccess(res.user);
-      }, 1200);
-    } else {
-      setRegError(res.message);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const firebaseUser = userCredential.user;
+
+      await updateProfile(firebaseUser, {
+        displayName: username.trim(),
+        photoURL: selectedAvatar
+      });
+
+      const res = onAddProfile(username.trim(), email.trim(), password, selectedAvatar);
+      
+      const raw = localStorage.getItem('duellio-users');
+      if (raw) {
+        try {
+          const list = JSON.parse(raw) as (UserProfile & { password?: string })[];
+          const idx = list.findIndex(u => u.email.toLowerCase() === email.trim().toLowerCase());
+          if (idx !== -1) {
+            list[idx].uid = firebaseUser.uid;
+            localStorage.setItem('duellio-users', JSON.stringify(list));
+            const updatedProfile = { ...list[idx] };
+            delete updatedProfile.password;
+            
+            setRegSuccess('🎉 Success! Your profile is registered and initialized with 1,000 Coins starting gift!');
+            setTimeout(() => {
+              onRegisterSuccess(updatedProfile);
+            }, 1200);
+            return;
+          }
+        } catch (e) {}
+      }
+
+      setRegError('Failed to initialize local profile mapping.');
+    } catch (err: any) {
+      setRegError(err.message || 'Registration failed.');
     }
   };
 
   const handleQuickLogin = (profile: UserProfile) => {
     onLoginSuccess(profile);
   };
+
 
   return (
     <div className="min-h-screen bg-[#070709] text-neutral-100 font-sans antialiased flex flex-col items-center justify-center p-4 selection:bg-purple-500/30 selection:text-white relative overflow-hidden" id="auth-entrance-portal">
@@ -201,6 +290,41 @@ export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({
             </button>
           </div>
 
+          {/* Google Sign In Option */}
+          <div className="space-y-4">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              className="w-full py-3 bg-white hover:bg-neutral-100 text-neutral-950 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center justify-center gap-2.5 shadow-md uppercase tracking-wider font-display select-none"
+            >
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                />
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+
+            <div className="flex items-center">
+              <div className="flex-1 border-t border-white/[0.06]"></div>
+              <span className="px-3 text-[9px] font-mono text-neutral-500 uppercase tracking-widest">or use email credentials</span>
+              <div className="flex-1 border-t border-white/[0.06]"></div>
+            </div>
+          </div>
+
           <AnimatePresence mode="wait">
             {activeMode === 'signin' ? (
               <motion.div
@@ -273,29 +397,32 @@ export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({
                 </form>
 
                 {/* Quick Swapper if device has saved sessions */}
-                {allProfiles.length > 0 && (
-                  <div className="border-t border-white/[0.04] pt-5 space-y-3.5">
-                    <span className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-widest">
-                      Saved Active Device Profiles
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-40 overflow-y-auto pr-1">
-                      {allProfiles.map((p) => (
-                        <div
-                          key={p.uid}
-                          onClick={() => handleQuickLogin(p)}
-                          className="flex items-center gap-3 p-2.5 rounded-2xl bg-[#0F0F13] border border-white/[0.03] hover:border-purple-500/25 transition-all cursor-pointer group"
-                        >
-                          <img src={p.avatar} alt={p.username} className="w-8 h-8 rounded-full object-cover border border-white/5" />
-                          <div className="min-w-0 flex-1 text-left">
-                            <span className="font-bold text-xs text-neutral-200 group-hover:text-purple-300 block truncate leading-none">{p.username}</span>
-                            <strong className="text-[9px] text-amber-400 font-mono block mt-1 leading-none">{p.coins.toLocaleString()} Coins</strong>
+                {(() => {
+                  const deviceProfiles = allProfiles.filter(p => !p.uid.startsWith('bot_'));
+                  return deviceProfiles.length > 0 && (
+                    <div className="border-t border-white/[0.04] pt-5 space-y-3.5">
+                      <span className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-widest">
+                        Saved Active Device Profiles
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-40 overflow-y-auto pr-1">
+                        {deviceProfiles.map((p) => (
+                          <div
+                            key={p.uid}
+                            onClick={() => handleQuickLogin(p)}
+                            className="flex items-center gap-3 p-2.5 rounded-2xl bg-[#0F0F13] border border-white/[0.03] hover:border-purple-500/25 transition-all cursor-pointer group"
+                          >
+                            <img src={p.avatar} alt={p.username} className="w-8 h-8 rounded-full object-cover border border-white/5" />
+                            <div className="min-w-0 flex-1 text-left">
+                              <span className="font-bold text-xs text-neutral-200 group-hover:text-purple-300 block truncate leading-none">{p.username}</span>
+                              <strong className="text-[9px] text-amber-400 font-mono block mt-1 leading-none">{p.coins.toLocaleString()} Coins</strong>
+                            </div>
+                            <span className="text-[9px] text-neutral-500 group-hover:text-neutral-300">Unlock →</span>
                           </div>
-                          <span className="text-[9px] text-neutral-500 group-hover:text-neutral-300">Unlock →</span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </motion.div>
             ) : (
               <motion.div

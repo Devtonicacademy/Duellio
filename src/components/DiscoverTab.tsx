@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Trophy, Users, Wallet, Star, ChevronLeft, ChevronRight, Search, ShieldCheck } from 'lucide-react';
 
 interface DiscoverTabProps {
-  onSelectGame: (gameType: 'Chess' | 'Ludo' | 'Whot', suggestedStake: number) => void;
+  onSelectGame: (gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft', suggestedStake: number) => void;
   userCoins: number;
 }
 
@@ -43,7 +43,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
     {
       id: 'quantum-checkers',
       title: 'Quantum Checkers',
-      gameType: 'Chess' as const, // Treat Checkers as Chess module since we have gorgeous FIDE Chess simulator!
+      gameType: 'Draft' as const,
       category: 'strategy',
       stakeMin: 2,
       stakeMax: 250,

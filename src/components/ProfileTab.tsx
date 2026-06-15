@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Trophy, 
@@ -21,6 +21,8 @@ import {
   Coins 
 } from 'lucide-react';
 import { UserProfile, WalletTransaction } from '../types';
+import { db } from '../firebase';
+import { doc, onSnapshot, query, collection, where } from 'firebase/firestore';
 
 interface ProfileTabProps {
   userProfile: UserProfile;
@@ -45,6 +47,37 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
 }) => {
   // Password change state
   const [currentPass, setCurrentPass] = useState('');
+  
+  // Developer revenue states
+  const [devRevenue, setDevRevenue] = useState<number>(0);
+  const [devTxHistory, setDevTxHistory] = useState<WalletTransaction[]>([]);
+
+  useEffect(() => {
+    if (userProfile.email !== 'devtonicllc@gmail.com') return;
+
+    const revUnsub = onSnapshot(doc(db, 'developer_stats', 'revenue'), (docSnap) => {
+      if (docSnap.exists()) {
+        setDevRevenue(docSnap.data()?.totalRake || 0);
+      }
+    });
+
+    const q = query(
+      collection(db, 'transactions'),
+      where('userId', '==', 'developer')
+    );
+    const txUnsub = onSnapshot(q, (snapshot) => {
+      const txList: WalletTransaction[] = [];
+      snapshot.forEach((docSnap) => {
+        txList.push(docSnap.data() as WalletTransaction);
+      });
+      setDevTxHistory(txList.sort((a, b) => b.id.localeCompare(a.id)));
+    });
+
+    return () => {
+      revUnsub();
+      txUnsub();
+    };
+  }, [userProfile]);
   const [newPass, setNewPass] = useState('');
   const [confirmNewPass, setConfirmNewPass] = useState('');
   const [showPassState, setShowPassState] = useState<{ current: boolean; new: boolean; confirm: boolean }>({
@@ -130,27 +163,21 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     }
   };
   
-  // Custom mock friends with status indicators
-  const friends = [
-    {
-      name: 'Ghost_Protocol',
-      status: 'In Lobby',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAlEoWyt4k69f_jcjOpBHjc0bFK9-KFouqDUvsLGypdqRqi8hhs3Flj9prGmaz6vNvdby9s_NvlRTNHsWMYM9alL91dzjDEWuPJEx1bPjHFCCclDswNgSAqN4RUs6_zQade3gxrKsCrvcVREmEnfkEuS4rn-t2XgXrtZp_98fU9FDONcSdXzeMmaxwbxlZi1ud0O1QQ8B8Nl_v1PTWcT-Vx7d5ZzkrRU-CYJi9leZN_wiIkAnrG_ME5ED8T7gCMqQBL1zwJaFqswQ',
-      badgeColor: 'border-cyan-400 bg-cyan-400'
-    },
-    {
-      name: 'Glitch_Witch',
-      status: 'In Game',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDDL9opxIaiZyVCds7zEVPMhkv_nt1wNEUPNQRdB6VKTNJkQ8uxx69_gnAgrc_Zyi9h4o2-trHVDhVTnV3ebeqa32_zTQ8r-rUoYFOlPpoAST2RiE7FaHm8vZ60eTSDtJNMrBkf-Lt4FewJfL89NW_5uzVWif_R5OzlzjKujB7OopZIaKWB1buCF-fC0hnfz0IhrZDzJV5ms-qL5y1qF2ts_I9pImG5EzswhZoUSAhNuxaMOcfFrwFZq5_FigvJ4FL1eOIluuVqvA',
-      badgeColor: 'border-purple-400 bg-purple-400'
-    },
-    {
-      name: 'Silent_Echo',
-      status: 'Offline',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCxy-eVDzCFQ9cAmljD2rC-oErAguIfdRzwvZJCOCdawSVeGBjkbhpCTtRQ085JmRGAFKfpyGqcmRuRPk6BD1EpO5f3H-PK-HMc1VRMUND---kpssWH3rQOLuSb2UtuZkF94PTPtajsBwAdaE763TuWOuZRo2poRykZmKsibvQ7ugo4h5r1hcaqu-tMkfT4SE_9P-gZA61tvhj0ez4Sanss_vjGrUPhbHlTSKNNo3uP-dAgXZQw0V025n4YvfHL--iQQqPWGwJI-g',
-      badgeColor: 'border-neutral-700 bg-neutral-700'
-    }
-  ];
+  // Actual user profiles on the app as friends
+  const friends = allProfiles
+    .filter(p => p.uid !== userProfile.uid)
+    .map(p => ({
+      name: p.username,
+      status: p.status === 'online' ? 'Online' : p.status === 'in-game' ? 'In Game' : 'Offline',
+      avatar: p.avatar,
+      badgeColor: p.status === 'online' 
+        ? 'border-emerald-400 bg-emerald-400' 
+        : p.status === 'in-game' 
+          ? 'border-purple-400 bg-purple-400' 
+          : 'border-neutral-700 bg-neutral-700'
+    }));
+
+  const deviceProfiles = allProfiles.filter(p => !p.uid.startsWith('bot_'));
 
   return (
     <div className="space-y-6" id="player-profile-view">
@@ -198,18 +225,6 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-1">
             <div className="bg-white/5 p-3.5 rounded-xl border border-white/5 hover:border-purple-500/15 transition-all">
               <span className="text-neutral-500 font-mono text-[9px] font-bold block uppercase tracking-wider">TOTAL MATCH WINS</span>
-              <span className="text-purple-300 font-display text-xl font-black">{1420 + userProfile.wins}</span>
-            </div>
-            <div className="bg-white/5 p-3.5 rounded-xl border border-white/5 hover:border-purple-500/15 transition-all">
-              <span className="text-neutral-500 font-mono text-[9px] font-bold block uppercase tracking-wider">WIN ESCROW DEGREE</span>
-              <span className="text-cyan-300 font-display text-xl font-black">68%</span>
-            </div>
-            <div className="bg-white/5 p-3.5 rounded-xl border border-white/5 hover:border-purple-500/15 transition-all">
-              <span className="text-neutral-500 font-mono text-[9px] font-bold block uppercase tracking-wider">ACHIEVEMENTS</span>
-              <span className="text-pink-300 font-display text-xl font-black">84/100</span>
-            </div>
-            <div className="bg-white/5 p-3.5 rounded-xl border border-white/5 hover:border-purple-500/15 transition-all">
-              <span className="text-neutral-500 font-mono text-[9px] font-bold block uppercase tracking-wider">XP TO NEXT LEVEL</span>
               <div className="mt-2.5">
                 <div className="w-full h-1.5 bg-neutral-900 rounded-full overflow-hidden">
                   <div className="h-full bg-linear-to-r from-purple-400 to-cyan-400 w-[75%] shadow-md"></div>
@@ -220,6 +235,109 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
         </div>
 
       </section>
+
+      {/* 🛠️ DEVELOPER TELEMETRY & REVENUE PORTAL */}
+      {userProfile.email === 'devtonicllc@gmail.com' && (
+        <section className="glass-panel p-6 rounded-2xl border border-cyan-500/20 relative overflow-hidden" id="developer-telemetry-portal">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 blur-[90px] rounded-full -mr-32 -mt-32 pointer-events-none"></div>
+          
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-900 pb-5 mb-6">
+            <div>
+              <h3 className="font-display font-extrabold text-white text-base tracking-wide uppercase flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping shrink-0" />
+                Developer Telemetry & Platform Revenue
+              </h3>
+              <p className="text-[11px] font-mono text-neutral-400 mt-1">
+                Real-time tracking of platform rake collections (10% commission on wagers) and house winnings from Bot matches.
+              </p>
+            </div>
+            <div className="bg-cyan-500/15 border border-cyan-500/35 text-cyan-300 px-3.5 py-1 rounded-xl font-mono text-xs font-bold tracking-wider uppercase">
+              DEV MODE ACTIVE
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 font-sans">
+            {/* Stat 1: Total Revenue */}
+            <div className="bg-neutral-950/60 p-4.5 rounded-2xl border border-neutral-850 flex items-center gap-4 hover:border-cyan-500/20 transition-all">
+              <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400">
+                <Coins className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono text-neutral-500 font-bold block uppercase tracking-wider">TOTAL PLATFORM REVENUE</span>
+                <span className="text-xl font-bold font-mono text-white mt-1 block">
+                  {devRevenue.toLocaleString()} <span className="text-xs text-cyan-400 font-sans font-normal">Coins</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Stat 2: Total Commission Transactions */}
+            <div className="bg-neutral-950/60 p-4.5 rounded-2xl border border-neutral-850 flex items-center gap-4 hover:border-cyan-500/20 transition-all">
+              <div className="p-3 bg-purple-500/10 rounded-xl text-purple-400">
+                <Zap className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono text-neutral-500 font-bold block uppercase tracking-wider">COMMISSION TRANSACTIONS</span>
+                <span className="text-xl font-bold font-mono text-white mt-1 block">
+                  {devTxHistory.length} <span className="text-xs text-purple-400 font-sans font-normal">recorded</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Stat 3: Avg Transaction Earning */}
+            <div className="bg-neutral-950/60 p-4.5 rounded-2xl border border-neutral-850 flex items-center gap-4 hover:border-cyan-500/20 transition-all">
+              <div className="p-3 bg-pink-500/10 rounded-xl text-pink-400">
+                <Trophy className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono text-neutral-500 font-bold block uppercase tracking-wider">EST. REVENUE SHIELD</span>
+                <span className="text-xl font-bold font-mono text-white mt-1 block">
+                  {devTxHistory.length > 0 
+                    ? Math.round(devRevenue / devTxHistory.length).toLocaleString() 
+                    : 0} <span className="text-xs text-pink-400 font-sans font-normal">Coins/Tx</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Revenue Ledger History */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-mono font-bold text-neutral-350 uppercase tracking-widest flex items-center gap-1.5 pb-2 border-b border-neutral-900">
+              <Clock className="w-4 h-4 text-cyan-300" />
+              Developer Coin-Ledger Feed
+            </h4>
+
+            {devTxHistory.length === 0 ? (
+              <div className="bg-black/20 border border-neutral-900 rounded-xl p-8 text-center text-neutral-500 text-xs">
+                No telemetry transaction recordings detected in the Firestore ledger yet. Start staked bot duels to accumulate rake fees!
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                {devTxHistory.map((tx) => (
+                  <div 
+                    key={tx.id} 
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-neutral-950/40 rounded-xl border border-neutral-900 hover:bg-neutral-900/20 transition-all"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
+                      <div>
+                        <p className="text-white text-xs font-semibold font-sans">{tx.description}</p>
+                        <span className="text-[9px] font-mono text-neutral-500 mt-1 block">
+                          TXID: {tx.id} • Timestamp: {tx.timestamp}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="inline-block px-2.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs font-bold font-mono">
+                        +{tx.amount.toLocaleString()} Coins
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Bento Grid layout containing radar stats and history ledger */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -379,7 +497,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
           </div>
 
           <button className="w-full mt-5 py-2 text-xs font-mono bg-neutral-900/80 hover:bg-neutral-900 text-neutral-400 hover:text-white rounded-lg transition-all border border-neutral-850 cursor-pointer">
-            View All (142 Friends)
+            View All ({friends.length} Friends)
           </button>
         </div>
 
@@ -586,7 +704,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             <div className="flex items-center justify-between pb-2 border-b border-neutral-900">
               <h4 className="text-xs font-mono font-bold text-neutral-350 uppercase tracking-widest flex items-center gap-1.5">
                 <UserPlus className="w-4 h-4 text-cyan-300" />
-                Active Device Profiles ({allProfiles.length})
+                Active Device Profiles ({deviceProfiles.length})
               </h4>
               <button
                 type="button"
@@ -599,7 +717,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             </div>
 
             <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
-              {allProfiles.map((profile) => {
+              {deviceProfiles.map((profile) => {
                 const isActive = profile.uid === userProfile.uid;
                 return (
                   <div

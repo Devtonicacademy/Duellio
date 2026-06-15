@@ -27,21 +27,24 @@ import {
   Link
 } from 'lucide-react';
 import { UserProfile, ChatMessage, MatchChallenge, WalletTransaction, WhotCard, WhotGameState } from '../types';
-import { BOT_PLAYERS, INITIAL_CHAT, getRandomBotResponse } from '../data/simulation';
+import { INITIAL_CHAT, getRandomBotResponse } from '../data/simulation';
 import { InteractiveLudoBoard } from './InteractiveLudoBoard';
 import { InteractiveChessBoard } from './InteractiveChessBoard';
+import { InteractiveDraftBoard } from './InteractiveDraftBoard';
+import { db } from '../firebase';
+import { doc, setDoc, increment } from 'firebase/firestore';
 
 interface PhaseSandboxTabProps {
   userProfile: UserProfile;
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
   transactions: WalletTransaction[];
   setTransactions: React.Dispatch<React.SetStateAction<WalletTransaction[]>>;
-  preselectedGame?: 'Chess' | 'Ludo' | 'Whot' | null;
-  setPreselectedGame?: React.Dispatch<React.SetStateAction<'Chess' | 'Ludo' | 'Whot' | null>>;
+  preselectedGame?: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | null;
+  setPreselectedGame?: React.Dispatch<React.SetStateAction<'Chess' | 'Ludo' | 'Whot' | 'Draft' | null>>;
   suggestedStake?: number;
   friendChallenge?: {
     senderName: string;
-    gameType: 'Chess' | 'Ludo' | 'Whot';
+    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft';
     entryFee: number;
     opponentType?: 'bot' | 'player';
     botDifficulty?: 'easy' | 'medium' | 'hard';
@@ -49,12 +52,13 @@ interface PhaseSandboxTabProps {
   } | null;
   setFriendChallenge?: React.Dispatch<React.SetStateAction<{
     senderName: string;
-    gameType: 'Chess' | 'Ludo' | 'Whot';
+    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft';
     entryFee: number;
     opponentType?: 'bot' | 'player';
     botDifficulty?: 'easy' | 'medium' | 'hard';
     rewardMultiplier?: number;
   } | null>>;
+  allProfiles: UserProfile[];
 }
 
 // Helper: Standard Whot cards generator
@@ -119,24 +123,36 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   setPreselectedGame,
   suggestedStake,
   friendChallenge,
-  setFriendChallenge
+  setFriendChallenge,
+  allProfiles
 }) => {
   const [activeTab, setActiveTab] = useState<'chat' | 'wallet' | 'presence'>('chat');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => INITIAL_CHAT);
   const [inputMessage, setInputMessage] = useState('');
-  const [onlineBots, setOnlineBots] = useState<UserProfile[]>(() => BOT_PLAYERS);
+  
+  const otherUsers = allProfiles.filter(p => p.uid !== userProfile.uid);
+  const [onlineBots, setOnlineBots] = useState<UserProfile[]>(() => otherUsers);
   
   // Custom Friend Challenge state parameters
-  const [friendGame, setFriendGame] = useState<'Chess' | 'Ludo' | 'Whot'>('Chess');
+  const [friendGame, setFriendGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft'>('Chess');
   const [friendStake, setFriendStake] = useState<number>(300);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
   // Staking challenge state
   const [activeChallenge, setActiveChallenge] = useState<MatchChallenge | null>(null);
   const [showChallengeModal, setShowChallengeModal] = useState(false);
-  const [selectedBot, setSelectedBot] = useState<UserProfile | null>(() => BOT_PLAYERS[0]);
-  const [gameType, setGameType] = useState<'Whot' | 'Ludo' | 'Chess'>('Chess');
+  const [selectedBot, setSelectedBot] = useState<UserProfile | null>(() => otherUsers[0] || null);
+  const [gameType, setGameType] = useState<'Whot' | 'Ludo' | 'Chess' | 'Draft'>('Chess');
   const [entryFee, setEntryFee] = useState<number>(300);
+
+  // Sync onlineBots and selectedBot when allProfiles or userProfile changes
+  useEffect(() => {
+    const updatedUsers = allProfiles.filter(p => p.uid !== userProfile.uid);
+    setOnlineBots(updatedUsers);
+    if (updatedUsers.length > 0 && (!selectedBot || !updatedUsers.some(u => u.uid === selectedBot.uid))) {
+      setSelectedBot(updatedUsers[0]);
+    }
+  }, [allProfiles, userProfile.uid]);
 
   // Pre-fill parameters when redirected from Discover cards
   useEffect(() => {
@@ -144,14 +160,14 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       setGameType(preselectedGame);
       setEntryFee(suggestedStake || 300);
       
-      const bot = onlineBots.find(b => b.status === 'online') || onlineBots[0] || BOT_PLAYERS[0];
-      setSelectedBot(bot);
+      const bot = onlineBots.find(b => b.status === 'online') || onlineBots[0] || (allProfiles.filter(p => p.uid !== userProfile.uid)[0]);
+      setSelectedBot(bot || null);
       
       if (setPreselectedGame) {
         setPreselectedGame(null);
       }
     }
-  }, [preselectedGame, suggestedStake, onlineBots, setPreselectedGame]);
+  }, [preselectedGame, suggestedStake, onlineBots, setPreselectedGame, allProfiles, userProfile.uid]);
 
   // Trigger Friend Invite Matches
   useEffect(() => {
@@ -176,21 +192,28 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       setGamePlayStatus('playing');
 
       // Deduct entry fee
-      setUserProfile(prev => ({
-        ...prev,
-        coins: Math.max(0, prev.coins - friendChallenge.entryFee),
-        status: 'in-game'
-      }));
+      if (friendChallenge.entryFee > 0) {
+        setUserProfile(prev => ({
+          ...prev,
+          coins: Math.max(0, prev.coins - friendChallenge.entryFee),
+          status: 'in-game'
+        }));
 
-      // Add a staking transaction log
-      const stakeTx: WalletTransaction = {
-        id: `escrow_${Date.now()}`,
-        type: 'stake_lock',
-        amount: friendChallenge.entryFee,
-        description: `Escrow Friend Challenge Lock: ${friendChallenge.gameType} vs ${friendChallenge.senderName}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setTransactions(prev => [stakeTx, ...prev]);
+        // Add a staking transaction log
+        const stakeTx: WalletTransaction = {
+          id: `escrow_${Date.now()}`,
+          type: 'stake_lock',
+          amount: friendChallenge.entryFee,
+          description: `Escrow Friend Challenge Lock: ${friendChallenge.gameType} vs ${friendChallenge.senderName}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setTransactions(prev => [stakeTx, ...prev]);
+      } else {
+        setUserProfile(prev => ({
+          ...prev,
+          status: 'in-game'
+        }));
+      }
 
       // Initialize the games
       if (friendChallenge.gameType === 'Whot') {
@@ -262,7 +285,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const whotDeckRef = useRef<WhotCard[]>([]);
 
   // Safety & Escrow Timer States
-  const [timeLeft, setTimeLeft] = useState<number>(60);
+  const [timeLeft, setTimeLeft] = useState<number>(1800);
   const [showReconciliation, setShowReconciliation] = useState<boolean>(false);
   const [reconciliationInfo, setReconciliationInfo] = useState<{
     gameType: string;
@@ -328,23 +351,52 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     const multiplier = activeChallenge.rewardMultiplier !== undefined ? activeChallenge.rewardMultiplier : 1.0;
     const winPayout = Math.floor(activeChallenge.entryFee * (1 + multiplier));
     
+    const rakeRate = 0.1;
+    let rakeAmount = 0;
+    let finalUserPayout = 0;
+
     if (userWon) {
-      refundedCoins = winPayout;
+      rakeAmount = winPayout > 0 ? Math.floor(winPayout * rakeRate) : 0;
+      finalUserPayout = winPayout - rakeAmount;
+      refundedCoins = finalUserPayout;
+
       setUserProfile(prev => ({ 
         ...prev, 
-        coins: prev.coins + winPayout,
+        coins: prev.coins + finalUserPayout,
         wins: prev.wins + 1,
         status: 'online'
       }));
       
-      const payoutTx: WalletTransaction = {
-        id: `recon_win_${Date.now()}`,
-        type: 'win_payout',
-        amount: winPayout,
-        description: `Timer Expiry Escrow Reconciliation Claim: ${activeChallenge.gameType} vs ${activeChallenge.senderName}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setTransactions(prev => [payoutTx, ...prev]);
+      if (finalUserPayout > 0) {
+        const payoutTx: WalletTransaction = {
+          id: `recon_win_${Date.now()}`,
+          userId: userProfile.uid,
+          type: 'win_payout',
+          amount: finalUserPayout,
+          description: `Timer Expiry Escrow Reconciliation Claim (90%): ${activeChallenge.gameType} vs ${activeChallenge.senderName}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: 'completed'
+        };
+        setTransactions(prev => [payoutTx, ...prev]);
+
+        // Save transaction to Firestore
+        setDoc(doc(db, 'transactions', payoutTx.id), payoutTx).catch(console.error);
+
+        // Record developer rake transaction
+        if (rakeAmount > 0) {
+          const devTx: WalletTransaction = {
+            id: `rake_${Date.now()}`,
+            userId: 'developer',
+            type: 'credit',
+            amount: rakeAmount,
+            description: `Rake Commission (10%) from ${activeChallenge.gameType} Match: ${userProfile.username} vs ${activeChallenge.senderName}`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            status: 'completed'
+          };
+          setDoc(doc(db, 'transactions', devTx.id), devTx).catch(console.error);
+          setDoc(doc(db, 'developer_stats', 'revenue'), { totalRake: increment(rakeAmount) }, { merge: true }).catch(console.error);
+        }
+      }
     } else {
       refundedCoins = 0;
       setUserProfile(prev => ({ 
@@ -352,6 +404,22 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         losses: prev.losses + 1,
         status: 'online'
       }));
+
+      // If playing with a bot, the user loses their stake to the house
+      const houseEarning = activeChallenge.entryFee;
+      if (houseEarning > 0 && activeChallenge.opponentType === 'bot') {
+        const devTx: WalletTransaction = {
+          id: `house_${Date.now()}`,
+          userId: 'developer',
+          type: 'credit',
+          amount: houseEarning,
+          description: `House Win vs ${userProfile.username} in ${activeChallenge.gameType} Bot Match`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: 'completed'
+        };
+        setDoc(doc(db, 'transactions', devTx.id), devTx).catch(console.error);
+        setDoc(doc(db, 'developer_stats', 'revenue'), { totalRake: increment(houseEarning) }, { merge: true }).catch(console.error);
+      }
     }
 
     setReconciliationInfo({
@@ -373,7 +441,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   // Timer Countdown Safeguard Effect
   useEffect(() => {
     if (gamePlayStatus !== 'playing') {
-      setTimeLeft(60);
+      setTimeLeft(1800);
       return;
     }
 
@@ -500,6 +568,79 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     }, 1200 + Math.random() * 800);
   };
 
+  const renderChatPanelContent = () => {
+    return (
+      <div className="flex-1 flex flex-col bg-neutral-900 overflow-hidden h-full">
+        <div className="flex-1 p-4 overflow-y-auto space-y-3.5">
+          {chatMessages.map((msg) => {
+            const isMe = msg.senderId === userProfile.uid;
+            return (
+              <div key={msg.id} className={`flex items-start gap-2.5 ${isMe ? 'flex-row-reverse' : ''}`}>
+                <img 
+                  src={msg.senderAvatar} 
+                  alt={msg.senderName} 
+                  className="w-8 h-8 rounded-full object-cover border border-neutral-800"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="max-w-[70%] space-y-1">
+                  <div className={`flex items-baseline gap-2 text-[10px] text-neutral-550 ${isMe ? 'flex-row-reverse' : ''}`}>
+                    <span className="font-semibold text-neutral-350">{msg.senderName}</span>
+                    <span>{msg.timestamp}</span>
+                  </div>
+                  <div className={`p-3 rounded-2xl text-xs leading-relaxed ${
+                    isMe 
+                      ? 'bg-amber-400 text-neutral-950 font-medium rounded-tr-none' 
+                      : 'bg-neutral-800 text-neutral-100 rounded-tl-none border border-neutral-700/50'
+                  }`}>
+                    {msg.text}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          
+          {isTyping && (
+            <div className="flex items-center gap-2 text-xs text-neutral-550 font-mono pl-3.5">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse animate-ping" />
+              <span>{typingBot} is typing...</span>
+            </div>
+          )}
+          <div ref={messageEndRef} />
+        </div>
+
+        {/* Emoji Selector Bar */}
+        <div className="px-3 py-1.5 bg-neutral-920 border-t border-neutral-800 flex flex-wrap gap-1.5 justify-start select-none">
+          {['😂', '😮', '👑', '🔥', '💀', '🧠', '🃏', '♟️', '🎲', '👍', '🎉', '💪'].map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => setInputMessage(prev => prev + emoji)}
+              className="p-1 px-1.5 text-xs rounded-lg hover:bg-neutral-800 hover:text-white transition-colors cursor-pointer select-none active:scale-90"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+
+        <form onSubmit={handleSendMessage} className="p-3 bg-neutral-920 border-t border-neutral-800 flex gap-2">
+          <input
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            placeholder="Send a message..."
+            className="flex-1 bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-2 text-xs font-sans text-white outline-hidden focus:border-neutral-700"
+          />
+          <button
+            type="submit"
+            className="p-2.5 bg-amber-400 hover:bg-amber-500 text-neutral-950 rounded-xl cursor-pointer font-bold transition-all"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </form>
+      </div>
+    );
+  };
+
   const openChallengePanel = (bot: UserProfile) => {
     if (gamePlayStatus !== 'none') return;
     setSelectedBot(bot);
@@ -511,23 +652,25 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     if (!activeChallenge) return;
 
     if (accept) {
-      if (userProfile.coins < activeChallenge.entryFee) {
+      if (activeChallenge.entryFee > 0 && userProfile.coins < activeChallenge.entryFee) {
         alert("Transaction Failed: Insufficient Wallet Coins. Utilize the faucet to credit more.");
         setActiveChallenge(null);
         return;
       }
 
       // Debit local cash
-      setUserProfile(prev => ({ ...prev, coins: prev.coins - activeChallenge.entryFee }));
-      
-      const lockTx: WalletTransaction = {
-        id: `escrow_${Date.now()}`,
-        type: 'stake_lock',
-        amount: activeChallenge.entryFee,
-        description: `Escrow atomic lock: ${activeChallenge.gameType} vs ${activeChallenge.senderName}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setTransactions(prev => [lockTx, ...prev]);
+      if (activeChallenge.entryFee > 0) {
+        setUserProfile(prev => ({ ...prev, coins: prev.coins - activeChallenge.entryFee }));
+        
+        const lockTx: WalletTransaction = {
+          id: `escrow_${Date.now()}`,
+          type: 'stake_lock',
+          amount: activeChallenge.entryFee,
+          description: `Escrow atomic lock: ${activeChallenge.gameType} vs ${activeChallenge.senderName}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setTransactions(prev => [lockTx, ...prev]);
+      }
 
       setGamePlayStatus('playing');
       const activeObj = { ...activeChallenge, status: 'accepted' as const };
@@ -548,6 +691,12 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           `[ESCROW LOCK] Atomic escrow write success. STAKE: ${activeChallenge.entryFee} coins escrowed.`,
           `[PRESENCE SYNC] Player status switched: in-game`,
           `[LUDO START] Ludo match session active. Choose a piece to spawn or slide on path.`
+        ]);
+      } else if (activeChallenge.gameType === 'Draft') {
+        setGamePlayLogs([
+          `[ESCROW LOCK] Atomic escrow write success. STAKE: ${activeChallenge.entryFee} coins escrowed.`,
+          `[PRESENCE SYNC] Player status switched: in-game`,
+          `[DRAFTS START] Standard checkers layout configured. Command your cyan pieces!`
         ]);
       } else {
         setGamePlayLogs([
@@ -988,28 +1137,58 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     setGamePlayStatus('completed');
     setOnlineBots(prev => prev.map(b => b.uid === activeChallenge.senderId ? { ...b, status: 'online' } : b));
 
+    const rakeRate = 0.1;
+    let rakeAmount = 0;
+    let finalUserPayout = 0;
+
     if (winnerIsMe) {
+      rakeAmount = totalPayout > 0 ? Math.floor(totalPayout * rakeRate) : 0;
+      finalUserPayout = totalPayout - rakeAmount;
+
       setUserProfile(prev => ({ 
         ...prev, 
-        coins: prev.coins + totalPayout,
+        coins: prev.coins + finalUserPayout,
         wins: prev.wins + 1,
         status: 'online'
       }));
       
-      const payoutTx: WalletTransaction = {
-        id: `payout_${Date.now()}`,
-        type: 'win_payout',
-        amount: totalPayout,
-        description: `Winner payout credited: ${activeChallenge.gameType} vs ${activeChallenge.senderName}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setTransactions(prev => [payoutTx, ...prev]);
+      if (finalUserPayout > 0) {
+        const payoutTx: WalletTransaction = {
+          id: `payout_${Date.now()}`,
+          userId: userProfile.uid,
+          type: 'win_payout',
+          amount: finalUserPayout,
+          description: `Winner payout credited (90%): ${activeChallenge.gameType} vs ${activeChallenge.senderName}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: 'completed'
+        };
+        setTransactions(prev => [payoutTx, ...prev]);
+
+        // Save transaction to Firestore
+        setDoc(doc(db, 'transactions', payoutTx.id), payoutTx).catch(console.error);
+
+        // Record developer rake transaction
+        if (rakeAmount > 0) {
+          const devTx: WalletTransaction = {
+            id: `rake_${Date.now()}`,
+            userId: 'developer',
+            type: 'credit',
+            amount: rakeAmount,
+            description: `Rake Commission (10%) from ${activeChallenge.gameType} Match: ${userProfile.username} vs ${activeChallenge.senderName}`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            status: 'completed'
+          };
+          setDoc(doc(db, 'transactions', devTx.id), devTx).catch(console.error);
+          setDoc(doc(db, 'developer_stats', 'revenue'), { totalRake: increment(rakeAmount) }, { merge: true }).catch(console.error);
+        }
+      }
 
       setGamePlayLogs(prev => [
         ...prev,
         `--- VICTORY SECURED ---`,
         `Fabulous! Lead Developer cleared their hand! Match payout verified.`,
-        `Atomic Payout Dispatched: Credited ${totalPayout} virtual coins into wallet.`
+        `Rake fee deducted: ${rakeAmount} Coins (10% platform fee).`,
+        `Atomic Payout Dispatched: Credited ${finalUserPayout} virtual coins into wallet.`
       ]);
     } else {
       setUserProfile(prev => ({ 
@@ -1017,6 +1196,22 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         losses: prev.losses + 1,
         status: 'online'
       }));
+
+      // If playing with a bot, the user loses their stake to the house
+      const houseEarning = activeChallenge.entryFee;
+      if (houseEarning > 0 && activeChallenge.opponentType === 'bot') {
+        const devTx: WalletTransaction = {
+          id: `house_${Date.now()}`,
+          userId: 'developer',
+          type: 'credit',
+          amount: houseEarning,
+          description: `House Win vs ${userProfile.username} in ${activeChallenge.gameType} Bot Match`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: 'completed'
+        };
+        setDoc(doc(db, 'transactions', devTx.id), devTx).catch(console.error);
+        setDoc(doc(db, 'developer_stats', 'revenue'), { totalRake: increment(houseEarning) }, { merge: true }).catch(console.error);
+      }
 
       setGamePlayLogs(prev => [
         ...prev,
@@ -1286,64 +1481,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 <span>Lobby Live Server</span>
               </div>
             </div>
-
             {/* Lobby messages sub-tab */}
-            {activeTab === 'chat' && (
-              <div className="flex-1 flex flex-col bg-neutral-900 overflow-hidden">
-                <div className="flex-1 p-4 overflow-y-auto space-y-3.5">
-                  {chatMessages.map((msg) => {
-                    const isMe = msg.senderId === userProfile.uid;
-                    return (
-                      <div key={msg.id} className={`flex items-start gap-2.5 ${isMe ? 'flex-row-reverse' : ''}`}>
-                        <img 
-                          src={msg.senderAvatar} 
-                          alt={msg.senderName} 
-                          className="w-8 h-8 rounded-full object-cover border border-neutral-800"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="max-w-[70%] space-y-1">
-                          <div className={`flex items-baseline gap-2 text-[10px] text-neutral-500 ${isMe ? 'flex-row-reverse' : ''}`}>
-                            <span className="font-semibold text-neutral-300">{msg.senderName}</span>
-                            <span>{msg.timestamp}</span>
-                          </div>
-                          <div className={`p-3 rounded-2xl text-xs leading-relaxed ${
-                            isMe 
-                              ? 'bg-amber-400 text-neutral-950 font-medium rounded-tr-none' 
-                              : 'bg-neutral-800 text-neutral-100 rounded-tl-none border border-neutral-700/50'
-                          }`}>
-                            {msg.text}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  
-                  {isTyping && (
-                    <div className="flex items-center gap-2 text-xs text-neutral-550 font-mono pl-3.5">
-                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse animate-ping" />
-                      <span>{typingBot} is typing...</span>
-                    </div>
-                  )}
-                  <div ref={messageEndRef} />
-                </div>
-
-                <form onSubmit={handleSendMessage} className="p-3 bg-neutral-920 border-t border-neutral-800 flex gap-2">
-                  <input
-                    type="text"
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder="Ask about atomic stakes, or type: Let's challenge a bot to Whot card game..."
-                    className="flex-1 bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-2 text-xs font-sans text-white outline-hidden focus:border-neutral-700"
-                  />
-                  <button
-                    type="submit"
-                    className="p-2.5 bg-amber-400 hover:bg-amber-500 text-neutral-950 rounded-xl cursor-pointer font-bold transition-all"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                </form>
-              </div>
-            )}
+            {activeTab === 'chat' && renderChatPanelContent()}
 
             {/* Wallet sub-tab */}
             {activeTab === 'wallet' && (
@@ -1402,8 +1541,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                     {/* Select Game base */}
                     <div className="space-y-1.5">
                       <label className="text-[10px] text-neutral-450 font-mono font-bold uppercase tracking-wider">Configure Arena Option</label>
-                      <div className="grid grid-cols-3 gap-1.5 font-sans">
-                        {(['Chess', 'Ludo', 'Whot'] as const).map((game) => (
+                      <div className="grid grid-cols-4 gap-1.5 font-sans">
+                        {(['Chess', 'Ludo', 'Whot', 'Draft'] as const).map((game) => (
                           <button
                             key={game}
                             onClick={() => setFriendGame(game)}
@@ -1523,40 +1662,41 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           </div>
         ) : (
           /* Render Active Interactive Game matches */
-          <div className="flex flex-col space-y-4">
-            {/* Real-time escrow safe timer safeguard banner */}
-            <div className="bg-neutral-950/95 border-2 border-purple-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
-              <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl ${timeLeft <= 15 ? 'bg-rose-500/20 text-rose-300 animate-pulse' : 'bg-purple-500/20 text-purple-300'}`}>
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-white uppercase tracking-wider font-display">🛡️ Escrow Safeguard Active</span>
-                    <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono px-1.5 py-0.5 rounded-md font-bold uppercase">SECURE STADIUM</span>
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
+            <div className="xl:col-span-3 flex flex-col space-y-4">
+              {/* Real-time escrow safe timer safeguard banner */}
+              <div className="bg-neutral-950/95 border-2 border-purple-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${timeLeft <= 60 ? 'bg-rose-500/20 text-rose-300 animate-pulse' : 'bg-purple-500/20 text-purple-300'}`}>
+                    <ShieldCheck className="w-5 h-5" />
                   </div>
-                  <p className="text-[11px] text-neutral-400 mt-0.5 font-sans">
-                    Match stake of <strong className="text-white font-mono font-bold text-xs">{activeChallenge?.entryFee} Coins</strong> is protected. In case of timeout or disconnects, tap reconcile to automatically resolve stakes safely based on current game points.
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-white uppercase tracking-wider font-display">🛡️ Escrow Safeguard Active</span>
+                      <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono px-1.5 py-0.5 rounded-md font-bold uppercase">SECURE STADIUM</span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400 mt-0.5 font-sans">
+                      Match stake of <strong className="text-white font-mono font-bold text-xs">{activeChallenge?.entryFee} Coins</strong> is protected. In case of timeout or disconnects, tap reconcile to automatically resolve stakes safely based on current game points.
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <div className="text-right shrink-0">
-                  <span className="block text-[10px] text-neutral-450 font-mono font-bold uppercase">Time Remaining:</span>
-                  <span className={`font-mono text-base font-black px-2.5 py-1 rounded-lg ${timeLeft <= 15 ? 'text-rose-400 bg-rose-950/80 border border-rose-500/30' : 'text-purple-300 bg-purple-950/50 border border-purple-500/20'}`}>
-                    {timeLeft}s
-                  </span>
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <div className="text-right shrink-0">
+                    <span className="block text-[10px] text-neutral-450 font-mono font-bold uppercase">Time Remaining:</span>
+                    <span className={`font-mono text-base font-black px-2.5 py-1 rounded-lg ${timeLeft <= 60 ? 'text-rose-400 bg-rose-950/80 border border-rose-500/30' : 'text-purple-300 bg-purple-950/50 border border-purple-500/20'}`}>
+                      {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleMatchTimerExpiry}
+                    className="px-4 py-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white rounded-xl text-xs font-black font-sans shadow-md border border-rose-500/20 cursor-pointer active:scale-95 transition-all select-none uppercase tracking-wider"
+                  >
+                    ⚖️ Reconcile
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleMatchTimerExpiry}
-                  className="px-4 py-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white rounded-xl text-xs font-black font-sans shadow-md border border-rose-500/20 cursor-pointer active:scale-95 transition-all select-none uppercase tracking-wider"
-                >
-                  ⚖️ Reconcile
-                </button>
               </div>
-            </div>
             {activeChallenge?.gameType === 'Whot' && whotGameState ? (
               /* Playable Whot card game table! */
               <div className="rounded-3xl p-4 sm:p-6 shadow-2xl space-y-6 relative overflow-hidden whot-game-table select-none" id="whot-card-table-arena">
@@ -1765,6 +1905,14 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
               />
+            ) : activeChallenge?.gameType === 'Draft' ? (
+              <InteractiveDraftBoard
+                entryFee={activeChallenge.entryFee}
+                opponentName={activeChallenge?.senderId === 'friend_user' ? activeChallenge.senderName : (selectedBot?.username || 'Bot')}
+                opponentAvatar={activeChallenge?.senderId === 'friend_user' ? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&q=80' : (selectedBot?.avatar || '')}
+                onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
+                onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
+              />
             ) : (
               <InteractiveChessBoard
                 entryFee={activeChallenge.entryFee}
@@ -1775,7 +1923,23 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
               />
             )}
           </div>
-        )}
+          
+          {/* Live Duel Chat Panel */}
+          <div className="xl:col-span-1 bg-neutral-900 rounded-3xl border border-neutral-800 shadow-xl flex flex-col h-[520px] md:h-[620px] overflow-hidden sticky top-24">
+            <div className="px-4 py-3 bg-neutral-920 border-b border-neutral-800 flex items-center justify-between shrink-0">
+              <span className="text-xs font-bold text-white uppercase tracking-wider font-display flex items-center gap-1.5">
+                <Send className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                Live Duel Chat
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[9px] font-mono text-neutral-450 uppercase font-black">Connected</span>
+              </span>
+            </div>
+            {renderChatPanelContent()}
+          </div>
+        </div>
+      )}
 
         {/* Incoming/Outgoing match challenge banner overlay alerts */}
         <AnimatePresence>
@@ -1835,8 +1999,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs text-neutral-550 font-mono font-semibold">Select Game Base</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['Whot', 'Ludo', 'Chess'] as const).map((g) => (
+                <div className="grid grid-cols-4 gap-2">
+                  {(['Whot', 'Ludo', 'Chess', 'Draft'] as const).map((g) => (
                     <button
                       key={g}
                       onClick={() => setGameType(g)}

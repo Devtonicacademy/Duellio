@@ -22,19 +22,19 @@ import {
   Copy
 } from 'lucide-react';
 import { UserProfile, WalletTransaction } from '../types';
-import { BOT_PLAYERS } from '../data/simulation';
 
 interface PlayArenaTabProps {
   userProfile: UserProfile;
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
   onLaunchMatch: (matchData: {
-    gameType: 'Chess' | 'Ludo' | 'Whot';
+    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft';
     opponentType: 'bot' | 'player';
     botDifficulty?: 'easy' | 'medium' | 'hard';
     entryFee: number;
     opponentName: string;
     multiplier: number;
   }) => void;
+  allProfiles: UserProfile[];
 }
 
 const AVAILABLE_GAMES = [
@@ -64,21 +64,32 @@ const AVAILABLE_GAMES = [
     icon: '🃏',
     difficultyRecommendation: 'High Reflex & Card Skill',
     color: 'from-purple-500/10 to-pink-500/10 border-purple-500/20'
+  },
+  {
+    id: 'Draft' as const,
+    name: 'Cyber Drafts Matrix',
+    metric: '8x8 Checkers Grid',
+    desc: 'Neon diagonal tactical warfare. Command your light tokens across the dark matrix grid, perform diagonal jumps, capture enemy nodes, and secure King elevations.',
+    icon: '🔴',
+    difficultyRecommendation: 'Mid Strategy Level',
+    color: 'from-amber-500/10 to-orange-500/10 border-amber-500/20'
   }
 ];
 
 export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
   userProfile,
   setUserProfile,
-  onLaunchMatch
+  onLaunchMatch,
+  allProfiles
 }) => {
-  const [selectedGame, setSelectedGame] = useState<'Chess' | 'Ludo' | 'Whot'>('Chess');
+  const [selectedGame, setSelectedGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft'>('Chess');
   const [opponentStyle, setOpponentStyle] = useState<'bot' | 'player'>('bot');
+  const [botPlayMode, setBotPlayMode] = useState<'practice' | 'staked'>('staked');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [stake, setStake] = useState<number>(250);
   
-  // Available other live players from SIMULATED BOT_PLAYERS
-  const onlinePlayers = BOT_PLAYERS.filter(p => p.status === 'online');
+  // Available other live players from allProfiles (excluding current user)
+  const onlinePlayers = allProfiles.filter(p => p.uid !== userProfile.uid);
   const [selectedPlayerUid, setSelectedPlayerUid] = useState<string>(onlinePlayers[0]?.uid || '');
 
   // Calculate bot multiplier modifier
@@ -95,19 +106,22 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
   const selectedOpponent = onlinePlayers.find(p => p.uid === selectedPlayerUid) || onlinePlayers[0];
 
   const handleLaunch = () => {
-    if (userProfile.coins < stake) {
-      alert(`Stake Lock Error: You have ${userProfile.coins} coins but the entry stake is ${stake}. Please use the "+" Claim Faucet button at the top header to get immediate coins.`);
+    const isPractice = opponentStyle === 'bot' && botPlayMode === 'practice';
+    const actualStake = isPractice ? 0 : stake;
+
+    if (userProfile.coins < actualStake) {
+      alert(`Stake Lock Error: You have ${userProfile.coins} coins but the entry stake is ${actualStake}. Please use the "+" Claim Faucet button at the top header to get immediate coins.`);
       return;
     }
 
     const { origin, pathname } = window.location;
-    const multiplier = getMultiplier();
+    const multiplier = isPractice ? 0 : getMultiplier();
     const opponentName = opponentStyle === 'bot' 
-      ? `Nebula_AI (${difficulty.toUpperCase()})` 
+      ? `Nebula_AI (${difficulty.toUpperCase()})${isPractice ? ' [PRACTICE]' : ''}` 
       : (selectedOpponent?.username || 'Chidi_LudoKing');
 
     if (opponentStyle === 'player') {
-      const inviteLink = `${origin}${pathname}?friendInvite=true&game=${selectedGame}&stake=${stake}&sender=${encodeURIComponent(userProfile.username)}`;
+      const inviteLink = `${origin}${pathname}?friendInvite=true&game=${selectedGame}&stake=${actualStake}&sender=${encodeURIComponent(userProfile.username)}`;
       navigator.clipboard.writeText(inviteLink);
       alert(`🎉 Multiplayer Match Ready!\n\nWe copied the invitation link to your clipboard:\n\n${inviteLink}\n\nShare this link with your challenger to start instantly!`);
     }
@@ -116,7 +130,7 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
       gameType: selectedGame,
       opponentType: opponentStyle,
       botDifficulty: opponentStyle === 'bot' ? difficulty : undefined,
-      entryFee: stake,
+      entryFee: actualStake,
       opponentName,
       multiplier
     });
@@ -262,6 +276,39 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
               </div>
             </div>
 
+            {/* Dynamic Segment: Bot Play Mode selector (Practice vs Staked) */}
+            {opponentStyle === 'bot' && (
+              <div className="space-y-2">
+                <label className="text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider block">
+                  Bot Game Style
+                </label>
+                <div className="grid grid-cols-2 gap-3 p-1 bg-[#070709] rounded-xl border border-white/[0.04]">
+                  <button
+                    type="button"
+                    onClick={() => setBotPlayMode('practice')}
+                    className={`py-2 rounded-lg font-bold text-xs font-display transition-all cursor-pointer ${
+                      botPlayMode === 'practice'
+                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                        : 'text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    Free Practice
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBotPlayMode('staked')}
+                    className={`py-2 rounded-lg font-bold text-xs font-display transition-all cursor-pointer ${
+                      botPlayMode === 'staked'
+                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                        : 'text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    Staked Challenge
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Dynamic Segment: Bot Difficulty selection with Multipliers */}
             {opponentStyle === 'bot' ? (
               <div className="space-y-3 animate-fade-in bg-purple-500/[0.02] border border-purple-500/10 p-4.5 rounded-2xl">
@@ -389,62 +436,68 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
               </div>
             )}
 
-            {/* Select Stakes with fast Buttons */}
-            <div className="space-y-2.5">
-              <div className="flex justify-between items-center">
-                <label className="text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider block">
-                  3. Entry Fee / Stakes
-                </label>
-                <span className="text-xs font-mono font-bold text-purple-300">{stake} Coins</span>
-              </div>
-              
-              <div className="grid grid-cols-4 gap-2">
-                {[100, 250, 500, 1000].map((val) => (
-                  <button
-                    key={val}
-                    type="button"
-                    onClick={() => setStake(val)}
-                    className={`py-2 text-[10px] font-mono font-bold rounded-xl transition-all border cursor-pointer ${
-                      stake === val
-                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                        : 'bg-neutral-900 hover:bg-neutral-850 border-white/[0.04] text-neutral-400'
-                    }`}
-                  >
-                    {val.toLocaleString()} Coins
-                  </button>
-                ))}
-              </div>
+            {/* Select Stakes with fast Buttons (Only shown for P2P or Staked Bot matches) */}
+            {!(opponentStyle === 'bot' && botPlayMode === 'practice') && (
+              <div className="space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider block">
+                    3. Entry Fee / Stakes
+                  </label>
+                  <span className="text-xs font-mono font-bold text-purple-300">{stake} Coins</span>
+                </div>
+                
+                <div className="grid grid-cols-4 gap-2">
+                  {[100, 250, 500, 1000].map((val) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setStake(val)}
+                      className={`py-2 text-[10px] font-mono font-bold rounded-xl transition-all border cursor-pointer ${
+                        stake === val
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                          : 'bg-neutral-900 hover:bg-neutral-850 border-white/[0.04] text-neutral-400'
+                      }`}
+                    >
+                      {val.toLocaleString()} Coins
+                    </button>
+                  ))}
+                </div>
 
-              {/* Slider for custom stake */}
-              <div className="pt-2">
-                <input 
-                  type="range" 
-                  min="50" 
-                  max="2000" 
-                  step="50"
-                  value={stake} 
-                  onChange={(e) => setStake(Number(e.target.value))}
-                  className="w-full h-1 bg-neutral-900 rounded-lg appearance-none cursor-pointer accent-purple-500"
-                />
-                <div className="flex justify-between text-[9px] font-mono text-neutral-500 mt-1">
-                  <span>Min: 50 Coins</span>
-                  <span>Max: 2,000 Coins</span>
+                {/* Slider for custom stake */}
+                <div className="pt-2">
+                  <input 
+                    type="range" 
+                    min="50" 
+                    max="2000" 
+                    step="50"
+                    value={stake} 
+                    onChange={(e) => setStake(Number(e.target.value))}
+                    className="w-full h-1 bg-neutral-900 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                  />
+                  <div className="flex justify-between text-[9px] font-mono text-neutral-500 mt-1">
+                    <span>Min: 50 Coins</span>
+                    <span>Max: 2,000 Coins</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Estimated payout calculation detail */}
             <div className="bg-[#070709] rounded-2xl p-4 border border-white/[0.04] space-y-2.5">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-neutral-400">Your Base Escrow Entry Fee:</span>
-                <span className="text-white font-mono font-bold">-{stake} Coins</span>
+                <span className="text-white font-mono font-bold">
+                  -{opponentStyle === 'bot' && botPlayMode === 'practice' ? 0 : stake} Coins
+                </span>
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-neutral-400">Match Stake Pool (P2P matching):</span>
-                <span className="text-white font-mono font-bold">{stake * 2} Coins</span>
+                <span className="text-white font-mono font-bold">
+                  {opponentStyle === 'bot' && botPlayMode === 'practice' ? 0 : stake * 2} Coins
+                </span>
               </div>
 
-              {opponentStyle === 'bot' && (
+              {opponentStyle === 'bot' && botPlayMode === 'staked' && (
                 <div className="flex justify-between items-center text-xs border-b border-dashed border-white/[0.06] pb-2.5">
                   <span className="text-purple-350 font-medium">AI Difficulty Multiplier Boost:</span>
                   <span className="text-purple-300 font-mono font-bold">x{getMultiplier().toFixed(1)} Bonus Payout</span>
@@ -454,7 +507,7 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
               <div className="flex justify-between items-center text-sm pt-1">
                 <strong className="text-white font-black font-display uppercase tracking-tight text-xs">On Victory Return Payout:</strong>
                 <strong className="text-emerald-400 font-mono font-bold text-base">
-                  +{Math.floor(stake * (1 + getMultiplier())).toLocaleString()} Coins!
+                  +{opponentStyle === 'bot' && botPlayMode === 'practice' ? 0 : Math.floor(stake * (1 + getMultiplier()))} Coins!
                 </strong>
               </div>
             </div>

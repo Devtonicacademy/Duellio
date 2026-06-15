@@ -15,6 +15,17 @@ export interface UserProfile {
   status: 'online' | 'offline' | 'in-game';
 }
 
+export interface UserReport {
+  id: string;
+  reporterId: string;
+  reportedUserId: string;
+  reason: 'toxicity' | 'cheating' | 'spam' | 'other';
+  description?: string;
+  status: 'pending' | 'reviewed' | 'action_taken';
+  timestamp: string;
+}
+
+
 export interface ChatMessage {
   id: string;
   senderId: string;
@@ -29,7 +40,7 @@ export interface MatchChallenge {
   senderId: string;
   senderName: string;
   receiverId: string;
-  gameType: 'Whot' | 'Ludo' | 'Chess';
+  gameType: 'Whot' | 'Ludo' | 'Chess' | 'Draft';
   entryFee: number;
   status: 'pending' | 'accepted' | 'declined' | 'completed';
   timestamp: string;
@@ -40,10 +51,14 @@ export interface MatchChallenge {
 
 export interface WalletTransaction {
   id: string;
-  type: 'credit' | 'debit' | 'stake_lock' | 'stake_refund' | 'win_payout';
+  userId?: string;
+  type: 'deposit' | 'withdrawal' | 'credit' | 'debit' | 'stake_lock' | 'stake_refund' | 'win_payout';
   amount: number;
   description: string;
   timestamp: string;
+  status?: 'pending' | 'completed' | 'failed' | 'reversed';
+  referenceId?: string; // e.g. Match ID, or Payment Gateway Ref
+  idempotencyKey?: string; // to prevent duplicate processing
 }
 
 export interface EndpointSpec {
@@ -92,3 +107,22 @@ export interface RoadmapPhase {
   blueprint: BlueprintDetail;
   checklist: string[];
 }
+
+export interface DraftPiece {
+  id: string;
+  playerId: string;
+  isKing: boolean;
+  position: { row: number; col: number }; // 0-7 for an 8x8 board
+}
+
+export interface DraftGameState {
+  sessionId: string;
+  playerIds: string[]; // typically 2 players
+  pieces: DraftPiece[];
+  activePlayerId: string;
+  status: 'playing' | 'completed';
+  winnerId?: string;
+  turnTimer: number;
+  lastMoveMessage?: string;
+}
+
