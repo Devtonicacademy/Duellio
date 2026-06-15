@@ -26,7 +26,7 @@ export const TournamentsTab: React.FC = () => {
         <div className="flex items-center gap-6">
           <div className="text-left md:text-right">
             <span className="font-mono text-[10px] text-neutral-500 block font-bold uppercase tracking-wider">TOTAL PRIZE POOL</span>
-            <span className="font-display text-3xl font-extrabold text-purple-300 text-glow-purple">$50,000 USD</span>
+            <span className="font-display text-3xl font-extrabold text-purple-300 text-glow-purple">50,000 Coins</span>
           </div>
 
           <button 
@@ -116,7 +116,7 @@ export const TournamentsTab: React.FC = () => {
                   <p className="text-[10px] text-neutral-450 font-mono mt-0.5">Starts in 4 hours • 128 Slots</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-mono text-purple-300 text-xs font-bold">$2,500</p>
+                  <p className="font-mono text-purple-300 text-xs font-bold">2,500 Coins</p>
                   <ChevronRight className="w-3.5 h-3.5 text-neutral-500 inline-block" />
                 </div>
               </div>
@@ -135,7 +135,7 @@ export const TournamentsTab: React.FC = () => {
                   <p className="text-[10px] text-neutral-450 font-mono mt-0.5">Tomorrow 18:00 • Free Entry</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-mono text-purple-300 text-xs font-bold">$10,000</p>
+                  <p className="font-mono text-purple-300 text-xs font-bold">10,000 Coins</p>
                   <ChevronRight className="w-3.5 h-3.5 text-neutral-500 inline-block" />
                 </div>
               </div>

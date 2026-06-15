@@ -263,7 +263,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
                     ))}
                     <div className="bg-neutral-950/90 backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-neutral-800 text-[10px] font-mono text-center">
                       <span className="text-neutral-500 block text-[8px] font-bold">STAKE RANGE</span>
-                      <span className="text-purple-300 font-bold">${game.stakeMin.toFixed(2)} - ${game.stakeMax.toFixed(2)}</span>
+                      <span className="text-purple-300 font-bold">{game.stakeMin} - {game.stakeMax} Coins</span>
                     </div>
                   </div>
                 </div>
@@ -278,7 +278,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
                         </h4>
                         <div className="flex items-center gap-1.5 text-xs text-neutral-450 mt-1 font-mono">
                           <Wallet className="w-3.5 h-3.5 text-purple-400" />
-                          <span>Total Staked: <strong className="text-purple-300">${game.totalStaked.toLocaleString()}</strong></span>
+                          <span>Total Staked: <strong className="text-purple-300">{game.totalStaked.toLocaleString()} Coins</strong></span>
                         </div>
                       </div>
 
@@ -372,7 +372,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
           </div>
           <h3 className="font-display font-extrabold text-xl text-white">Duellio Pro Championship: Arena S1</h3>
           <p className="text-neutral-400 text-xs md:text-sm leading-relaxed max-w-xl">
-            Register and stake early in FIDE-certified tournament events. Pool escalators start at <strong>$5,000.00 USD</strong>. Dynamic anti-cheat scans enabled on host.
+            Register and stake early in FIDE-certified tournament events. Pool escalators start at <strong>5,000,000 Coins</strong>. Dynamic anti-cheat scans enabled on host.
           </p>
           <div className="flex gap-4 items-center">
             <button 

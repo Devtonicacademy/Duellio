@@ -33,6 +33,9 @@ export interface MatchChallenge {
   entryFee: number;
   status: 'pending' | 'accepted' | 'declined' | 'completed';
   timestamp: string;
+  botDifficulty?: 'easy' | 'medium' | 'hard';
+  opponentType?: 'bot' | 'player';
+  rewardMultiplier?: number;
 }
 
 export interface WalletTransaction {

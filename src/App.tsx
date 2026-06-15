@@ -23,7 +23,10 @@ import {
   Tv,
   User,
   ExternalLink,
-  HelpCircle as QuestionIcon
+  HelpCircle as QuestionIcon,
+  Sun,
+  Moon,
+  Gamepad2
 } from 'lucide-react';
 
 import { DiscoverTab } from './components/DiscoverTab';
@@ -31,12 +34,22 @@ import { TournamentsTab } from './components/TournamentsTab';
 import { ProfileTab } from './components/ProfileTab';
 import { PhaseSandboxTab } from './components/PhaseSandboxTab';
 import { DuellioLogo } from './components/DuellioLogo';
+import { PlayArenaTab } from './components/PlayArenaTab';
 
 import { INITIAL_USER, INITIAL_TX } from './data/simulation';
 import { UserProfile, WalletTransaction } from './types';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'discover' | 'tournaments' | 'lobbies' | 'profile'>('discover');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const stored = localStorage.getItem('duellio-theme');
+    return (stored === 'light' || stored === 'dark') ? stored : 'dark';
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('duellio-theme', theme);
+  }, [theme]);
+
+  const [activeTab, setActiveTab] = useState<'discover' | 'tournaments' | 'lobbies' | 'profile' | 'play-arena'>('discover');
   const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_USER);
   const [transactions, setTransactions] = useState<WalletTransaction[]>(INITIAL_TX);
   
@@ -55,6 +68,9 @@ export default function App() {
     senderName: string;
     gameType: 'Chess' | 'Ludo' | 'Whot';
     entryFee: number;
+    opponentType?: 'bot' | 'player';
+    botDifficulty?: 'easy' | 'medium' | 'hard';
+    rewardMultiplier?: number;
   } | null>(null);
 
   React.useEffect(() => {
@@ -98,8 +114,27 @@ export default function App() {
     setTransactions(prev => [newTx, ...prev]);
   };
 
+  const handleLaunchArenaMatch = (matchData: {
+    gameType: 'Chess' | 'Ludo' | 'Whot';
+    opponentType: 'bot' | 'player';
+    botDifficulty?: 'easy' | 'medium' | 'hard';
+    entryFee: number;
+    opponentName: string;
+    multiplier: number;
+  }) => {
+    setFriendChallenge({
+      senderName: matchData.opponentName,
+      gameType: matchData.gameType,
+      entryFee: matchData.entryFee,
+      opponentType: matchData.opponentType,
+      botDifficulty: matchData.botDifficulty,
+      rewardMultiplier: matchData.multiplier
+    });
+    setActiveTab('lobbies');
+  };
+
   return (
-    <div className="min-h-screen bg-[#070709] text-neutral-100 font-sans antialiased pb-12 selection:bg-purple-500/30 selection:text-white" id="applet-viewport">
+    <div className={`min-h-screen bg-[#070709] text-neutral-100 font-sans antialiased pb-12 selection:bg-purple-500/30 selection:text-white ${theme}`} id="applet-viewport">
       
       {/* Sticky Premium Glowing Navigation Header Bar matches Screenshot layouts exactly */}
       <header className="sticky top-0 z-40 bg-[#0B0B0E]/80 backdrop-blur-xl border-b border-white/[0.06] shadow-[0_4px_30px_rgba(0,0,0,0.4)] px-4 md:px-8 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
@@ -143,6 +178,18 @@ export default function App() {
           </button>
 
           <button
+            onClick={() => { setActiveTab('play-arena'); setPreselectedGame(null); }}
+            className={`px-4.5 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold cursor-pointer uppercase text-[10px] tracking-wider select-none ${
+              activeTab === 'play-arena'
+                ? 'bg-purple-350 text-[#070709] font-black shadow-lg shadow-purple-500/10'
+                : 'text-neutral-400 hover:text-neutral-100 hover:bg-white/[0.03]'
+            }`}
+          >
+            <Gamepad2 className="w-4 h-4" />
+            Play Arena
+          </button>
+
+          <button
             onClick={() => { setActiveTab('tournaments'); setPreselectedGame(null); }}
             className={`px-4.5 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold cursor-pointer uppercase text-[10px] tracking-wider select-none ${
               activeTab === 'tournaments'
@@ -181,6 +228,15 @@ export default function App() {
 
         {/* Wallet action, faucet and profile image link on right */}
         <div className="flex items-center gap-3.5">
+          <button 
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+            className="flex items-center justify-center p-2.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl transition-all cursor-pointer font-sans"
+            id="theme-mode-toggle"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+          </button>
+
           <button 
             onClick={handleHeaderFaucet}
             title="Instant Faucet Claim"
@@ -229,6 +285,15 @@ export default function App() {
               <DiscoverTab 
                 onSelectGame={handleSelectGameFromDiscover} 
                 userCoins={userProfile.coins} 
+              />
+            )}
+
+            {/* Play Arena View */}
+            {activeTab === 'play-arena' && (
+              <PlayArenaTab 
+                userProfile={userProfile}
+                setUserProfile={setUserProfile}
+                onLaunchMatch={handleLaunchArenaMatch}
               />
             )}
 

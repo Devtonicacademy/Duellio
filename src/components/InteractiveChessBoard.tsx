@@ -601,7 +601,7 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
           )}
 
           <div 
-            className="w-full max-w-[440px] aspect-square bg-[#070D18]/95 border border-cyan-500/35 p-2.5 rounded-[28px] shadow-[0_30px_70px_rgba(0,0,0,0.8),0_0_35px_rgba(6,182,212,0.15)] flex flex-col relative"
+            className="w-full max-w-[440px] aspect-square bg-[#070D18]/95 border border-cyan-500/35 p-2.5 rounded-[28px] shadow-[0_30px_70px_rgba(0,0,0,0.8),0_0_35px_rgba(6,182,212,0.15)] flex flex-col relative chess-grid-canvas"
             style={{ transform: view3D ? 'translateZ(10px)' : 'none', transformStyle: 'preserve-3d' }}
           >
             {/* Ambient inner bezel glow */}

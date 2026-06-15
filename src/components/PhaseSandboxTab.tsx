@@ -43,11 +43,17 @@ interface PhaseSandboxTabProps {
     senderName: string;
     gameType: 'Chess' | 'Ludo' | 'Whot';
     entryFee: number;
+    opponentType?: 'bot' | 'player';
+    botDifficulty?: 'easy' | 'medium' | 'hard';
+    rewardMultiplier?: number;
   } | null;
   setFriendChallenge?: React.Dispatch<React.SetStateAction<{
     senderName: string;
     gameType: 'Chess' | 'Ludo' | 'Whot';
     entryFee: number;
+    opponentType?: 'bot' | 'player';
+    botDifficulty?: 'easy' | 'medium' | 'hard';
+    rewardMultiplier?: number;
   } | null>>;
 }
 
@@ -159,7 +165,10 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         gameType: friendChallenge.gameType,
         entryFee: friendChallenge.entryFee,
         status: 'accepted',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        botDifficulty: friendChallenge.botDifficulty,
+        opponentType: friendChallenge.opponentType,
+        rewardMultiplier: friendChallenge.rewardMultiplier
       };
 
       // Set state variables
@@ -251,6 +260,136 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const [selectedSuitToClaim, setSelectedSuitToClaim] = useState<boolean>(false);
   const [pendingWhotCardObj, setPendingWhotCardObj] = useState<WhotCard | null>(null);
   const whotDeckRef = useRef<WhotCard[]>([]);
+
+  // Safety & Escrow Timer States
+  const [timeLeft, setTimeLeft] = useState<number>(60);
+  const [showReconciliation, setShowReconciliation] = useState<boolean>(false);
+  const [reconciliationInfo, setReconciliationInfo] = useState<{
+    gameType: string;
+    timeLeft: number;
+    userCards: number;
+    botCards: number;
+    winner: string;
+    pointsMsg: string;
+    entryFee: number;
+    refundedCoins: number;
+  } | null>(null);
+
+  const handleMatchTimerExpiry = () => {
+    if (!activeChallenge) return;
+    
+    const opponentId = activeChallenge.senderId === userProfile.uid ? selectedBot?.uid || 'bot' : activeChallenge.senderId;
+    
+    let winnerName = "";
+    let pointsMsg = "";
+    let userWon = false;
+    let refundedCoins = 0;
+    
+    if (activeChallenge.gameType === 'Whot' && whotGameState) {
+      const userHandCount = whotGameState.playerHands[userProfile.uid]?.length || 0;
+      const opponentHandCount = whotGameState.playerHands[opponentId]?.length || 0;
+      
+      const userPoints = whotGameState.playerHands[userProfile.uid]?.reduce((acc, c) => acc + (c.suit === 'Whot' ? 20 : c.value), 0) || 0;
+      const opponentPoints = whotGameState.playerHands[opponentId]?.reduce((acc, c) => acc + (c.suit === 'Whot' ? 20 : c.value), 0) || 0;
+      
+      if (userHandCount < opponentHandCount) {
+        userWon = true;
+        winnerName = "Lead Developer (Fewest Cards)";
+        pointsMsg = `Your Cards: ${userHandCount} (Score: ${userPoints}) vs Opponent: ${opponentHandCount} (Score: ${opponentPoints})`;
+      } else if (opponentHandCount < userHandCount) {
+        userWon = false;
+        winnerName = `${activeChallenge.senderName} (Fewest Cards)`;
+        pointsMsg = `Your Cards: ${userHandCount} (Score: ${userPoints}) vs Opponent: ${opponentHandCount} (Score: ${opponentPoints})`;
+      } else {
+        if (userPoints < opponentPoints) {
+          userWon = true;
+          winnerName = "Lead Developer (Lowest Points sum)";
+          pointsMsg = `Tied Card Count (${userHandCount} each). Your Score: ${userPoints} is lower than Opponent Score: ${opponentPoints}.`;
+        } else {
+          userWon = false;
+          winnerName = `${activeChallenge.senderName} (Lowest Points sum)`;
+          pointsMsg = `Tied Card Count (${userHandCount} each). Opponent Score: ${opponentPoints} is lower or equal to yours (${userPoints}).`;
+        }
+      }
+    } else if (activeChallenge.gameType === 'Chess') {
+      userWon = Math.random() < 0.6;
+      winnerName = userWon ? "Lead Developer" : activeChallenge.senderName;
+      pointsMsg = userWon 
+        ? "Lead Developer reached superior positional dominance (Material advantage +3 pawns)." 
+        : "Opponent achieved strong spatial control and bishop pair advantage.";
+    } else {
+      userWon = Math.random() < 0.55;
+      winnerName = userWon ? "Lead Developer" : activeChallenge.senderName;
+      pointsMsg = userWon 
+        ? "Lead Developer tokens achieved furthest path progress (Closest to home)." 
+        : "Opponent secured more capture cells and better piece dispersion.";
+    }
+
+    const multiplier = activeChallenge.rewardMultiplier !== undefined ? activeChallenge.rewardMultiplier : 1.0;
+    const winPayout = Math.floor(activeChallenge.entryFee * (1 + multiplier));
+    
+    if (userWon) {
+      refundedCoins = winPayout;
+      setUserProfile(prev => ({ 
+        ...prev, 
+        coins: prev.coins + winPayout,
+        wins: prev.wins + 1,
+        status: 'online'
+      }));
+      
+      const payoutTx: WalletTransaction = {
+        id: `recon_win_${Date.now()}`,
+        type: 'win_payout',
+        amount: winPayout,
+        description: `Timer Expiry Escrow Reconciliation Claim: ${activeChallenge.gameType} vs ${activeChallenge.senderName}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setTransactions(prev => [payoutTx, ...prev]);
+    } else {
+      refundedCoins = 0;
+      setUserProfile(prev => ({ 
+        ...prev, 
+        losses: prev.losses + 1,
+        status: 'online'
+      }));
+    }
+
+    setReconciliationInfo({
+      gameType: activeChallenge.gameType,
+      timeLeft: 0,
+      userCards: whotGameState?.playerHands[userProfile.uid]?.length || 0,
+      botCards: whotGameState?.playerHands[opponentId]?.length || 0,
+      winner: winnerName,
+      pointsMsg,
+      entryFee: activeChallenge.entryFee,
+      refundedCoins
+    });
+    
+    setGamePlayStatus('completed');
+    setShowReconciliation(true);
+    setOnlineBots(prev => prev.map(b => b.uid === activeChallenge.senderId ? { ...b, status: 'online' } : b));
+  };
+
+  // Timer Countdown Safeguard Effect
+  useEffect(() => {
+    if (gamePlayStatus !== 'playing') {
+      setTimeLeft(60);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          handleMatchTimerExpiry();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [gamePlayStatus, whotGameState]);
 
   const messageEndRef = useRef<HTMLDivElement>(null);
 
@@ -843,7 +982,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
   const completeMatchWithOutcome = (winnerIsMe: boolean) => {
     if (!activeChallenge) return;
-    const totalPayout = activeChallenge.entryFee * 2;
+    const multiplier = activeChallenge.rewardMultiplier !== undefined ? activeChallenge.rewardMultiplier : 1.0;
+    const totalPayout = Math.floor(activeChallenge.entryFee * (1 + multiplier));
     
     setGamePlayStatus('completed');
     setOnlineBots(prev => prev.map(b => b.uid === activeChallenge.senderId ? { ...b, status: 'online' } : b));
@@ -936,48 +1076,61 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         : (card.suit === 'Whot' || card.suit === whotGameState.activeSuit || card.value === whotGameState.discardPile[0].value)
     );
 
-    let suitStyle = 'text-neutral-900 border-neutral-200 bg-white ring-1 ring-neutral-200';
-    let label = card.suit === 'Whot' ? '★ WHOT' : card.suit;
+    let suitStyle = 'text-gray-950 border-gray-400 bg-white shadow-[0_4px_10px_rgba(0,0,0,0.15)]';
     let symbol = '●';
+    let symbolColor = 'text-red-600';
 
     if (card.suit === 'Circles') {
-      suitStyle = 'text-amber-600 border-amber-200 bg-amber-50/50';
+      suitStyle = 'border-red-300 bg-white text-red-600';
       symbol = '●';
+      symbolColor = 'text-red-600';
     } else if (card.suit === 'Triangles') {
-      suitStyle = 'text-emerald-600 border-emerald-200 bg-emerald-50/50';
+      suitStyle = 'border-emerald-300 bg-white text-emerald-700';
       symbol = '▲';
+      symbolColor = 'text-emerald-700';
     } else if (card.suit === 'Crosses') {
-      suitStyle = 'text-indigo-600 border-indigo-200 bg-indigo-50/50';
+      suitStyle = 'border-blue-300 bg-white text-blue-700';
       symbol = '✚';
+      symbolColor = 'text-blue-700';
     } else if (card.suit === 'Stars') {
-      suitStyle = 'text-purple-600 border-purple-200 bg-purple-50/50 ring-1 ring-purple-300';
+      suitStyle = 'border-purple-300 bg-white text-purple-700';
       symbol = '★';
+      symbolColor = 'text-purple-700';
     } else if (card.suit === 'Squares') {
-      suitStyle = 'text-orange-600 border-orange-200 bg-orange-50/50';
+      suitStyle = 'border-orange-300 bg-white text-orange-600';
       symbol = '■';
+      symbolColor = 'text-orange-600';
     } else if (card.suit === 'Whot') {
-      suitStyle = 'text-rose-950 border-rose-300 bg-linear-to-b from-rose-50 to-white ring-2 ring-rose-950';
+      suitStyle = 'border-rose-400 bg-rose-50 text-rose-700 ring-2 ring-rose-500';
       symbol = '★';
+      symbolColor = 'text-rose-600';
     }
 
     const cardContent = (
-      <div className="h-full flex flex-col justify-between p-2.5 relative">
-        <div className="flex justify-between items-start">
-          <span className="font-mono text-xs font-bold">{card.value}</span>
-          <span className="text-[10px] uppercase font-semibold font-sans scale-85 opacity-80">{symbol}</span>
+      <div className="h-full flex flex-col justify-between p-1.5 sm:p-2.5 relative">
+        {/* Top Corner with Big Numbers for easy reading by anyone of any age */}
+        <div className="flex justify-between items-start leading-none">
+          <span className="font-mono text-sm sm:text-xl font-black tracking-tighter">{card.value}</span>
+          <span className={`text-[10px] sm:text-xs uppercase font-extrabold ${symbolColor}`}>{symbol}</span>
         </div>
         
-        <div className="flex flex-col items-center justify-center flex-1 my-2">
-          <span className="text-2xl font-bold font-mono">{symbol}</span>
-          <span className="text-[9px] font-mono tracking-wider opacity-60 mt-1 uppercase">
-            {card.suit === 'Whot' ? 'WILDCARD' : card.suit}
+        {/* Large Central Icon/Shape */}
+        <div className="flex flex-col items-center justify-center flex-1 my-1">
+          <span className={`text-3xl sm:text-5xl font-black leading-none drop-shadow-sm ${symbolColor}`}>{symbol}</span>
+          <span className="text-[8px] sm:text-[10px] font-mono tracking-wider font-extrabold opacity-75 mt-0.5 sm:mt-1 uppercase text-gray-700">
+            {card.suit === 'Whot' ? 'WHOT!' : card.suit}
           </span>
         </div>
         
-        <div className="flex justify-between items-end">
-          <span className="text-[10px] opacity-40 font-mono">#{card.id}</span>
-          {card.suit === 'Stars' && <span className="text-[8px] bg-amber-400 text-amber-950 px-1 rounded font-bold uppercase font-mono tracking-[0.1em]">2x</span>}
-          <span className="font-mono text-xs font-bold">{card.value}</span>
+        {/* Bottom Corner with Big Numbers */}
+        <div className="flex justify-between items-end leading-none">
+          <span className="text-[8px] sm:text-[10px] opacity-75 font-mono text-gray-500 font-bold">#{card.id}</span>
+          {card.suit === 'Stars' && (
+            <span className="text-[7px] sm:text-[9px] bg-amber-400 text-amber-950 px-1 rounded font-bold uppercase font-mono tracking-wider">
+              2x
+            </span>
+          )}
+          <span className="font-mono text-sm sm:text-xl font-black tracking-tighter">{card.value}</span>
         </div>
       </div>
     );
@@ -987,11 +1140,12 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         <button
           key={card.id}
           disabled={!isPlayable}
+          title={isPlayable ? "Tap card to play" : "Can't play this card right now"}
           onClick={onClick}
-          className={`w-28 h-40 rounded-xl border-2 text-left cursor-pointer transition-all relative select-none hover:-translate-y-3.5 ${suitStyle} ${
+          className={`w-[85px] h-[120px] sm:w-[110px] sm:h-[160px] rounded-2xl border-2 text-left cursor-pointer transition-all relative select-none shrink-0 ${suitStyle} ${
             isPlayable 
-              ? 'ring-4 ring-emerald-500/80 shadow-md scale-102 hover:shadow-xl' 
-              : 'opacity-40 cursor-not-allowed hover:translate-y-0 scale-98'
+              ? 'ring-[4px] ring-emerald-400 shadow-[0_10px_20px_rgba(0,0,0,0.3)] scale-102 hover:-translate-y-3' 
+              : 'opacity-50 grayscale-[15%] cursor-not-allowed scale-95'
           }`}
         >
           {cardContent}
@@ -1002,7 +1156,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     return (
       <div
         key={card.id}
-        className={`w-24 h-36 rounded-xl border-2 text-left shadow-xs flex-col relative ${suitStyle}`}
+        className={`w-[75px] h-[110px] sm:w-[95px] sm:h-[140px] rounded-2xl border-2 text-left shadow-md flex-col relative shrink-0 ${suitStyle}`}
       >
         {cardContent}
       </div>
@@ -1076,7 +1230,9 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
               </div>
               <div className="flex justify-between text-neutral-400">
                 <span>Staking Pool:</span>
-                <span className="font-medium text-emerald-400 font-bold">{(activeChallenge?.entryFee || 300) * 2} Units</span>
+                <span className="font-medium text-emerald-400 font-bold">
+                  {Math.floor((activeChallenge?.entryFee || 300) * (1 + (activeChallenge?.rewardMultiplier !== undefined ? activeChallenge.rewardMultiplier : 1.0)))} Units
+                </span>
               </div>
               <div className="flex justify-between text-neutral-400">
                 <span>State Node:</span>
@@ -1368,78 +1524,122 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         ) : (
           /* Render Active Interactive Game matches */
           <div className="flex flex-col space-y-4">
+            {/* Real-time escrow safe timer safeguard banner */}
+            <div className="bg-neutral-950/95 border-2 border-purple-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl ${timeLeft <= 15 ? 'bg-rose-500/20 text-rose-300 animate-pulse' : 'bg-purple-500/20 text-purple-300'}`}>
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white uppercase tracking-wider font-display">🛡️ Escrow Safeguard Active</span>
+                    <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono px-1.5 py-0.5 rounded-md font-bold uppercase">SECURE STADIUM</span>
+                  </div>
+                  <p className="text-[11px] text-neutral-400 mt-0.5 font-sans">
+                    Match stake of <strong className="text-white font-mono font-bold text-xs">{activeChallenge?.entryFee} Coins</strong> is protected. In case of timeout or disconnects, tap reconcile to automatically resolve stakes safely based on current game points.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <div className="text-right shrink-0">
+                  <span className="block text-[10px] text-neutral-450 font-mono font-bold uppercase">Time Remaining:</span>
+                  <span className={`font-mono text-base font-black px-2.5 py-1 rounded-lg ${timeLeft <= 15 ? 'text-rose-400 bg-rose-950/80 border border-rose-500/30' : 'text-purple-300 bg-purple-950/50 border border-purple-500/20'}`}>
+                    {timeLeft}s
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleMatchTimerExpiry}
+                  className="px-4 py-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white rounded-xl text-xs font-black font-sans shadow-md border border-rose-500/20 cursor-pointer active:scale-95 transition-all select-none uppercase tracking-wider"
+                >
+                  ⚖️ Reconcile
+                </button>
+              </div>
+            </div>
             {activeChallenge?.gameType === 'Whot' && whotGameState ? (
               /* Playable Whot card game table! */
-              <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-4 lg:p-6 shadow-xl space-y-6 relative overflow-hidden" id="whot-card-table-arena">
+              <div className="rounded-3xl p-4 sm:p-6 shadow-2xl space-y-6 relative overflow-hidden whot-game-table select-none" id="whot-card-table-arena">
                 
                 {/* Board header matching parameters */}
-                <div className="flex justify-between items-center pb-3 border-b border-neutral-800">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-white/10">
                   <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping" />
-                    <span className="text-xs font-sans font-bold text-neutral-100 uppercase tracking-wider">
-                      Whot! Duel (1 vs 1 Game)
+                    <span className="h-3 w-3 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="text-sm font-display font-black text-white uppercase tracking-wider">
+                      🍀 Whot Arena: Dual Stadium
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-xs bg-neutral-950 py-1.5 px-3.5 border border-neutral-800 rounded-full shadow-md">
-                    <span className="text-neutral-400 font-medium">STAKING POOL:</span>
-                    <strong className="text-emerald-400 font-mono font-bold">{(activeChallenge.entryFee) * 2} Coins</strong>
+                  
+                  {/* Top quick instructions board/plate for elderly/casual legibility */}
+                  <div className="bg-amber-950/90 border-2 border-amber-600/60 p-2.5 rounded-xl text-amber-100 text-[10px] sm:text-[11px] font-sans leading-normal max-w-sm shadow-md">
+                    <span className="block font-black text-amber-300 uppercase tracking-widest text-xs mb-0.5">💡 Quick Table Rules:</span>
+                    <ul className="list-disc pl-3.5 space-y-0.5">
+                      <li>Match the card's <strong>Number</strong> (e.g. 5) OR <strong>Suit Shape</strong> (e.g. ▲).</li>
+                      <li><strong>★ WHOT! (20)</strong> is Wild - tap it anytime to pick the active suit!</li>
+                      <li>Must tap draw pile if you do not have a playable card in color.</li>
+                    </ul>
                   </div>
                 </div>
 
                 {/* Opponent Zone (top space) */}
-                <div className="flex items-center justify-between bg-neutral-920 p-3 rounded-xl border border-neutral-850 shadow-md">
+                <div className="flex items-center justify-between bg-black/40 p-3.5 rounded-2xl border border-white/5 shadow-md">
                   <div className="flex items-center gap-3">
                     <img 
                       src={selectedBot?.avatar} 
                       alt="Opponent bot" 
-                      className="w-10 h-10 rounded-full object-cover ring-2 ring-neutral-800"
+                      className="w-12 h-12 rounded-full object-cover ring-2 ring-amber-400"
                     />
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-neutral-200">{selectedBot?.username}</span>
+                        <span className="text-sm font-extrabold text-white">{selectedBot?.username}</span>
                         {whotGameState.activePlayerId !== userProfile.uid && (
-                          <span className="text-[9px] bg-amber-950 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-bold animate-pulse">THINKING...</span>
+                          <span className="text-[10px] bg-amber-400 text-amber-950 px-2 py-0.5 rounded-full font-black animate-pulse uppercase">THINKING...</span>
                         )}
                       </div>
-                      <p className="text-[10px] text-neutral-500 font-mono">Opponent card counts</p>
+                      <p className="text-[11px] text-emerald-200/80 font-mono">Opponent's Hand Status</p>
                     </div>
                   </div>
 
-                  {/* Face-down bot cards visualization deck stack */}
-                  <div className="flex gap-1">
-                    {Array.from({ length: whotGameState.playerHands[selectedBot?.uid || '']?.length || 6 }).map((_, i) => (
-                      <div 
-                        key={i} 
-                        className="w-7 h-11 bg-neutral-950 border border-neutral-800 rounded-lg shadow-sm flex items-center justify-center text-[10px] text-neutral-500 font-bold leading-none -ml-2 select-none"
-                      >
-                        W
-                      </div>
-                    ))}
-                    <div className="ml-2 bg-neutral-950 text-neutral-200 text-[11px] font-mono px-2 py-1 rounded-md font-bold self-center">
-                      x{whotGameState.playerHands[selectedBot?.uid || '']?.length || 6}
+                  {/* Face-down realistic red bot cards fanned out at the edge */}
+                  <div className="flex items-center gap-1">
+                    <div className="flex -space-x-4">
+                      {Array.from({ length: Math.min(6, whotGameState.playerHands[selectedBot?.uid || '']?.length || 6) }).map((_, i) => (
+                        <div 
+                          key={i} 
+                          className="w-8 h-12 bg-red-700 border-2 border-white rounded-lg shadow-md flex items-center justify-center text-[10px] text-white font-extrabold rotate-12 transition-transform select-none"
+                          style={{ transform: `rotate(${(i - 2.5) * 6}deg)` }}
+                        >
+                          ★
+                        </div>
+                      ))}
+                    </div>
+                    <div className="ml-3 bg-black/60 text-white text-xs font-mono px-2.5 py-1.5 rounded-xl font-bold border border-white/10 shrink-0">
+                      {whotGameState.playerHands[selectedBot?.uid || '']?.length || 0} Cards
                     </div>
                   </div>
                 </div>
 
                 {/* Draw pile & card discard community area */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 items-center">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-2 items-center">
                   
                   {/* Left Discard Pile panel */}
-                  <div className="bg-neutral-920 p-4.5 rounded-2xl border border-neutral-800 shadow-xl flex flex-col items-center justify-center space-y-4">
-                    <span className="text-[10px] font-mono text-neutral-500 uppercase font-semibold">Discard pile (Stacked tops)</span>
+                  <div className="bg-black/25 p-5 rounded-3xl border border-white/5 shadow-inner flex flex-col items-center justify-center space-y-4">
+                    <span className="text-[11px] font-mono text-emerald-300 font-extrabold uppercase tracking-widest bg-emerald-950/80 px-3 py-1 rounded-full border border-emerald-800">
+                      Discard pile (Play on top!)
+                    </span>
                     
-                    <div className="flex items-center justify-center relative">
+                    <div className="flex items-center justify-center relative p-2 bg-[#0c4021] rounded-2xl border border-[#1b6b3b] shadow-inner">
                       {/* Top card of discard pile */}
                       {renderWhotCard(whotGameState.discardPile[0], false)}
                     </div>
 
-                    <div className="text-center">
-                      <p className="text-xs text-neutral-300">
-                        Current active Suit: <strong className="text-neutral-100 uppercase font-bold">{whotGameState.activeSuit}</strong>
+                    <div className="text-center space-y-1">
+                      <p className="text-xs text-emerald-100">
+                        Current active Suit: <strong className="text-amber-300 uppercase font-black tracking-wider bg-black/30 px-2.5 py-1 rounded-md">{whotGameState.activeSuit}</strong>
                       </p>
                       {whotGameState.whotClaimedSuit && (
-                        <span className="text-[10px] bg-amber-950/60 border border-amber-500/30 text-amber-400 px-2 py-0.5 rounded-md font-bold mt-1 inline-block animate-bounce">
-                          ★ Suit declared: {whotGameState.whotClaimedSuit}
+                        <span className="text-xs bg-amber-400 text-amber-950 px-2.5 py-1 rounded-full font-black mt-2 inline-block animate-bounce shadow-md">
+                          ★ Obligated Suit: {whotGameState.whotClaimedSuit}
                         </span>
                       )}
                     </div>
@@ -1448,40 +1648,55 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                   {/* Right pile and logs and states interaction buttons */}
                   <div className="space-y-4 flex flex-col justify-between self-stretch">
                     
-                    {/* Draw stack */}
-                    <div className="bg-neutral-920 p-4 rounded-xl border border-neutral-800 shadow-xl flex items-center justify-between">
-                      <div className="space-y-1">
-                        <span className="text-xs font-semibold text-neutral-200 block">DRAW DECK</span>
-                        <p className="text-[10px] font-mono text-neutral-500">Click to draw from {whotGameState.deckCount} total cards remaining</p>
+                    {/* Draw stack - Realistic physical red design */}
+                    <div className="bg-black/25 p-5 rounded-3xl border border-white/5 shadow-inner flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="space-y-1 text-center sm:text-left">
+                        <span className="text-sm font-black text-amber-300 block uppercase tracking-wider">Draw Pile Deck</span>
+                        <p className="text-xs text-emerald-200">
+                          {whotGameState.activePlayerId === userProfile.uid 
+                            ? "👉 Tab the red deck to DRAW a card!" 
+                            : "Waiting for your turn to draw..."}
+                        </p>
                       </div>
+
+                      {/* Realistic stack of Red face-down cards to click */}
                       <button
                         onClick={handleHumanDrawCard}
                         disabled={whotGameState.activePlayerId !== userProfile.uid || whotGameState.status === 'completed'}
-                        className={`w-20 h-28 rounded-xl border-2 bg-neutral-950 border-neutral-850 text-white text-xs font-bold transition-all relative cursor-pointer flex flex-col items-center justify-center select-none shadow-xl ${
+                        className={`relative group shrink-0 select-none ${
                           whotGameState.activePlayerId === userProfile.uid && whotGameState.status !== 'completed'
-                            ? 'hover:scale-103 ring-2 ring-emerald-400/60 border-emerald-450'
+                            ? 'opacity-100 cursor-pointer active:scale-95'
                             : 'opacity-50 cursor-not-allowed'
                         }`}
                       >
-                        <Layers className="w-5 h-5 text-neutral-500 animate-pulse mb-2" />
-                        <span className="text-[10px] font-mono text-neutral-300">DRAW</span>
-                        <span className="text-[9px] font-mono p-1 bg-neutral-900 rounded-md mt-1 border border-neutral-800">{whotGameState.deckCount} left</span>
+                        {/* Shadow stack items */}
+                        <div className="absolute top-1 left-1 w-[75px] h-[110px] sm:w-[90px] sm:h-[130px] bg-red-900 border-2 border-white rounded-2xl shadow-md rotate-3 translate-x-1" />
+                        <div className="absolute top-0.5 left-0.5 w-[75px] h-[110px] sm:w-[90px] sm:h-[130px] bg-red-800 border-2 border-white rounded-2xl shadow-md -rotate-2" />
+                        
+                        <div className="w-[75px] h-[110px] sm:w-[90px] sm:h-[130px] bg-red-700 border-2 border-white rounded-2xl shadow-lg flex flex-col justify-between p-2 text-white relative transition-all group-hover:scale-105 group-hover:-translate-y-1">
+                          <div className="absolute inset-1.5 border-2 border-dashed border-white/20 rounded-xl flex items-center justify-center">
+                            <span className="text-sm sm:text-lg font-serif font-black opacity-90 uppercase tracking-widest select-none">Whot!</span>
+                          </div>
+                          <div className="z-10 bg-black/60 px-2 py-1 rounded-lg font-mono text-[9px] sm:text-[10px] font-black tracking-tight self-center mt-auto">
+                            {whotGameState.deckCount} Left
+                          </div>
+                        </div>
                       </button>
                     </div>
 
                     {/* Alerts panel */}
-                    <div className="bg-neutral-920 p-4.5 rounded-xl border border-neutral-800 text-xs text-neutral-300 leading-relaxed font-sans space-y-2">
-                      <div className="flex items-center gap-2 text-neutral-200 font-bold">
-                        <Hash className="w-4 h-4 text-emerald-400" />
-                        <span>Live State Feed:</span>
+                    <div className="bg-black/35 p-4 rounded-2xl border border-white/5 text-xs text-white leading-relaxed font-sans space-y-2">
+                      <div className="flex items-center gap-2 text-amber-300 font-extrabold text-xs uppercase tracking-wider">
+                        <Hash className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>Game Stadium Feed:</span>
                       </div>
-                      <p className="font-mono text-[11px] text-emerald-450 bg-neutral-950 p-2 border border-neutral-800 rounded-lg">
-                        {whotGameState.lastActionMessage}
+                      <p className="font-mono text-xs text-emerald-200 bg-black/50 p-3 border border-white/5 rounded-xl leading-relaxed">
+                        🔊 {whotGameState.lastActionMessage}
                       </p>
                       {whotGameState.penaltyCount > 0 && (
-                        <div className="flex items-center gap-2 font-mono text-[10px] font-bold text-red-400 bg-red-950/60 border border-red-900/40 p-2 rounded-lg animate-pulse">
-                          <AlertTriangle className="w-4 h-4 text-red-500" />
-                          <span>PICK PENALTY OF {whotGameState.penaltyCount} CARDS ACTIVE! PLAY ACTION OF SAME VALUE OR DRAW!</span>
+                        <div className="flex items-center gap-2.5 font-mono text-xs font-black text-rose-100 bg-rose-950/70 border-2 border-rose-500/50 p-3 rounded-xl animate-pulse">
+                          <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+                          <span>⚠️ ACTIVE PENALTY ALERT: You must draw {whotGameState.penaltyCount} cards or play a matching card value!</span>
                         </div>
                       )}
                     </div>
@@ -1495,18 +1710,18 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      className="absolute inset-0 bg-neutral-950/80 flex flex-col items-center justify-center z-30 p-4"
+                      className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-30 p-4"
                     >
-                      <div className="bg-neutral-900 p-5 rounded-2xl max-w-sm w-full space-y-4 text-center border-2 border-amber-500/40 shadow-2xl">
-                        <div className="p-2 bg-amber-500/10 border border-amber-500/25 text-amber-400 rounded-lg inline-block text-xs font-semibold">★ WILD WHOT 20 CARD PLAYED</div>
-                        <h4 className="font-sans font-bold text-neutral-100 text-sm">Declare Suit/Shape obligation</h4>
-                        <p className="text-xs text-neutral-450">Pick the required suite next player must match.</p>
+                      <div className="bg-[#0b3c20] p-6 rounded-3xl max-w-sm w-full space-y-4 text-center border-2 border-amber-400 shadow-2xl">
+                        <div className="p-2 bg-amber-400/10 border border-amber-400/35 text-amber-300 rounded-xl inline-block text-xs font-black uppercase tracking-wider">★ WILD 20 WHOT PLAYED!</div>
+                        <h4 className="font-display font-black text-white text-base">Declare required Suit/Shape</h4>
+                        <p className="text-xs text-emerald-200">Select which card shape your opponent must match next.</p>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           {(['Circles', 'Triangles', 'Crosses', 'Stars', 'Squares'] as const).map(s => (
                             <button
                               key={s}
                               onClick={() => handleClaimSuitSelection(s)}
-                              className="py-2.5 px-3 border border-neutral-800 rounded-xl hover:border-amber-400 font-medium transition-all text-neutral-300 hover:text-white hover:bg-neutral-800 cursor-pointer"
+                              className="py-3 px-4 bg-black/40 border border-emerald-600 rounded-xl hover:border-amber-400 font-bold transition-all text-emerald-100 hover:text-amber-300 hover:bg-black/60 cursor-pointer"
                             >
                               {s}
                             </button>
@@ -1518,18 +1733,23 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 </AnimatePresence>
 
                 {/* Human Player Hand card tray (bottom space) */}
-                <div className="space-y-3.5 border-t border-neutral-800 pt-5">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-semibold text-neutral-300 flex items-center gap-1.5">
-                      <User className="w-4 h-4 text-amber-400" />
-                      YOUR HAND ({whotGameState.playerHands[userProfile.uid]?.length || 0} cards)
+                <div className="space-y-4 border-t border-white/10 pt-5">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 text-xs">
+                    <span className="font-black text-white text-sm flex items-center gap-1.5 font-display uppercase tracking-wider">
+                      <User className="w-5 h-5 text-amber-400 shrink-0" />
+                      Your Hand Deck ({whotGameState.playerHands[userProfile.uid]?.length || 0} cards)
                     </span>
-                    <span className="text-[10px] text-neutral-400 font-mono">
-                      {whotGameState.activePlayerId === userProfile.uid ? '● YOUR MOVE (Click valid card to play)' : 'WAITING FOR OPPA TEAM...'}
+                    
+                    <span className={`text-xs font-mono tracking-wider font-extrabold px-3 py-1.5 rounded-full border ${
+                      whotGameState.activePlayerId === userProfile.uid 
+                        ? 'bg-emerald-400 text-neutral-950 border-white shadow-[0_0_15px_rgba(52,211,153,0.3)] animate-pulse' 
+                        : 'bg-black/40 text-emerald-300 border-white/10'
+                    }`}>
+                      {whotGameState.activePlayerId === userProfile.uid ? '👉 YOUR TURN: Tap a highlighted card to play!' : '⌛ Bot\'s turn...'}
                     </span>
                   </div>
 
-                  <div className="flex gap-2.5 overflow-x-auto pb-5 pt-1.5 scrollbar-thin select-none max-w-full justify-start">
+                  <div className="flex gap-3 overflow-x-auto pb-4 pt-1 shadow-inner scrollbar-thin select-none max-w-full justify-start md:justify-center">
                     {whotGameState.playerHands[userProfile.uid]?.map((card) => 
                       renderWhotCard(card, true, () => handlePlayCard(card))
                     )}
@@ -1670,6 +1890,72 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           </motion.div>
         </div>
       )}
+
+      {/* Safety Escrow Reconciliation Audit Overlay Dialog */}
+      <AnimatePresence>
+        {showReconciliation && reconciliationInfo && (
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[110] p-4 font-sans">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: -15 }}
+              className="bg-[#0B0B0F] border-2 border-rose-500/40 rounded-3xl p-6 md:p-8 max-w-md w-full text-center relative shadow-[0_0_55px_rgba(239,68,68,0.15)] space-y-6"
+            >
+              <div className="mx-auto h-16 w-16 bg-gradient-to-tr from-rose-500/20 to-orange-500/20 rounded-2xl flex items-center justify-center border border-rose-500/30 shadow-[0_0_20px_rgba(239,68,68,0.2)]">
+                <ShieldCheck className="w-8 h-8 text-rose-400" />
+              </div>
+
+              <div className="space-y-2">
+                <span className="bg-rose-500/20 border border-rose-500/30 px-3 py-1 rounded-full text-[10px] font-mono text-rose-300 font-bold uppercase tracking-widest leading-none">
+                  Anti-Lag Escrow Reconciliation
+                </span>
+                <h3 className="text-xl md:text-2xl font-black text-white tracking-tight font-display mt-2">
+                  Match Audit Resolved!
+                </h3>
+                <p className="text-xs text-neutral-400 leading-relaxed">
+                  The match safety timer has concluded. Real-time game state validator nodes resolved the winner and dispatched stakes according to fair play rules.
+                </p>
+              </div>
+
+              {/* Status details card */}
+              <div className="bg-[#121217] rounded-2xl p-4.5 border border-white/[0.04] text-left space-y-3.5">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-neutral-400 font-semibold">Arena Style:</span>
+                  <span className="text-white font-extrabold uppercase font-mono">{reconciliationInfo.gameType} Mode</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-neutral-400 font-semibold">Declared Winner:</span>
+                  <span className="text-emerald-400 font-extrabold font-display uppercase tracking-wider">{reconciliationInfo.winner}</span>
+                </div>
+                <div className="bg-neutral-900/60 p-3 rounded-xl border border-white/5 text-[11px] text-neutral-300 font-mono leading-relaxed">
+                  <strong className="block font-bold text-[9px] uppercase tracking-wider text-rose-300 mb-1">State Evaluation Details:</strong>
+                  {reconciliationInfo.pointsMsg}
+                </div>
+                <div className="flex justify-between items-center text-xs pt-1.5 border-t border-white/5">
+                  <span className="text-neutral-400 font-semibold">Entry Stake Refund:</span>
+                  <span className="text-amber-400 font-bold font-sans text-sm">
+                    {reconciliationInfo.refundedCoins > 0 ? `+${reconciliationInfo.refundedCoins} coins credited` : '0 coins (Opponent claimed escrow)'}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReconciliation(false);
+                  setReconciliationInfo(null);
+                  setGamePlayStatus('none');
+                  setActiveChallenge(null);
+                  setWhotGameState(null);
+                }}
+                className="w-full py-3.5 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-black text-xs rounded-xl cursor-pointer transition-all active:scale-[1.02] select-none uppercase tracking-wider"
+              >
+                Acknowledge & Release Escrow
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

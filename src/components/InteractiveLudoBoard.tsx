@@ -419,7 +419,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           {/* THE 3D LUDO BOARD CANVAS */}
           {/* ========================================================== */}
           <div 
-            className="relative w-[380px] h-[380px] bg-[#070D18]/95 rounded-[28px] border border-cyan-500/35 p-1.5 flex flex-col justify-between shadow-[0_30px_70px_rgba(0,0,0,0.8),0_0_35px_rgba(6,182,212,0.15)]"
+            className="relative w-[380px] h-[380px] bg-[#070D18]/95 rounded-[28px] border border-cyan-500/35 p-1.5 flex flex-col justify-between shadow-[0_30px_70px_rgba(0,0,0,0.8),0_0_35px_rgba(6,182,212,0.15)] ludo-board-container"
             style={{ transform: view3D ? 'translateZ(10px)' : 'none', transformStyle: 'preserve-3d' }}
           >
             {/* Ambient inner neon board glow lines */}

@@ -148,11 +148,11 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ userProfile, transaction
             <div className="w-full border-t border-neutral-900 mt-5 pt-4 grid grid-cols-2 gap-4 text-center">
               <div>
                 <p className="text-[8px] font-mono text-neutral-500 font-bold block uppercase tracking-wider">TOTAL EARNED</p>
-                <strong className="text-purple-300 font-mono text-xs">${(userProfile.coins + 12840).toLocaleString()}</strong>
+                <strong className="text-purple-300 font-mono text-xs">{(userProfile.coins + 12840).toLocaleString()} Coins</strong>
               </div>
               <div>
                 <p className="text-[8px] font-mono text-neutral-500 font-bold block uppercase tracking-wider">SECURE ESCROW</p>
-                <strong className="text-cyan-300 font-mono text-xs">$8,200</strong>
+                <strong className="text-cyan-300 font-mono text-xs">8,200 Coins</strong>
               </div>
             </div>
           </div>
