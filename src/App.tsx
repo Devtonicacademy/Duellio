@@ -35,6 +35,7 @@ import { ProfileTab } from './components/ProfileTab';
 import { PhaseSandboxTab } from './components/PhaseSandboxTab';
 import { DuellioLogo } from './components/DuellioLogo';
 import { PlayArenaTab } from './components/PlayArenaTab';
+import { AuthEntrancePortal } from './components/AuthEntrancePortal';
 
 import { INITIAL_USER, INITIAL_TX } from './data/simulation';
 import { UserProfile, WalletTransaction } from './types';
@@ -50,9 +51,206 @@ export default function App() {
   }, [theme]);
 
   const [activeTab, setActiveTab] = useState<'discover' | 'tournaments' | 'lobbies' | 'profile' | 'play-arena'>('discover');
-  const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_USER);
+  
+  // Stored Profiles and Active User loading
+  const [allProfiles, setAllProfiles] = useState<UserProfile[]>(() => {
+    const raw = localStorage.getItem('duellio-users');
+    if (!raw) {
+      const defaultUsers = [
+        { ...INITIAL_USER, password: 'password123' },
+        {
+          uid: 'user_gamer',
+          username: 'Apex_Pro',
+          email: 'apex@gamerplatform.io',
+          avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80',
+          wins: 4,
+          losses: 1,
+          draws: 0,
+          coins: 1000,
+          status: 'online',
+          password: 'password123'
+        }
+      ];
+      localStorage.setItem('duellio-users', JSON.stringify(defaultUsers));
+      return defaultUsers.map(({ password, ...u }) => u as UserProfile);
+    }
+    try {
+      const parsed = JSON.parse(raw) as (UserProfile & { password?: string })[];
+      return parsed.map(({ password, ...u }) => u as UserProfile);
+    } catch (e) {
+      return [INITIAL_USER];
+    }
+  });
+
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
+    const rawUsers = localStorage.getItem('duellio-users');
+    let usersList: (UserProfile & { password?: string })[] = [];
+    if (rawUsers) {
+      try {
+        usersList = JSON.parse(rawUsers);
+      } catch (e) {
+        usersList = [{ ...INITIAL_USER, password: 'password123' }];
+      }
+    } else {
+      usersList = [{ ...INITIAL_USER, password: 'password123' }];
+      localStorage.setItem('duellio-users', JSON.stringify(usersList));
+    }
+
+    const currentId = localStorage.getItem('duellio-current-user-uid');
+    if (currentId === 'none') {
+      return null;
+    }
+    const found = usersList.find(u => u.uid === currentId);
+    if (found) {
+      return found;
+    }
+    // Default to the first user
+    localStorage.setItem('duellio-current-user-uid', usersList[0].uid);
+    return usersList[0];
+  });
+
   const [transactions, setTransactions] = useState<WalletTransaction[]>(INITIAL_TX);
   
+  // Sync modified userProfile changes back to the localStorage array and allProfiles state
+  React.useEffect(() => {
+    if (!userProfile) {
+      localStorage.setItem('duellio-current-user-uid', 'none');
+      return;
+    }
+    localStorage.setItem('duellio-current-user-uid', userProfile.uid);
+    const raw = localStorage.getItem('duellio-users');
+    if (raw) {
+      try {
+        const usersList = JSON.parse(raw) as (UserProfile & { password?: string })[];
+        const index = usersList.findIndex(u => u.uid === userProfile.uid);
+        if (index !== -1) {
+          usersList[index] = { ...usersList[index], ...userProfile };
+          localStorage.setItem('duellio-users', JSON.stringify(usersList));
+          setAllProfiles(usersList.map(({ password, ...u }) => u));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [userProfile]);
+
+  // Logout Session
+  const handleLogout = () => {
+    setUserProfile(null);
+    localStorage.setItem('duellio-current-user-uid', 'none');
+  };
+
+  // Change Password
+  const handleChangePassword = (current: string, newP: string) => {
+    if (!userProfile) return { success: false, message: 'No active session.' };
+    const raw = localStorage.getItem('duellio-users');
+    if (raw) {
+      try {
+        const list = JSON.parse(raw) as (UserProfile & { password?: string })[];
+        const idx = list.findIndex(u => u.uid === userProfile.uid);
+        if (idx !== -1) {
+          const storedPass = list[idx].password || 'password123';
+          if (storedPass !== current) {
+            return { success: false, message: 'Inclement validation check - old password incorrect.' };
+          }
+          list[idx].password = newP;
+          localStorage.setItem('duellio-users', JSON.stringify(list));
+          return { success: true, message: 'Password database updated successfully!' };
+        }
+      } catch (e) {
+        return { success: false, message: 'Fidelity encryption mismatch.' };
+      }
+    }
+    return { success: false, message: 'User profile not found in credentials db.' };
+  };
+
+  // Switch / Swap Profile instantly
+  const handleSwitchProfile = (uid: string) => {
+    const raw = localStorage.getItem('duellio-users');
+    if (raw) {
+      try {
+        const list = JSON.parse(raw) as (UserProfile & { password?: string })[];
+        const found = list.find(u => u.uid === uid);
+        if (found) {
+          setUserProfile(found);
+          localStorage.setItem('duellio-current-user-uid', uid);
+        }
+      } catch (e) {}
+    }
+  };
+
+  // Delete Guest / Device Profile
+  const handleDeleteProfile = (uid: string) => {
+    const raw = localStorage.getItem('duellio-users');
+    if (!raw) return;
+    try {
+      const list = JSON.parse(raw) as (UserProfile & { password?: string })[];
+      if (list.length <= 1) {
+        alert("🔒 Identity Vault Core Requirement: At least one user profile must persist on client device.");
+        return;
+      }
+      const updated = list.filter(u => u.uid !== uid);
+      localStorage.setItem('duellio-users', JSON.stringify(updated));
+      setAllProfiles(updated.map(({ password, ...u }) => u));
+      
+      if (userProfile?.uid === uid) {
+        const nextUser = updated[0];
+        setUserProfile(nextUser);
+        localStorage.setItem('duellio-current-user-uid', nextUser.uid);
+      }
+    } catch (e) {}
+  };
+
+  // Register New device profile with automatic 1000 Starting Coins
+  const handleAddProfile = (username: string, email: string, pass: string, avatar: string) => {
+    const raw = localStorage.getItem('duellio-users');
+    let list: (UserProfile & { password?: string })[] = [];
+    if (raw) {
+      try { list = JSON.parse(raw); } catch (e) {}
+    }
+
+    const duplicateUser = list.some(u => u.username.toLowerCase() === username.toLowerCase());
+    const duplicateEmail = list.some(u => u.email.toLowerCase() === email.toLowerCase());
+    if (duplicateUser) {
+      return { success: false, message: `Username "${username}" is already registered on this device.` };
+    }
+    if (duplicateEmail) {
+      return { success: false, message: `Email "${email}" is already registered on this device.` };
+    }
+
+    const newUser: UserProfile & { password?: string } = {
+      uid: `user_${Math.floor(100000 + Math.random() * 900000)}`,
+      username,
+      email,
+      avatar,
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      coins: 1000, // mandatory 1,000 Starting Coins rule!
+      status: 'online',
+      password: pass
+    };
+
+    list.push(newUser);
+    localStorage.setItem('duellio-users', JSON.stringify(list));
+    
+    // Welcome Credit transaction
+    const bonusTx: WalletTransaction = {
+      id: `TX-RECOM-${Math.floor(100000 + Math.random() * 900000)}`,
+      type: 'credit',
+      amount: 1000,
+      description: 'Onboarding welcome bonus preloaded',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setTransactions(prev => [bonusTx, ...prev]);
+
+    setUserProfile(newUser);
+    localStorage.setItem('duellio-current-user-uid', newUser.uid);
+    setAllProfiles(list.map(({ password, ...u }) => u));
+
+    return { success: true, message: 'Onboarding successful with 1,000 Coins credited!', user: newUser };
+  };
+
   // High fidelity quick state connectors
   const [preselectedGame, setPreselectedGame] = useState<'Chess' | 'Ludo' | 'Whot' | null>(null);
   const [suggestedStake, setSuggestedStake] = useState<number>(300);
@@ -102,6 +300,7 @@ export default function App() {
 
   // Faucet claim quick trigger
   const handleHeaderFaucet = () => {
+    if (!userProfile) return;
     const claimAmount = 1000;
     const newTx: WalletTransaction = {
       id: `TX-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -110,7 +309,7 @@ export default function App() {
       description: 'Lobby Header Faucet Credit Claim',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     };
-    setUserProfile(prev => ({ ...prev, coins: prev.coins + claimAmount }));
+    setUserProfile(prev => prev ? ({ ...prev, coins: prev.coins + claimAmount }) : null);
     setTransactions(prev => [newTx, ...prev]);
   };
 
@@ -132,6 +331,21 @@ export default function App() {
     });
     setActiveTab('lobbies');
   };
+
+  if (!userProfile) {
+    return (
+      <AuthEntrancePortal
+        onLoginSuccess={(user) => {
+          setUserProfile(user);
+        }}
+        onRegisterSuccess={(user) => {
+          setUserProfile(user);
+        }}
+        allProfiles={allProfiles}
+        onAddProfile={handleAddProfile}
+      />
+    );
+  }
 
   return (
     <div className={`min-h-screen bg-[#070709] text-neutral-100 font-sans antialiased pb-12 selection:bg-purple-500/30 selection:text-white ${theme}`} id="applet-viewport">
@@ -252,17 +466,17 @@ export default function App() {
           >
             <div className="p-0.5 rounded-full border border-purple-500/60 ring-2 ring-purple-500/20 overflow-hidden w-8 h-8">
               <img 
-                src={userProfile.avatar} 
+                src={userProfile?.avatar || ''} 
                 alt="Me" 
                 className="w-full h-full rounded-full object-cover" 
               />
             </div>
             <div className="text-left hidden sm:block">
               <span className="block text-[11px] text-white font-bold font-display group-hover:text-purple-300 transition-colors leading-none tracking-tight truncate max-w-[80px]">
-                {userProfile.username}
+                {userProfile?.username || ''}
               </span>
               <strong className="text-[10px] text-purple-300 font-mono leading-none font-bold block mt-0.5">
-                ${userProfile.coins.toLocaleString()}
+                {(userProfile?.coins || 0).toLocaleString()} Coins
               </strong>
             </div>
           </div>
@@ -319,10 +533,16 @@ export default function App() {
             )}
 
             {/* Player Achievements / Profiles View */}
-            {activeTab === 'profile' && (
+            {activeTab === 'profile' && userProfile && (
               <ProfileTab 
                 userProfile={userProfile} 
                 transactions={transactions} 
+                onLogout={handleLogout}
+                onChangePassword={handleChangePassword}
+                onDeleteProfile={handleDeleteProfile}
+                onAddProfile={handleAddProfile}
+                onSwitchProfile={handleSwitchProfile}
+                allProfiles={allProfiles}
               />
             )}
           </motion.div>

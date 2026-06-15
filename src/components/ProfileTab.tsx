@@ -1,14 +1,134 @@
-import React from 'react';
-import { motion } from 'motion/react';
-import { Trophy, HelpCircle, ShieldAlert, Award, Inbox, Clock, Zap, Star, ShieldCheck, Heart, EyeOff, MessageSquare } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  Trophy, 
+  HelpCircle, 
+  ShieldAlert, 
+  Award, 
+  Inbox, 
+  Clock, 
+  Zap, 
+  Star, 
+  ShieldCheck, 
+  Heart, 
+  EyeOff, 
+  MessageSquare, 
+  Trash2, 
+  LogOut, 
+  UserPlus, 
+  KeyRound, 
+  Eye, 
+  Coins 
+} from 'lucide-react';
 import { UserProfile, WalletTransaction } from '../types';
 
 interface ProfileTabProps {
   userProfile: UserProfile;
   transactions: WalletTransaction[];
+  onLogout: () => void;
+  onChangePassword: (currentPass: string, newPass: string) => { success: boolean; message: string };
+  onDeleteProfile: (uid: string) => void;
+  onAddProfile: (username: string, email: string, pass: string, avatar: string) => { success: boolean; message: string; user?: UserProfile };
+  onSwitchProfile: (uid: string) => void;
+  allProfiles: UserProfile[];
 }
 
-export const ProfileTab: React.FC<ProfileTabProps> = ({ userProfile, transactions }) => {
+export const ProfileTab: React.FC<ProfileTabProps> = ({ 
+  userProfile, 
+  transactions,
+  onLogout,
+  onChangePassword,
+  onDeleteProfile,
+  onAddProfile,
+  onSwitchProfile,
+  allProfiles
+}) => {
+  // Password change state
+  const [currentPass, setCurrentPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [confirmNewPass, setConfirmNewPass] = useState('');
+  const [showPassState, setShowPassState] = useState<{ current: boolean; new: boolean; confirm: boolean }>({
+    current: false,
+    new: false,
+    confirm: false
+  });
+  const [pwdMsg, setPwdMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // New profile creation state
+  const [showAddProfileModal, setShowAddProfileModal] = useState(false);
+  const [regUsername, setRegUsername] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPass, setRegPass] = useState('');
+  const [regSelectedAvatar, setRegSelectedAvatar] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80');
+  const [regMsg, setRegMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const availableAvatars = [
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=150&q=80',
+    'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80',
+    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
+    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80'
+  ];
+
+  const handlePasswordChange = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwdMsg(null);
+
+    if (!currentPass || !newPass || !confirmNewPass) {
+      setPwdMsg({ type: 'error', text: 'All fields are required.' });
+      return;
+    }
+
+    if (newPass !== confirmNewPass) {
+      setPwdMsg({ type: 'error', text: 'New passwords do not match.' });
+      return;
+    }
+
+    if (newPass.length < 6) {
+      setPwdMsg({ type: 'error', text: 'New password must be at least 6 characters.' });
+      return;
+    }
+
+    const res = onChangePassword(currentPass, newPass);
+    if (res.success) {
+      setPwdMsg({ type: 'success', text: res.message });
+      setCurrentPass('');
+      setNewPass('');
+      setConfirmNewPass('');
+    } else {
+      setPwdMsg({ type: 'error', text: res.message });
+    }
+  };
+
+  const handleCreateProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegMsg(null);
+
+    if (!regUsername || !regEmail || !regPass) {
+      setRegMsg({ type: 'error', text: 'All fields are required.' });
+      return;
+    }
+
+    if (regPass.length < 6) {
+      setRegMsg({ type: 'error', text: 'Password must be at least 6 characters.' });
+      return;
+    }
+
+    const res = onAddProfile(regUsername, regEmail, regPass, regSelectedAvatar);
+    if (res.success) {
+      setRegMsg({ type: 'success', text: 'Profile created with 1,000 Coins starting gift! Swapping sessions...' });
+      setTimeout(() => {
+        setRegUsername('');
+        setRegEmail('');
+        setRegPass('');
+        setShowAddProfileModal(false);
+        setRegMsg(null);
+      }, 1500);
+    } else {
+      setRegMsg({ type: 'error', text: res.message });
+    }
+  };
   
   // Custom mock friends with status indicators
   const friends = [
@@ -339,6 +459,330 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({ userProfile, transaction
         </div>
       </div>
 
+      {/* 🛡️ IDENTITY MANAGEMENT & PROFILE VAULT */}
+      <section className="glass-panel p-6 rounded-2xl border border-neutral-850 relative overflow-hidden" id="identity-management-vault">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 blur-[90px] rounded-full -mr-32 -mt-32 pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/5 blur-[90px] rounded-full -ml-32 -mb-32 pointer-events-none"></div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-900 pb-5 mb-6">
+          <div>
+            <h3 className="font-display font-extrabold text-white text-base tracking-wide uppercase flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-purple-400" />
+              Identity & Session Vault
+            </h3>
+            <p className="text-[11px] font-mono text-neutral-450 mt-1">
+              Configure active credentials, manage local client profiles, and administer zero-trust wallet handshakes.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="px-4 py-2 bg-gradient-to-r from-rose-650 to-rose-750 hover:from-rose-600 hover:to-rose-700 text-white rounded-xl text-xs font-bold font-sans flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-md border border-rose-500/10 select-none uppercase tracking-wider self-start sm:self-auto"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out Session</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Column A: Change Password */}
+          <div className="lg:col-span-6 space-y-4">
+            <h4 className="text-xs font-mono font-bold text-neutral-350 uppercase tracking-widest flex items-center gap-1.5 pb-2 border-b border-neutral-900">
+              <KeyRound className="w-4 h-4 text-purple-300" />
+              Edit Security Password
+            </h4>
+
+            <form onSubmit={handlePasswordChange} className="space-y-3.5 font-sans">
+              <div>
+                <label className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
+                  Current Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassState.current ? 'text' : 'password'}
+                    value={currentPass}
+                    onChange={(e) => setCurrentPass(e.target.value)}
+                    placeholder="Enter current password"
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-purple-500/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassState(prev => ({ ...prev, current: !prev.current }))}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-neutral-500 hover:text-neutral-300"
+                  >
+                    {showPassState.current ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassState.new ? 'text' : 'password'}
+                      value={newPass}
+                      onChange={(e) => setNewPass(e.target.value)}
+                      placeholder="At least 6 chars"
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-purple-500/50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassState(prev => ({ ...prev, new: !prev.new }))}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-neutral-500 hover:text-neutral-300"
+                    >
+                      {showPassState.new ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassState.confirm ? 'text' : 'password'}
+                      value={confirmNewPass}
+                      onChange={(e) => setConfirmNewPass(e.target.value)}
+                      placeholder="Repeat new password"
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-purple-500/50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassState(prev => ({ ...prev, confirm: !prev.confirm }))}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-neutral-500 hover:text-neutral-300"
+                    >
+                      {showPassState.confirm ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {pwdMsg && (
+                <div className={`p-3 rounded-xl border text-xs font-medium ${
+                  pwdMsg.type === 'success' 
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                    : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                }`}>
+                  {pwdMsg.text}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-purple-800 hover:from-purple-450 hover:to-purple-750 text-white rounded-xl text-xs font-bold transition-all hover:scale-[1.01] active:scale-95 cursor-pointer uppercase tracking-wider shadow-md select-none"
+              >
+                🔐 Confirm Password Edit
+              </button>
+            </form>
+          </div>
+
+          {/* Column B: Local Profile Switcher */}
+          <div className="lg:col-span-6 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-900">
+              <h4 className="text-xs font-mono font-bold text-neutral-350 uppercase tracking-widest flex items-center gap-1.5">
+                <UserPlus className="w-4 h-4 text-cyan-300" />
+                Active Device Profiles ({allProfiles.length})
+              </h4>
+              <button
+                type="button"
+                onClick={() => setShowAddProfileModal(true)}
+                className="px-2.5 py-1 bg-cyan-400 hover:bg-cyan-300 text-neutral-950 rounded-lg text-[10px] font-black uppercase font-mono tracking-wider flex items-center gap-1 cursor-pointer transition-all active:scale-95 select-none"
+              >
+                <UserPlus className="w-3 h-3" />
+                <span>Add Profile</span>
+              </button>
+            </div>
+
+            <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+              {allProfiles.map((profile) => {
+                const isActive = profile.uid === userProfile.uid;
+                return (
+                  <div
+                    key={profile.uid}
+                    className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                      isActive 
+                        ? 'bg-purple-500/10 border-purple-500/40 text-neutral-100 shadow-[0_0_15px_rgba(147,51,234,0.1)]' 
+                        : 'bg-neutral-950/60 border-neutral-850 text-neutral-300 hover:bg-neutral-900/40'
+                    }`}
+                  >
+                    <div 
+                      onClick={() => !isActive && onSwitchProfile(profile.uid)}
+                      className={`flex items-center gap-3 flex-1 min-w-0 ${!isActive ? 'cursor-pointer' : 'cursor-default'}`}
+                    >
+                      <img 
+                        src={profile.avatar} 
+                        alt={profile.username} 
+                        className={`w-9 h-9 rounded-full object-cover border ${isActive ? 'border-purple-400' : 'border-neutral-700'}`}
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs block truncate leading-none">{profile.username}</span>
+                          {isActive && (
+                            <span className="bg-purple-300 text-neutral-950 text-[8px] font-bold font-mono px-1 rounded uppercase tracking-wider">Active</span>
+                          )}
+                        </div>
+                        <span className="text-[9px] font-mono text-neutral-400 mt-1 block truncate">
+                          {profile.email} • <strong className="text-amber-400">{profile.coins.toLocaleString()} Coins</strong>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Delete capability */}
+                    <button
+                      type="button"
+                      onClick={() => onDeleteProfile(profile.uid)}
+                      title={`Remove profile ${profile.username}`}
+                      className="p-2 text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer select-none"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-[9px] text-neutral-450 font-mono leading-relaxed bg-black/30 p-2.5 rounded-xl border border-white/[0.03]">
+              💡 <strong>Dual Mode Vault Rule:</strong> Adding new profiles creates completely isolated secure game sessions. New profiles receive <strong>1,000 Coins starting credit</strong>. Deleting the active session profile triggers automatic sign-out.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      {/* Complete Modal Overlay for Add Profile */}
+      <AnimatePresence>
+        {showAddProfileModal && (
+          <div className="fixed inset-0 bg-black/92 backdrop-blur-md flex items-center justify-center z-[120] p-4 font-sans">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: -15 }}
+              className="bg-[#0B0B0F] border-2 border-cyan-500/30 rounded-3xl p-6 md:p-8 max-w-md w-full relative shadow-[0_0_50px_rgba(34,211,238,0.12)] space-y-6"
+            >
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => { setShowAddProfileModal(false); setRegMsg(null); }}
+                className="absolute top-4 right-4 text-neutral-500 hover:text-white font-black text-sm p-1.5 hover:bg-white/5 rounded-full cursor-pointer transition-colors select-none"
+              >
+                ✕
+              </button>
+
+              <div className="text-center space-y-2">
+                <div className="mx-auto h-14 w-14 bg-cyan-500/15 rounded-2xl flex items-center justify-center border border-cyan-400/30 shadow-[0_0_15px_rgba(34,211,238,0.15)]">
+                  <UserPlus className="w-7 h-7 text-cyan-300" />
+                </div>
+                <h3 className="text-lg md:text-xl font-black text-white tracking-tight font-display uppercase">
+                  Register New Client Profile
+                </h3>
+                <p className="text-xs text-neutral-400">
+                  Join the Duellio arena with isolated coins, records, and statistics.
+                </p>
+              </div>
+
+              {/* Reward Alert */}
+              <div className="bg-emerald-500/10 border border-emerald-500/25 p-3 rounded-2xl flex items-center gap-3.5">
+                <div className="p-2 bg-emerald-500/15 rounded-xl text-emerald-400 animate-bounce">
+                  <Coins className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="block text-[10px] font-mono leading-none font-extrabold text-emerald-300 uppercase tracking-widest">ONBOARDING BENEFIT</span>
+                  <p className="text-xs text-neutral-300 font-bold mt-1">Starting reward of 1,000 Coins loaded automatically.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleCreateProfile} className="space-y-4 text-left">
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
+                    Choose Profile Avatar
+                  </label>
+                  <div className="flex gap-2 justify-between flex-wrap bg-neutral-950 p-2 rounded-2xl border border-white/5">
+                    {availableAvatars.map((av) => (
+                      <button
+                        key={av}
+                        type="button"
+                        onClick={() => setRegSelectedAvatar(av)}
+                        className={`w-11 h-11 rounded-full overflow-hidden border-2 transition-all cursor-pointer ${
+                          regSelectedAvatar === av ? 'border-cyan-400 scale-105' : 'border-transparent hover:border-neutral-700'
+                        }`}
+                      >
+                        <img src={av} alt="Avatar Selection" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={regUsername}
+                    onChange={(e) => setRegUsername(e.target.value)}
+                    placeholder="Enter visual username"
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-cyan-500/50 text-sans"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    placeholder="name@server-nodes.io"
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-cyan-500/50 text-sans"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                    Security Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={regPass}
+                    onChange={(e) => setRegPass(e.target.value)}
+                    placeholder="Min 6 characters"
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-cyan-500/50 font-mono"
+                  />
+                </div>
+
+                {regMsg && (
+                  <div className={`p-3 rounded-xl border text-xs font-semibold ${
+                    regMsg.type === 'success' 
+                      ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' 
+                      : 'bg-rose-500/10 border-rose-500/25 text-rose-400'
+                  }`}>
+                    {regMsg.text}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-neutral-950 font-black text-sm rounded-xl cursor-pointer transition-all shadow-md active:scale-95 uppercase tracking-wider mt-3 select-none"
+                >
+                  Create & Launch Profile
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };
+
