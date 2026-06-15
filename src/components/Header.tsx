@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   Trophy, 
   Compass,
@@ -8,7 +7,9 @@ import {
   Sun,
   Moon,
   Gamepad2,
-  Tv
+  Tv,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { DuellioLogo } from './DuellioLogo';
 import { UserProfile } from '../types';
@@ -21,6 +22,8 @@ interface HeaderProps {
   toggleTheme: () => void;
   userProfile: UserProfile | null;
   onHeaderFaucet: () => void;
+  voiceEnabled: boolean;
+  toggleVoice: () => void;
 }
 
 export function Header({
@@ -30,7 +33,9 @@ export function Header({
   theme,
   toggleTheme,
   userProfile,
-  onHeaderFaucet
+  onHeaderFaucet,
+  voiceEnabled,
+  toggleVoice
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-[#0B0B0E]/80 backdrop-blur-xl border-b border-white/[0.06] shadow-[0_4px_30px_rgba(0,0,0,0.4)] px-4 md:px-8 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
@@ -142,6 +147,15 @@ export function Header({
           id="theme-mode-toggle"
         >
           {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+        </button>
+
+        <button 
+          onClick={toggleVoice}
+          title={voiceEnabled ? "Mute Voice Announcements" : "Enable Voice Announcements"}
+          className="flex items-center justify-center p-2.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl transition-all cursor-pointer font-sans"
+          id="voice-toggle"
+        >
+          {voiceEnabled ? <Volume2 className="w-4 h-4 text-purple-400" /> : <VolumeX className="w-4 h-4 text-neutral-500" />}
         </button>
 
         <button 

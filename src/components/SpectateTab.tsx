@@ -37,7 +37,7 @@ const LOCAL_LEADERBOARDS = [
     region: 'Lagos, Nigeria',
     players: [
       { rank: 1, name: 'Adebayo_WhotLord', wins: 142, coins: 45000, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80' },
-      { rank: 2, name: 'Chidi_LudoKing', wins: 118, coins: 32000, avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80' },
+      { rank: 2, name: 'Chidi_LudoMaster', wins: 118, coins: 32000, avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80' },
       { rank: 3, name: 'Funmi_Cards', wins: 95, coins: 21000, avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&q=80' },
     ]
   },

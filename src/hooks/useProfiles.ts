@@ -21,64 +21,17 @@ export function useProfiles() {
     const unsubscribe = onSnapshot(collection(db, 'users'), async (snapshot) => {
       const profilesList: UserProfile[] = [];
       snapshot.forEach((docSnap) => {
-        profilesList.push(docSnap.data() as UserProfile);
+        const profile = docSnap.data() as UserProfile;
+        if (profile.uid && profile.uid.startsWith('bot_')) {
+          deleteDoc(doc(db, 'users', profile.uid)).catch(err =>
+            console.error("Failed to delete bot profile from Firestore:", err)
+          );
+        } else {
+          profilesList.push(profile);
+        }
       });
 
-      // Seed default bots if the users collection is empty
-      if (profilesList.length === 0) {
-        const defaultBots = [
-          {
-            uid: 'bot_dotun',
-            username: 'Dotun_WhotMaster',
-            email: 'dotun@gamerplatform.io',
-            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
-            wins: 412,
-            losses: 231,
-            draws: 88,
-            coins: 4500,
-            status: 'online' as const
-          },
-          {
-            uid: 'bot_chidi',
-            username: 'Chidi_LudoKing',
-            email: 'chidi@gamerplatform.io',
-            avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
-            wins: 589,
-            losses: 420,
-            draws: 110,
-            coins: 10200,
-            status: 'online' as const
-          },
-          {
-            uid: 'bot_elena',
-            username: 'Elena_ChessGrandmaster',
-            email: 'elena@gamerplatform.io',
-            avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80',
-            wins: 1205,
-            losses: 312,
-            draws: 411,
-            coins: 24500,
-            status: 'online' as const
-          },
-          {
-            uid: 'bot_sam',
-            username: 'Sam_Staker',
-            email: 'sam@gamerplatform.io',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
-            wins: 95,
-            losses: 90,
-            draws: 2,
-            coins: 750,
-            status: 'offline' as const
-          }
-        ];
-
-        for (const bot of defaultBots) {
-          await setDoc(doc(db, 'users', bot.uid), bot);
-        }
-      } else {
-        setAllProfiles(profilesList);
-      }
+      setAllProfiles(profilesList);
     });
 
     return () => unsubscribe();

@@ -78,6 +78,19 @@ export default function App() {
     rewardMultiplier?: number;
   } | null>(null);
 
+  // Voice/Speech synthesis accessibility state
+  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('duellio-voice-enabled') !== 'false';
+  });
+
+  const toggleVoice = () => {
+    setVoiceEnabled(prev => {
+      const next = !prev;
+      localStorage.setItem('duellio-voice-enabled', String(next));
+      return next;
+    });
+  };
+
   // Wrapper for profile registration to automatically log the onboarding transaction
   const handleAddProfileWrapper = (username: string, email: string, pass: string, avatar: string) => {
     return handleAddProfile(username, email, pass, avatar, addTransaction);
@@ -150,6 +163,8 @@ export default function App() {
         toggleTheme={toggleTheme}
         userProfile={userProfile}
         onHeaderFaucet={() => handleHeaderFaucet(userProfile, setUserProfile)}
+        voiceEnabled={voiceEnabled}
+        toggleVoice={toggleVoice}
       />
 
       {/* Main viewport with Suspense boundary for lazy components */}
@@ -198,6 +213,8 @@ export default function App() {
                 friendChallenge={friendChallenge}
                 setFriendChallenge={setFriendChallenge}
                 allProfiles={allProfiles}
+                theme={theme}
+                voiceEnabled={voiceEnabled}
               />
             )}
 
@@ -254,7 +271,8 @@ export default function App() {
           setFriendChallenge({
             senderName: friendInvite.sender,
             gameType: friendInvite.game,
-            entryFee: friendInvite.stake
+            entryFee: friendInvite.stake,
+            opponentType: 'player'
           });
           setActiveTab('lobbies');
           

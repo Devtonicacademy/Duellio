@@ -118,7 +118,7 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
     const multiplier = isPractice ? 0 : getMultiplier();
     const opponentName = opponentStyle === 'bot' 
       ? `Nebula_AI (${difficulty.toUpperCase()})${isPractice ? ' [PRACTICE]' : ''}` 
-      : (selectedOpponent?.username || 'Chidi_LudoKing');
+      : (selectedOpponent?.username || 'Challenger');
 
     if (opponentStyle === 'player') {
       const inviteLink = `${origin}${pathname}?friendInvite=true&game=${selectedGame}&stake=${actualStake}&sender=${encodeURIComponent(userProfile.username)}`;
