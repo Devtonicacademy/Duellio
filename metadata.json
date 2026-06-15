@@ -1,0 +1,6 @@
+{
+  "name": "Duellio",
+  "description": "A dark, premium, multiplayer gaming arena with zero-trust wallet integration and real-time simulators for Whot, Ludo, and Chess.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

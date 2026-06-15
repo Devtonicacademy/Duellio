@@ -1,0 +1,364 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  Trophy, 
+  Terminal, 
+  Map, 
+  FileCode, 
+  Layout, 
+  Workflow, 
+  ShieldCheck, 
+  HelpCircle,
+  Database,
+  Compass,
+  CheckCircle2,
+  Users,
+  Swords,
+  Coins,
+  Tv,
+  User,
+  ExternalLink,
+  HelpCircle as QuestionIcon
+} from 'lucide-react';
+
+import { DiscoverTab } from './components/DiscoverTab';
+import { TournamentsTab } from './components/TournamentsTab';
+import { ProfileTab } from './components/ProfileTab';
+import { PhaseSandboxTab } from './components/PhaseSandboxTab';
+import { DuellioLogo } from './components/DuellioLogo';
+
+import { INITIAL_USER, INITIAL_TX } from './data/simulation';
+import { UserProfile, WalletTransaction } from './types';
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState<'discover' | 'tournaments' | 'lobbies' | 'profile'>('discover');
+  const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_USER);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>(INITIAL_TX);
+  
+  // High fidelity quick state connectors
+  const [preselectedGame, setPreselectedGame] = useState<'Chess' | 'Ludo' | 'Whot' | null>(null);
+  const [suggestedStake, setSuggestedStake] = useState<number>(300);
+
+  // Friend Link challenge states
+  const [friendInvite, setFriendInvite] = useState<{
+    game: 'Chess' | 'Ludo' | 'Whot';
+    stake: number;
+    sender: string;
+  } | null>(null);
+
+  const [friendChallenge, setFriendChallenge] = useState<{
+    senderName: string;
+    gameType: 'Chess' | 'Ludo' | 'Whot';
+    entryFee: number;
+  } | null>(null);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hasInvite = params.get('friendInvite') === 'true' || params.get('invite') === 'true';
+    const inviteGame = params.get('game');
+    const inviteStake = params.get('stake');
+    const inviteSender = params.get('sender');
+
+    if (hasInvite && inviteGame && inviteStake && inviteSender) {
+      const validGames = ['Chess', 'Ludo', 'Whot'];
+      const gameType = validGames.includes(inviteGame) ? (inviteGame as 'Chess' | 'Ludo' | 'Whot') : 'Chess';
+      const stakeVal = Math.max(100, Math.min(1000, parseInt(inviteStake) || 300));
+      
+      setFriendInvite({
+        game: gameType,
+        stake: stakeVal,
+        sender: inviteSender
+      });
+    }
+  }, []);
+
+  // Direct card-to-matchmaker connector
+  const handleSelectGameFromDiscover = (gameType: 'Chess' | 'Ludo' | 'Whot', stake: number) => {
+    setPreselectedGame(gameType);
+    setSuggestedStake(stake);
+    setActiveTab('lobbies');
+  };
+
+  // Faucet claim quick trigger
+  const handleHeaderFaucet = () => {
+    const claimAmount = 1000;
+    const newTx: WalletTransaction = {
+      id: `TX-${Math.floor(100000 + Math.random() * 900000)}`,
+      type: 'credit',
+      amount: claimAmount,
+      description: 'Lobby Header Faucet Credit Claim',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    };
+    setUserProfile(prev => ({ ...prev, coins: prev.coins + claimAmount }));
+    setTransactions(prev => [newTx, ...prev]);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#070709] text-neutral-100 font-sans antialiased pb-12 selection:bg-purple-500/30 selection:text-white" id="applet-viewport">
+      
+      {/* Sticky Premium Glowing Navigation Header Bar matches Screenshot layouts exactly */}
+      <header className="sticky top-0 z-40 bg-[#0B0B0E]/80 backdrop-blur-xl border-b border-white/[0.06] shadow-[0_4px_30px_rgba(0,0,0,0.4)] px-4 md:px-8 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
+        
+        {/* Logo and network metadata indicator */}
+        <div className="flex items-center gap-3 select-none">
+          <div 
+            onClick={() => setActiveTab('discover')}
+            className="cursor-pointer hover:scale-105 transition-transform duration-250 shrink-0"
+          >
+            <DuellioLogo size={46} showText={false} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span 
+                onClick={() => setActiveTab('discover')}
+                className="cursor-pointer text-xl font-extrabold text-white tracking-[0.2em] font-display text-glow-purple"
+              >
+                DUELLIO
+              </span>
+              <span className="bg-emerald-500/20 border border-emerald-500/35 px-2 py-0.5 rounded-full text-[9px] font-mono text-emerald-400 font-bold uppercase animate-pulse">
+                PRO NETWORK LIVE
+              </span>
+            </div>
+            <p className="text-[9px] font-mono text-neutral-500">Zero-Trust Matchmaker • FIDE & Whot Certified</p>
+          </div>
+        </div>
+
+        {/* Dynamic Centered Navigation Tabs */}
+        <nav className="flex items-center bg-[#0F0F13] p-1.5 rounded-2xl border border-white/[0.04] text-xs font-display">
+          <button
+            onClick={() => { setActiveTab('discover'); setPreselectedGame(null); }}
+            className={`px-4.5 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold cursor-pointer uppercase text-[10px] tracking-wider select-none ${
+              activeTab === 'discover'
+                ? 'bg-purple-350 text-[#070709] font-black shadow-lg shadow-purple-500/10'
+                : 'text-neutral-400 hover:text-neutral-100 hover:bg-white/[0.03]'
+            }`}
+          >
+            <Compass className="w-4 h-4" />
+            Discover
+          </button>
+
+          <button
+            onClick={() => { setActiveTab('tournaments'); setPreselectedGame(null); }}
+            className={`px-4.5 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold cursor-pointer uppercase text-[10px] tracking-wider select-none ${
+              activeTab === 'tournaments'
+                ? 'bg-purple-350 text-[#070709] font-black shadow-lg shadow-purple-500/10'
+                : 'text-neutral-400 hover:text-neutral-100 hover:bg-white/[0.03]'
+            }`}
+          >
+            <Trophy className="w-4 h-4" />
+            Tournaments
+          </button>
+
+          <button
+            onClick={() => setActiveTab('lobbies')}
+            className={`px-4.5 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold cursor-pointer uppercase text-[10px] tracking-wider select-none ${
+              activeTab === 'lobbies'
+                ? 'bg-purple-350 text-[#070709] font-black shadow-lg shadow-purple-500/10'
+                : 'text-neutral-400 hover:text-neutral-100 hover:bg-white/[0.03]'
+            }`}
+          >
+            <Swords className="w-4 h-4" />
+            Lobbies
+          </button>
+
+          <button
+            onClick={() => { setActiveTab('profile'); setPreselectedGame(null); }}
+            className={`px-4.5 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold cursor-pointer uppercase text-[10px] tracking-wider select-none ${
+              activeTab === 'profile'
+                ? 'bg-purple-350 text-[#070709] font-black shadow-lg shadow-purple-500/10'
+                : 'text-neutral-400 hover:text-neutral-100 hover:bg-white/[0.03]'
+            }`}
+          >
+            <User className="w-4 h-4" />
+            My Profile
+          </button>
+        </nav>
+
+        {/* Wallet action, faucet and profile image link on right */}
+        <div className="flex items-center gap-3.5">
+          <button 
+            onClick={handleHeaderFaucet}
+            title="Instant Faucet Claim"
+            className="flex items-center gap-2 px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl transition-all cursor-pointer font-mono text-xs font-bold"
+          >
+            <Coins className="w-4 h-4 animate-bounce" />
+            <span>Claim +1,000</span>
+          </button>
+
+          <div 
+            onClick={() => setActiveTab('profile')}
+            className="flex items-center gap-2.5 cursor-pointer bg-neutral-900 hover:bg-neutral-850 py-1.5 pl-2.5 pr-4 rounded-full border border-neutral-800 transition-all select-none group"
+          >
+            <div className="p-0.5 rounded-full border border-purple-500/60 ring-2 ring-purple-500/20 overflow-hidden w-8 h-8">
+              <img 
+                src={userProfile.avatar} 
+                alt="Me" 
+                className="w-full h-full rounded-full object-cover" 
+              />
+            </div>
+            <div className="text-left hidden sm:block">
+              <span className="block text-[11px] text-white font-bold font-display group-hover:text-purple-300 transition-colors leading-none tracking-tight truncate max-w-[80px]">
+                {userProfile.username}
+              </span>
+              <strong className="text-[10px] text-purple-300 font-mono leading-none font-bold block mt-0.5">
+                ${userProfile.coins.toLocaleString()}
+              </strong>
+            </div>
+          </div>
+        </div>
+
+      </header>
+
+      {/* Main viewport */}
+      <main className="max-w-7xl mx-auto px-4 md:px-8 mt-10">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.18 }}
+          >
+            {/* Discover View */}
+            {activeTab === 'discover' && (
+              <DiscoverTab 
+                onSelectGame={handleSelectGameFromDiscover} 
+                userCoins={userProfile.coins} 
+              />
+            )}
+
+            {/* Tournaments View */}
+            {activeTab === 'tournaments' && (
+              <TournamentsTab />
+            )}
+
+            {/* Matchmaking Lobbies and actual Games simulation View */}
+            {activeTab === 'lobbies' && (
+              <PhaseSandboxTab 
+                userProfile={userProfile} 
+                setUserProfile={setUserProfile}
+                transactions={transactions}
+                setTransactions={setTransactions}
+                // We will hook these up to auto trigger challenges
+                preselectedGame={preselectedGame}
+                setPreselectedGame={setPreselectedGame}
+                suggestedStake={suggestedStake}
+                friendChallenge={friendChallenge}
+                setFriendChallenge={setFriendChallenge}
+              />
+            )}
+
+            {/* Player Achievements / Profiles View */}
+            {activeTab === 'profile' && (
+              <ProfileTab 
+                userProfile={userProfile} 
+                transactions={transactions} 
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </main>
+
+      {/* Absolute Overlay for Friend Invitations via Shared Links */}
+      <AnimatePresence>
+        {friendInvite && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+            <motion.div
+              initial={{ scale: 0.95, y: 15, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: -15, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="bg-[#0B0B0F] border border-purple-500/40 rounded-3xl p-6 md:p-8 max-w-md w-full text-center relative shadow-[0_0_50px_rgba(147,51,234,0.15)] space-y-6"
+            >
+              {/* Glowing purple badge indicator */}
+              <div className="mx-auto h-16 w-16 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center border border-purple-500/30 shadow-[0_0_20px_rgba(147,51,234,0.2)]">
+                <Swords className="w-8 h-8 text-purple-400" />
+              </div>
+
+              <div className="space-y-2">
+                <span className="bg-purple-500/20 border border-purple-500/30 px-3 py-1 rounded-full text-[10px] font-mono text-purple-300 font-bold uppercase tracking-widest leading-none">
+                  Incoming Game Invitation
+                </span>
+                <h3 className="text-xl md:text-2xl font-black text-white tracking-tight font-display mt-2">
+                  Challenge from <span className="text-purple-400 font-extrabold">{friendInvite.sender}</span>
+                </h3>
+                <p className="text-xs text-neutral-400">
+                  Accept the stakes and enter the Duellio Smart P2P Matchmaker Arena instantly.
+                </p>
+              </div>
+
+              {/* Match setup status indicators */}
+              <div className="bg-[#121217] rounded-2xl p-4.5 border border-white/[0.04] text-left space-y-3.5">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-neutral-400 font-medium font-sans">Selected Arena:</span>
+                  <span className="text-white font-bold font-display uppercase tracking-wider">{friendInvite.game} Board</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-neutral-400 font-medium font-sans">Match Stakes:</span>
+                  <span className="text-purple-300 font-bold font-mono text-sm">{friendInvite.stake} Coins</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-neutral-400 font-medium font-sans">Onboarding Bonus:</span>
+                  <span className="text-emerald-400 font-mono font-bold uppercase text-[10px]">Claimed +1,000 Coins Setup Benefit</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2.5 pt-2 font-sans">
+                <button
+                  onClick={() => {
+                    // Claim faucet coins immediately so user has plenty of funds to join
+                    const bonusCoins = 1000;
+                    setUserProfile(prev => ({
+                      ...prev,
+                      coins: prev.coins + bonusCoins
+                    }));
+                    setTransactions(prev => [
+                      {
+                        id: `TX-${Math.floor(100000 + Math.random() * 900000)}`,
+                        type: 'credit' as const,
+                        amount: bonusCoins,
+                        description: `Claimed Welcome Stake Credit: From ${friendInvite.sender}`,
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      },
+                      ...prev
+                    ]);
+
+                    // Activate the lobby and friend challenge match trigger
+                    setFriendChallenge({
+                      senderName: friendInvite.sender,
+                      gameType: friendInvite.game,
+                      entryFee: friendInvite.stake
+                    });
+                    setActiveTab('lobbies');
+                    
+                    // Clean memory and URL parameters without refreshing
+                    setFriendInvite(null);
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                  }}
+                  className="w-full py-3.5 bg-gradient-to-r from-purple-500 to-purple-800 hover:from-purple-450 hover:to-purple-750 text-white font-black text-sm rounded-xl cursor-pointer transition-all shadow-lg hover:scale-[1.02] select-none uppercase tracking-wider"
+                >
+                  Accept Stakes & Duel Now
+                </button>
+                <button
+                  onClick={() => {
+                    setFriendInvite(null);
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                  }}
+                  className="w-full py-2.5 bg-neutral-900/60 hover:bg-neutral-850 border border-white/[0.05] hover:border-white/[0.1] text-neutral-400 hover:text-white font-medium text-xs rounded-xl cursor-pointer transition-all select-none uppercase tracking-wider"
+                >
+                  Ignore Challenge
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+

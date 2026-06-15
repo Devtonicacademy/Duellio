@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;650;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Sora", inherit;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@utility glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@utility glass-panel {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+@utility neon-glow-purple {
+  filter: drop-shadow(0 0 15px rgba(221, 183, 255, 0.3));
+}
+
+@utility neon-glow-primary {
+  filter: drop-shadow(0 0 12px rgba(221, 183, 255, 0.25));
+}
+
+@utility text-glow-purple {
+  text-shadow: 0 0 12px rgba(221, 183, 255, 0.45);
+}
+
+@utility neon-glow-cyan {
+  filter: drop-shadow(0 0 15px rgba(76, 215, 246, 0.3));
+}
+
+@utility neon-glow-secondary {
+  filter: drop-shadow(0 0 12px rgba(76, 215, 246, 0.25));
+}
+
