@@ -33,6 +33,7 @@ interface PlayArenaTabProps {
     entryFee: number;
     opponentName: string;
     multiplier: number;
+    sessionId?: string;
   }) => void;
   allProfiles: UserProfile[];
 }
@@ -130,8 +131,10 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
       ? `Nebula_AI (${difficulty.toUpperCase()})${isPractice ? ' [PRACTICE]' : ''}` 
       : (selectedOpponent?.username || 'Challenger');
 
+    let sessionId: string | undefined = undefined;
     if (opponentStyle === 'player') {
-      const inviteLink = `${origin}${pathname}?friendInvite=true&game=${selectedGame}&stake=${actualStake}&sender=${encodeURIComponent(userProfile.username)}`;
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const inviteLink = `${origin}${pathname}?friendInvite=true&game=${selectedGame}&stake=${actualStake}&sender=${encodeURIComponent(userProfile.username)}&sessionId=${sessionId}`;
       navigator.clipboard.writeText(inviteLink);
       alert(`🎉 Multiplayer Match Ready!\n\nWe copied the invitation link to your clipboard:\n\n${inviteLink}\n\nShare this link with your challenger to start instantly!`);
     }
@@ -142,7 +145,8 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
       botDifficulty: opponentStyle === 'bot' ? difficulty : undefined,
       entryFee: actualStake,
       opponentName,
-      multiplier
+      multiplier,
+      sessionId
     });
 
     setSelectedGame(null);

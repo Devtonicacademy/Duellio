@@ -5,6 +5,7 @@ export function useFriendInvite() {
     game: 'Chess' | 'Ludo' | 'Whot' | 'Draft';
     stake: number;
     sender: string;
+    sessionId?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -13,6 +14,7 @@ export function useFriendInvite() {
     const inviteGame = params.get('game');
     const inviteStake = params.get('stake');
     const inviteSender = params.get('sender');
+    const sessionId = params.get('sessionId') || undefined;
 
     if (hasInvite && inviteGame && inviteStake && inviteSender) {
       const validGames = ['Chess', 'Ludo', 'Whot', 'Draft'];
@@ -22,7 +24,8 @@ export function useFriendInvite() {
       setFriendInvite({
         game: gameType,
         stake: stakeVal,
-        sender: inviteSender
+        sender: inviteSender,
+        sessionId
       });
     }
   }, []);

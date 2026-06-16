@@ -81,6 +81,8 @@ export default function App() {
     opponentType?: 'bot' | 'player';
     botDifficulty?: 'easy' | 'medium' | 'hard';
     rewardMultiplier?: number;
+    sessionId?: string;
+    isHost?: boolean;
   } | null>(null);
 
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(() => {
@@ -141,6 +143,7 @@ export default function App() {
     entryFee: number;
     opponentName: string;
     multiplier: number;
+    sessionId?: string;
   }) => {
     setFriendChallenge({
       senderName: matchData.opponentName,
@@ -148,7 +151,9 @@ export default function App() {
       entryFee: matchData.entryFee,
       opponentType: matchData.opponentType,
       botDifficulty: matchData.botDifficulty,
-      rewardMultiplier: matchData.multiplier
+      rewardMultiplier: matchData.multiplier,
+      sessionId: matchData.sessionId,
+      isHost: true
     });
     setActiveTab('lobbies');
   };
@@ -325,7 +330,9 @@ export default function App() {
             senderName: friendInvite.sender,
             gameType: friendInvite.game,
             entryFee: friendInvite.stake,
-            opponentType: 'player'
+            opponentType: 'player',
+            sessionId: friendInvite.sessionId,
+            isHost: false
           });
           setActiveTab('lobbies');
           

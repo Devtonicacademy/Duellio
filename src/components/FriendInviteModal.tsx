@@ -7,6 +7,7 @@ interface FriendInviteModalProps {
     game: 'Chess' | 'Ludo' | 'Whot' | 'Draft';
     stake: number;
     sender: string;
+    sessionId?: string;
   } | null;
   onAccept: () => void;
   onIgnore: () => void;
