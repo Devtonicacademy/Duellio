@@ -341,7 +341,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   };
 
   return (
-    <div className="relative min-h-[580px] bg-[#03060E] rounded-3xl overflow-hidden border border-cyan-500/30 p-1 font-sans flex flex-col justify-between shadow-[0_25px_60px_rgba(0,0,0,0.8)] select-none">
+    <div className="relative min-h-[460px] sm:min-h-[580px] bg-[#03060E] rounded-2xl sm:rounded-3xl overflow-hidden border border-cyan-500/30 p-1 sm:p-2.5 font-sans flex flex-col justify-between shadow-[0_25px_60px_rgba(0,0,0,0.8)] select-none">
       
       {/* Background neon visual line decors exactly mirroring the screenshot */}
       <div className="absolute top-2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent pointer-events-none" />
@@ -656,7 +656,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       {/* ========================================================== */}
       {/* GLOWING ACTION CONTROLS HUD (Bottom Left) */}
       {/* ========================================================== */}
-      <div className="absolute bottom-5 left-5 bg-[#080d1a]/95 backdrop-blur-md px-4.5 py-3 rounded-2xl border border-emerald-500/30 flex flex-col gap-1.5 shadow-[0_15px_30px_rgba(0,0,0,0.5)] z-30 min-w-[150px]">
+      <div className="relative sm:absolute sm:bottom-5 sm:left-5 mx-auto mt-4 sm:mt-0 w-full max-w-[320px] sm:w-auto sm:max-w-none bg-[#080d1a]/95 backdrop-blur-md px-4.5 py-3 rounded-2xl border border-emerald-500/30 flex flex-col gap-1.5 shadow-[0_15px_30px_rgba(0,0,0,0.5)] z-30 min-w-[150px]">
         <div className="flex items-center gap-2">
           <div className={`w-2.5 h-2.5 rounded-full ${activePlayer === 'green' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
           <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest">
@@ -681,7 +681,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       {/* ========================================================== */}
       {/* FLOATING LEADERBOARD SPECTATOR PANEL (Top Right) */}
       {/* ========================================================== */}
-      <div className="absolute top-18 right-5 bg-[#090F1B]/95 backdrop-blur-md py-3 px-4 rounded-2xl border border-cyan-500/25 shadow-2xl space-y-2.5 max-w-[170px] z-30">
+      <div className="relative sm:absolute sm:top-18 sm:right-5 mx-auto mt-4 sm:mt-0 w-full max-w-[320px] sm:w-auto sm:max-w-[170px] bg-[#090F1B]/95 backdrop-blur-md py-3 px-4 rounded-2xl border border-cyan-500/25 shadow-2xl space-y-2.5 z-30">
         <div className="flex justify-between items-center text-[8px] font-mono border-b border-cyan-500/15 pb-1.5">
           <span className="font-extrabold text-[10px] tracking-wide text-cyan-300">⚔️ DUEL RANK: 5</span>
         </div>

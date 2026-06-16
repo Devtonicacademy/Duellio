@@ -314,7 +314,11 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
     // Check if black king captured (simulated simplified termination wins)
     if (destPiece && destPiece.type === 'k') {
       setGameResult('white_won');
-      onAddLog(`[SUCCESS] Opponent King Captured! Dispatching prize wallet transactions...`);
+      if (entryFee > 0) {
+        onAddLog(`[SUCCESS] Opponent King Captured! Dispatching prize wallet transactions...`);
+      } else {
+        onAddLog(`[SUCCESS] Opponent King Captured! Free practice match completed.`);
+      }
       setTimeout(() => onGameOver(true), 2500);
       return;
     }
@@ -485,8 +489,8 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
 
   return (
     <div 
-      className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-[#03060E] p-5 rounded-3xl border border-cyan-500/30 shadow-[0_25px_60px_rgba(0,0,0,0.8)] animate-fade-in relative overflow-hidden" 
-      id="chess-arena-viewport"
+      className="grid grid-cols-1 lg:grid-cols-12 gap-4 bg-[#03060E] p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-cyan-500/30 shadow-[0_25px_60px_rgba(0,0,0,0.8)] animate-fade-in relative overflow-hidden" 
+      style={{ transformStyle: 'preserve-3d' }}
     >
       {/* Background elegant grid lines */}
       <div className="absolute top-2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent pointer-events-none" />
@@ -601,11 +605,11 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
           )}
 
           <div 
-            className="w-full max-w-[440px] aspect-square bg-[#070D18]/95 border border-cyan-500/35 p-2.5 rounded-[28px] shadow-[0_30px_70px_rgba(0,0,0,0.8),0_0_35px_rgba(6,182,212,0.15)] flex flex-col relative chess-grid-canvas"
+            className="w-full max-w-[440px] aspect-square bg-[#070D18]/95 border border-cyan-500/35 p-1.5 sm:p-2.5 rounded-2xl sm:rounded-[28px] shadow-[0_30px_70px_rgba(0,0,0,0.8),0_0_35px_rgba(6,182,212,0.15)] flex flex-col relative chess-grid-canvas"
             style={{ transform: view3D ? 'translateZ(10px)' : 'none', transformStyle: 'preserve-3d' }}
           >
             {/* Ambient inner bezel glow */}
-            <div className="absolute inset-0 rounded-[28px] border border-cyan-500/10 pointer-events-none" />
+            <div className="absolute inset-0 rounded-2xl sm:rounded-[28px] border border-cyan-500/10 pointer-events-none" />
 
             <div className="grid grid-cols-8 grid-rows-8 w-full h-full rounded-2xl overflow-hidden border border-neutral-850 bg-[#02050b]">
               {board.map((row, rIdx) => 

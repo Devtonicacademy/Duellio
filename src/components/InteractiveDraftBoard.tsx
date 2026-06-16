@@ -285,7 +285,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
 
   return (
     <div 
-      className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-[#03060E] p-5 rounded-3xl border border-cyan-500/30 shadow-[0_25px_60px_rgba(0,0,0,0.8)] animate-fade-in relative overflow-hidden" 
+      className="grid grid-cols-1 lg:grid-cols-12 gap-4 bg-[#03060E] p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-cyan-500/30 shadow-[0_25px_60px_rgba(0,0,0,0.8)] animate-fade-in relative overflow-hidden" 
       id="draft-arena-viewport"
     >
       {/* Glow overlays */}

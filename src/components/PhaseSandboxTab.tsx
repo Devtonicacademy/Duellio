@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
 import { 
   Send, 
   Wallet, 
@@ -61,6 +61,9 @@ interface PhaseSandboxTabProps {
   allProfiles: UserProfile[];
   theme?: string;
   voiceEnabled?: boolean;
+  handleToggleDeactivate?: (uid: string, deactivated: boolean) => Promise<{ success: boolean; message?: string }>;
+  handleDeleteProfile?: (uid: string) => Promise<void>;
+  onGameActiveChange?: (isActive: boolean) => void;
 }
 
 // Helper: Standard Whot cards generator
@@ -118,6 +121,18 @@ function shuffleDeck(deck: WhotCard[]): WhotCard[] {
   return shuffled;
 }
 
+function hasAnyPlayableCard(hand: WhotCard[], activeSuit: string, topCard: WhotCard | undefined, penaltyCount: number) {
+  if (!topCard) return false;
+  const penaltyActive = penaltyCount > 0;
+  return hand.some(card => {
+    if (penaltyActive) {
+      if (topCard.value === 14) return false; // General market (14) cannot be countered!
+      return card.value === topCard.value;
+    }
+    return card.suit === 'Whot' || card.suit === activeSuit || card.value === topCard.value;
+  });
+}
+
 export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   userProfile,
   setUserProfile,
@@ -129,11 +144,26 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   friendChallenge,
   setFriendChallenge,
   allProfiles,
-  voiceEnabled = false
+  voiceEnabled = false,
+  handleToggleDeactivate,
+  handleDeleteProfile,
+  onGameActiveChange
 }) => {
   const [activeTab, setActiveTab] = useState<'chat' | 'wallet' | 'presence' | 'settings'>('chat');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
+
+  // 3D Perspective mode
+  const [is3DMode, setIs3DMode] = useState<boolean>(true);
+
+  // Card Fan / Spin mode for mobile
+  const [isFanMode, setIsFanMode] = useState<boolean>(false);
+  const [fanCenterIndex, setFanCenterIndex] = useState<number>(0);
+  const fanTouchStartX = useRef<number>(0);
+  const fanTouchStartY = useRef<number>(0);
+
+  // Escrow details expand/collapse on mobile
+  const [showEscrowDetails, setShowEscrowDetails] = useState<boolean>(false);
 
   // Admin Whot Game Settings State
   const [whotSettings, setWhotSettings] = useState(() => {
@@ -171,6 +201,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const [selectedBot, setSelectedBot] = useState<UserProfile | null>(() => otherUsers[0] || null);
   const [gameType, setGameType] = useState<'Whot' | 'Ludo' | 'Chess' | 'Draft'>('Chess');
   const [entryFee, setEntryFee] = useState<number>(300);
+
+  // Notification alert state for semi last card, last card, checkup
+  const [whotNotification, setWhotNotification] = useState<{ text: string; type: 'semi' | 'last' | 'checkup' } | null>(null);
+  const prevHandsRef = useRef<{ [uid: string]: number }>({});
+  const lastTimeoutPlayerRef = useRef<string | null>(null);
 
   // Sync onlineBots and selectedBot when allProfiles or userProfile changes
   useEffect(() => {
@@ -257,6 +292,14 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         }
         const starterCard = fullDeck.splice(starterIndex, 1)[0];
 
+        // Cap remaining draw pile to 30 max
+        if (fullDeck.length > 30) {
+          fullDeck.splice(30);
+        }
+
+        const startPlayerId = Math.random() < 0.5 ? userProfile.uid : 'friend_user';
+        const isHumanTurn = startPlayerId === userProfile.uid;
+
         setWhotGameState({
           sessionId: inviteChallenge.id,
           playerIds: [userProfile.uid, 'friend_user'],
@@ -264,15 +307,17 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
             [userProfile.uid]: humanHand,
             'friend_user': botHand
           },
+          deckCount: fullDeck.length,
           discardPile: [starterCard],
           activeSuit: starterCard.suit as any,
-          activePlayerId: userProfile.uid,
+          activePlayerId: startPlayerId,
           status: 'playing',
           penaltyCount: 0,
-          lastActionMessage: `Friend Challenge Whot session: Starter card is ${starterCard.suit} ${starterCard.value}.`
+          lastActionMessage: isHumanTurn
+            ? `Friend Challenge started! Top card is ${starterCard.suit} ${starterCard.value}. Lead Developer's turn.`
+            : `Friend Challenge started! Top card is ${starterCard.suit} ${starterCard.value}. Opponent's turn.`
         });
-
-        setGamePlayLogs([
+        whotDeckRef.current = fullDeck;    setGamePlayLogs([
           `[ESCROW LOCK] Atomic escrow write success. STAKE: ${friendChallenge.entryFee} coins escrowed.`,
           `[DECK INITIALIZED] Safe Fisher-Yates generator shuffling card deck. Dealt 6 cards to each player.`,
           `[TURN VALIDATION] Starter card dealt to discard stack: ${starterCard.suit} ${starterCard.value}.`,
@@ -355,8 +400,12 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const whotDeckRef = useRef<WhotCard[]>([]);
 
   // Safety & Escrow Timer States
-  const [timeLeft, setTimeLeft] = useState<number>(1800);
-  const [turnTimeLeft, setTurnTimeLeft] = useState<number>(120);
+  const [timeLeft, setTimeLeft] = useState<number>(() => {
+    return parseInt(localStorage.getItem('duellio-admin-total-game-time') || '1800', 10);
+  });
+  const [turnTimeLeft, setTurnTimeLeft] = useState<number>(() => {
+    return parseInt(localStorage.getItem('duellio-admin-player-turn-time') || '120', 10);
+  });
   const [showRules, setShowRules] = useState<boolean>(false);
   const [showReconciliation, setShowReconciliation] = useState<boolean>(false);
   const [reconciliationInfo, setReconciliationInfo] = useState<{
@@ -375,95 +424,77 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     : '';
 
   const opponentProfile = activeChallenge
-    ? (activeChallenge.opponentType === 'bot' || activeChallenge.receiverId === selectedBot?.uid
-        ? selectedBot
-        : (allProfiles.find(p => p.uid === opponentId || p.username === activeChallenge.senderName) || {
-            uid: opponentId,
-            username: activeChallenge.senderName || 'Opponent',
-            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
-            wins: 0,
-            losses: 0,
+    ? (activeChallenge.opponentType === 'bot' && activeChallenge.senderId === 'friend_user'
+        ? {
+            uid: 'bot',
+            username: activeChallenge.senderName || 'Nebula_AI',
+            avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=120&q=80',
+            wins: 15,
+            losses: 15,
             draws: 0,
-            coins: 0,
-            status: 'online'
-          }))
+            coins: 1000,
+            status: 'online' as const
+          }
+        : (activeChallenge.opponentType === 'bot' || activeChallenge.receiverId === selectedBot?.uid
+            ? selectedBot
+            : (allProfiles.find(p => p.uid === opponentId || p.username === activeChallenge.senderName) || {
+                uid: opponentId,
+                username: activeChallenge.senderName || 'Opponent',
+                avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+                wins: 0,
+                losses: 0,
+                draws: 0,
+                coins: 0,
+                status: 'online'
+              })))
     : selectedBot;
 
   const handleTurnTimeout = () => {
     if (!whotGameState || whotGameState.status !== 'playing') return;
     
     const activePlayerId = whotGameState.activePlayerId;
+    if (lastTimeoutPlayerRef.current === activePlayerId) return; // Prevent double timeout execution in the same turn!
+    lastTimeoutPlayerRef.current = activePlayerId;
+
     const botId = activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid : activeChallenge?.senderId;
     if (!botId) return;
 
-    const penaltyActive = whotGameState.penaltyCount > 0;
-    
     if (activePlayerId === userProfile.uid) {
-      if (penaltyActive) {
-        const pCount = whotGameState.penaltyCount;
-        drawCardForPlayer(userProfile.uid, pCount);
-        const message = `Time limit exceeded! You drew ${pCount} penalty cards & passed turn.`;
-        
-        setWhotGameState(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            activePlayerId: botId,
-            penaltyCount: 0,
-            lastActionMessage: message
-          };
-        });
-
-        setGamePlayLogs(prev => [
+      drawCardForPlayer(userProfile.uid, 1);
+      const message = `Time limit exceeded! You drew 1 card as penalty. Turn passed.`;
+      
+      setWhotGameState(prev => {
+        if (!prev) return null;
+        return {
           ...prev,
-          `[TIMEOUT] Time limit exceeded. You took ${pCount} penalty cards.`
-        ]);
-      } else {
-        drawCardForPlayer(userProfile.uid, 1);
-        const message = `Time limit exceeded! You drew 1 card. Turn passed.`;
-        
-        setWhotGameState(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            activePlayerId: botId,
-            lastActionMessage: message
-          };
-        });
+          activePlayerId: botId,
+          penaltyCount: 0,
+          lastActionMessage: message
+        };
+      });
 
-        setGamePlayLogs(prev => [
-          ...prev,
-          `[TIMEOUT] Time limit exceeded. You drew 1 card.`
-        ]);
-      }
+      setGamePlayLogs(prev => [
+        ...prev,
+        `[TIMEOUT] Time limit exceeded. You drew 1 card as penalty.`
+      ]);
     } else {
-      if (penaltyActive) {
-        const pCount = whotGameState.penaltyCount;
-        drawCardForPlayer(activePlayerId, pCount);
-        const message = `${opponentProfile?.username || 'Opponent'} timed out, drew ${pCount} penalty cards & passed turn.`;
-        
-        setWhotGameState(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            activePlayerId: userProfile.uid,
-            penaltyCount: 0,
-            lastActionMessage: message
-          };
-        });
-      } else {
-        drawCardForPlayer(activePlayerId, 1);
-        const message = `${opponentProfile?.username || 'Opponent'} timed out, drew 1 card & passed turn.`;
-        
-        setWhotGameState(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            activePlayerId: userProfile.uid,
-            lastActionMessage: message
-          };
-        });
-      }
+      drawCardForPlayer(activePlayerId, 1);
+      const message = `${opponentProfile?.username || 'Opponent'} timed out, drew 1 card as penalty & passed turn.`;
+      
+      setWhotGameState(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          activePlayerId: userProfile.uid,
+          penaltyCount: 0,
+          lastActionMessage: message
+        };
+      });
+
+      setGamePlayLogs(prev => [
+        ...prev,
+        `[TIMEOUT] ${opponentProfile?.username || 'Opponent'} timed out and drew 1 card as penalty.`
+      ]);
     }
   };
 
@@ -609,8 +640,9 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
   // Timer Countdown Safeguard Effect
   useEffect(() => {
+    const adminTotalTime = parseInt(localStorage.getItem('duellio-admin-total-game-time') || '1800', 10);
     if (gamePlayStatus !== 'playing') {
-      setTimeLeft(1800);
+      setTimeLeft(adminTotalTime);
       return;
     }
 
@@ -630,26 +662,155 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
   // Turn Timer Countdown Safeguard Effect
   useEffect(() => {
+    const adminTurnTime = parseInt(localStorage.getItem('duellio-admin-player-turn-time') || '120', 10);
     if (gamePlayStatus !== 'playing' || !whotGameState || whotGameState.status !== 'playing') {
-      setTurnTimeLeft(120);
+      setTurnTimeLeft(adminTurnTime);
       return;
     }
 
-    setTurnTimeLeft(120);
+    setTurnTimeLeft(adminTurnTime);
+    lastTimeoutPlayerRef.current = null; // Clear safeguard flag for the new turn!
 
     const interval = setInterval(() => {
-      setTurnTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          handleTurnTimeout();
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTurnTimeLeft(prev => prev - 1);
     }, 1000);
 
     return () => clearInterval(interval);
   }, [whotGameState?.activePlayerId, whotGameState?.status, gamePlayStatus]);
+
+  // Handle Turn Timeout when time runs out
+  useEffect(() => {
+    if (gamePlayStatus === 'playing' && whotGameState && whotGameState.status === 'playing' && turnTimeLeft <= 0) {
+      handleTurnTimeout();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [turnTimeLeft, gamePlayStatus]);
+
+  // Trigger note/notification for card count warnings ("semi last card", "last card", "checkup")
+  useEffect(() => {
+    if (!whotGameState || (whotGameState.status !== 'playing' && whotGameState.status !== 'completed')) {
+      prevHandsRef.current = {};
+      return;
+    }
+
+    const botId = activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid : activeChallenge?.senderId;
+    const players = [
+      { id: userProfile.uid, name: 'Lead Developer' },
+      ...(botId ? [{ id: botId, name: opponentProfile?.username || 'Opponent' }] : [])
+    ];
+
+    for (const player of players) {
+      const currentCount = whotGameState.playerHands[player.id]?.length || 0;
+      const prevCount = prevHandsRef.current[player.id];
+
+      // Only alert if there was a real state change
+      if (prevCount !== undefined && currentCount !== prevCount) {
+        if (currentCount === 2) {
+          setWhotNotification({ text: `${player.name}: SEMI LAST CARD! 🃟`, type: 'semi' });
+        } else if (currentCount === 1) {
+          setWhotNotification({ text: `${player.name}: LAST CARD! 🂱`, type: 'last' });
+        } else if (currentCount === 0 && prevCount > 0) {
+          setWhotNotification({ text: `${player.name}: CHECKUP! 👑`, type: 'checkup' });
+        }
+      }
+      prevHandsRef.current[player.id] = currentCount;
+    }
+  }, [whotGameState, userProfile.uid, activeChallenge, selectedBot, opponentProfile]);
+
+  // Clear notification timer
+  useEffect(() => {
+    if (whotNotification) {
+      const timer = setTimeout(() => {
+        setWhotNotification(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [whotNotification]);
+
+  // Notify parent of active game changes to hide/show main header
+  useEffect(() => {
+    if (onGameActiveChange) {
+      onGameActiveChange(gamePlayStatus !== 'none');
+    }
+  }, [gamePlayStatus, onGameActiveChange]);
+
+  // Dynamically compute tension CSS class based on remaining card counts
+  const getTensionClass = () => {
+    if (!whotGameState || whotGameState.status !== 'playing') return '';
+    const botId = activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid : activeChallenge?.senderId;
+    const userCount = whotGameState.playerHands[userProfile.uid]?.length || 0;
+    const botCount = botId ? (whotGameState.playerHands[botId]?.length || 0) : 0;
+    
+    if (userCount === 1 || botCount === 1) {
+      return 'tension-last';
+    }
+    if (userCount === 2 || botCount === 2) {
+      return 'tension-semi';
+    }
+    return '';
+  };
+
+  // End Game Check when draw pile is empty and no playable cards remain
+  useEffect(() => {
+    if (gamePlayStatus !== 'playing' || !whotGameState || whotGameState.status !== 'playing') return;
+    
+    if (whotGameState.deckCount === 0) {
+      const opponentId = activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid : activeChallenge?.senderId;
+      if (!opponentId) return;
+
+      const userHand = whotGameState.playerHands[userProfile.uid] || [];
+      const botHand = whotGameState.playerHands[opponentId] || [];
+
+      const userHasPlayable = hasAnyPlayableCard(userHand, whotGameState.activeSuit, whotGameState.discardPile[0], whotGameState.penaltyCount);
+      const botHasPlayable = hasAnyPlayableCard(botHand, whotGameState.activeSuit, whotGameState.discardPile[0], whotGameState.penaltyCount);
+
+      if (!userHasPlayable && !botHasPlayable) {
+        // Both players cannot play, and draw deck is empty. Game ends!
+        const userSum = userHand.reduce((acc, c) => acc + (c.suit === 'Whot' ? 20 : c.value), 0);
+        const botSum = botHand.reduce((acc, c) => acc + (c.suit === 'Whot' ? 20 : c.value), 0);
+        
+        const userWins = userSum <= botSum;
+        const winnerId = userWins ? userProfile.uid : opponentId;
+        const message = `No valid moves left for both players and draw pile is empty! Game ended. ${
+          userWins ? 'Lead Developer wins by points sum' : `${opponentProfile?.username || 'Opponent'} wins by points sum`
+        } (${userSum} vs ${botSum}).`;
+
+        setWhotGameState(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            status: 'completed',
+            winnerId,
+            lastActionMessage: message
+          };
+        });
+
+        setGamePlayLogs(prev => [
+          ...prev,
+          `[GAME OVER - NO MOVES] ${message}`
+        ]);
+
+        completeMatchWithOutcome(userWins);
+      }
+    }
+  }, [whotGameState, gamePlayStatus, activeChallenge, selectedBot, opponentProfile]);
+
+  const handleRematch = () => {
+    if (!activeChallenge) return;
+    setGamePlayStatus('playing');
+    setShowReconciliation(false);
+    startInteractiveWhotGame(activeChallenge);
+    setGamePlayLogs([
+      `[REMATCH] New game started against ${opponentProfile?.username || 'Opponent'}!`
+    ]);
+  };
+
+  const handleBackToLobbies = () => {
+    setWhotGameState(null);
+    setActiveChallenge(null);
+    setGamePlayStatus('none');
+    setUserProfile(prev => ({ ...prev, status: 'online' }));
+  };
 
   const messageEndRef = useRef<HTMLDivElement>(null);
 
@@ -705,7 +866,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     }, 1800);
 
     return () => clearTimeout(timer);
-  }, [whotGameState?.activePlayerId, whotGameState?.status]);
+  }, [whotGameState?.activePlayerId, whotGameState?.status, whotGameState?.discardPile]);
 
   // Fountain token credits click handler
   const handleFountainCredit = () => {
@@ -936,8 +1097,16 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     
     if (starterIndex === -1) starterIndex = 0;
     const starterCard = fullDeck.splice(starterIndex, 1)[0];
+
+    // Cap remaining draw pile to 30 max
+    if (fullDeck.length > 30) {
+      fullDeck.splice(30);
+    }
     
     const opId = challenge.senderId === userProfile.uid ? challenge.receiverId : challenge.senderId;
+
+    const startPlayerId = Math.random() < 0.5 ? userProfile.uid : opId;
+    const isHumanTurn = startPlayerId === userProfile.uid;
 
     const initialSession: WhotGameState = {
       sessionId: challenge.id,
@@ -949,11 +1118,13 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       deckCount: fullDeck.length,
       discardPile: [starterCard],
       activeSuit: starterCard.suit as any,
-      activePlayerId: userProfile.uid, // Lead Developer goes first
+      activePlayerId: startPlayerId,
       status: 'playing',
       turnTimer: 20,
       penaltyCount: 0,
-      lastActionMessage: 'Match started! Top pile represents Circle ' + starterCard.value + '. Lead Developer turn.'
+      lastActionMessage: isHumanTurn
+        ? 'Match started! Top pile represents ' + starterCard.suit + ' ' + starterCard.value + '. Lead Developer turn.'
+        : 'Match started! Top pile represents ' + starterCard.suit + ' ' + starterCard.value + '. Opponent turn.'
     };
     
     whotDeckRef.current = fullDeck;
@@ -967,23 +1138,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
     for (let i = 0; i < count; i++) {
       if (currentDeck.length === 0) {
-        // Recycle discard pile
-        if (!whotGameState || whotGameState.discardPile.length <= 1) break;
-        const [activeTop, ...discarded] = whotGameState.discardPile;
-        currentDeck = shuffleDeck(discarded);
-        
-        setWhotGameState(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            discardPile: [activeTop]
-          };
-        });
-        
-        setGamePlayLogs(prev => [
-          ...prev,
-          `[DECK RECYCLING] Draw pool exhausted. Discard pile recycled and shuffled into deck.`
-        ]);
+        break; // Draw pile is empty, do not reset/recycle discard pile until game ends
       }
       
       const card = currentDeck.pop();
@@ -1069,7 +1224,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
     let isValid = false;
     if (penaltyActive) {
-      isValid = card.value === topCard.value;
+      if (topCard.value === 14) {
+        isValid = false; // General market (14) cannot be countered!
+      } else {
+        isValid = card.value === topCard.value;
+      }
     } else {
       isValid = card.suit === 'Whot' || card.suit === activeSuit || card.value === topCard.value;
     }
@@ -1111,6 +1270,15 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     let nextPenalty = whotGameState.penaltyCount;
     let message = `You played ${card.suit} ${card.value}.`;
 
+    let suffix = "";
+    if (nextPlayerHand.length === 2) {
+      suffix = " - SEMI LAST CARD!";
+    } else if (nextPlayerHand.length === 1) {
+      suffix = " - LAST CARD!";
+    } else if (nextPlayerHand.length === 0) {
+      suffix = " - CHECKUP!";
+    }
+
     if (card.value === 1) { // Hold On
       if (whotSettings.playAgainOn1or8) {
         nextPlayer = userProfile.uid; 
@@ -1135,8 +1303,15 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         message = `You played Pick Two (2)! Opponent pickup obligations: ${nextPenalty}.`;
       }
     } else if (card.value === 5) { // Pick Three
-      nextPenalty += 3;
-      message = `You played Pick Three (5)! Opponent pickup obligations: ${nextPenalty}.`;
+      if (whotGameState.penaltyCount > 0) {
+        nextPenalty = 0; // cleared
+        message = `You countered the Pick Three (5) with another 5! Obligation cleared. Next user plays on.`;
+        nextPlayer = botId;
+      } else {
+        nextPenalty = 3;
+        message = `You played Pick Three (5)! Opponent must draw 3 cards or counter with another 5.`;
+        nextPlayer = botId;
+      }
     } else if (card.value === 8) { // Suspension
       if (whotSettings.playAgainOn1or8) {
         nextPlayer = userProfile.uid; // opponent is suspended, turn matches developer again!
@@ -1147,7 +1322,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       }
     } else if (card.value === 14) { // General market
       if (whotSettings.forcePickOn14) {
-        drawCardForPlayer(botId, 1);
+        nextPenalty = 1;
         message = `You played General Market (14)! Opponent is forced to draw 1 card.`;
       } else {
         message = `You played General Market (14). Opponent draw setting is disabled.`;
@@ -1155,6 +1330,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     } else if (card.suit === 'Whot') {
       message = `You played Whot (20) & declared ${claimedSuit}!`;
     }
+
+    message += suffix;
 
     setWhotGameState(prev => {
       if (!prev) return null;
@@ -1199,6 +1376,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
     const isPlayable = (card: WhotCard) => {
       if (penaltyActive) {
+        if (topCard.value === 14) return false; // General market (14) cannot be countered!
         return card.value === topCard.value;
       }
       return card.suit === 'Whot' || card.suit === activeSuit || card.value === topCard.value;
@@ -1243,6 +1421,15 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       let nextPenalty = whotGameState.penaltyCount;
       let message = `${opponentProfile?.username || 'Opponent'} played ${playedCard.suit} ${playedCard.value}.`;
 
+      let suffix = "";
+      if (nextBotHand.length === 2) {
+        suffix = " - SEMI LAST CARD!";
+      } else if (nextBotHand.length === 1) {
+        suffix = " - LAST CARD!";
+      } else if (nextBotHand.length === 0) {
+        suffix = " - CHECKUP!";
+      }
+
       if (playedCard.value === 1) { // Hold On
         if (whotSettings.playAgainOn1or8) {
           nextPlayer = botId;
@@ -1267,8 +1454,15 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           message = `${opponentProfile?.username || 'Opponent'} played Pick Two (2)! Penalties stacked to ${nextPenalty}.`;
         }
       } else if (playedCard.value === 5) {
-        nextPenalty += 3;
-        message = `${opponentProfile?.username || 'Opponent'} played Pick Three (5)! Penalties stacked to ${nextPenalty}.`;
+        if (whotGameState.penaltyCount > 0) {
+          nextPenalty = 0; // cleared
+          message = `${opponentProfile?.username || 'Opponent'} countered the Pick Three (5) with another 5! Obligation cleared. Next user plays on.`;
+          nextPlayer = userProfile.uid;
+        } else {
+          nextPenalty = 3;
+          message = `${opponentProfile?.username || 'Opponent'} played Pick Three (5)! Lead Developer must draw 3 cards or counter with another 5.`;
+          nextPlayer = userProfile.uid;
+        }
       } else if (playedCard.value === 8) {
         if (whotSettings.playAgainOn1or8) {
           nextPlayer = botId;
@@ -1279,7 +1473,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         }
       } else if (playedCard.value === 14) {
         if (whotSettings.forcePickOn14) {
-          drawCardForPlayer(userProfile.uid, 1);
+          nextPenalty = 1;
           message = `${opponentProfile?.username || 'Opponent'} played General Market (14)! Lead Developer is forced to draw 1 card.`;
         } else {
           message = `${opponentProfile?.username || 'Opponent'} played General Market (14). Opponent draw setting is disabled.`;
@@ -1287,6 +1481,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       } else if (playedCard.suit === 'Whot') {
         message = `${opponentProfile?.username || 'Opponent'} played Whot (20) & declared ${newClaimedSuit}!`;
       }
+
+      message += suffix;
 
       setWhotGameState(prev => {
         if (!prev) return null;
@@ -1409,13 +1605,21 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         }
       }
 
-      setGamePlayLogs(prev => [
-        ...prev,
-        `--- VICTORY SECURED ---`,
-        `Fabulous! Lead Developer cleared their hand! Match payout verified.`,
-        `Rake fee deducted: ${rakeAmount} Coins (10% platform fee).`,
-        `Atomic Payout Dispatched: Credited ${finalUserPayout} virtual coins into wallet.`
-      ]);
+      if (activeChallenge.entryFee > 0) {
+        setGamePlayLogs(prev => [
+          ...prev,
+          `--- VICTORY SECURED ---`,
+          `Fabulous! Lead Developer cleared their hand! Match payout verified.`,
+          `Rake fee deducted: ${rakeAmount} Coins (10% platform fee).`,
+          `Atomic Payout Dispatched: Credited ${finalUserPayout} virtual coins into wallet.`
+        ]);
+      } else {
+        setGamePlayLogs(prev => [
+          ...prev,
+          `--- VICTORY SECURED ---`,
+          `Fabulous! Lead Developer cleared their hand! Free practice match completed.`
+        ]);
+      }
     } else {
       setUserProfile(prev => ({ 
         ...prev, 
@@ -1438,11 +1642,19 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         setDoc(doc(db, 'developer_stats', 'revenue'), { totalRake: increment(houseEarning) }, { merge: true }).catch(console.error);
       }
 
-      setGamePlayLogs(prev => [
-        ...prev,
-        `--- LOSS DETECTED ---`,
-        `Opponent bot cleared their hand! Stake coins shifted to Winner escrow node.`
-      ]);
+      if (activeChallenge.entryFee > 0) {
+        setGamePlayLogs(prev => [
+          ...prev,
+          `--- MATCH DEFEAT ---`,
+          `Opponent cleared their hand first. Staked coins claimed by opponent escrow.`
+        ]);
+      } else {
+        setGamePlayLogs(prev => [
+          ...prev,
+          `--- MATCH DEFEAT ---`,
+          `Opponent cleared their hand first. Free practice match completed.`
+        ]);
+      }
     }
 
     setTimeout(() => {
@@ -1490,7 +1702,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   };
 
   // Helper helper: styling mapping for aesthetic Whot cards
-  const renderWhotCard = (card: WhotCard, isButton: boolean, onClick?: () => void) => {
+  const renderWhotCard = (card: WhotCard, isButton: boolean, onClick?: () => void, isHand = false) => {
     const isPlayable = whotGameState && whotGameState.activePlayerId === userProfile.uid && (
       whotGameState.penaltyCount > 0 
         ? card.value === whotGameState.discardPile[0].value 
@@ -1556,31 +1768,43 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       </div>
     );
 
+    const sizeClass = (isButton || isHand)
+      ? 'w-[85px] h-[120px] sm:w-[110px] sm:h-[160px]'
+      : 'w-[75px] h-[110px] sm:w-[95px] sm:h-[140px]';
+
     if (isButton) {
       return (
-        <button
+        <motion.button
           key={card.id}
+          layoutId={card.id}
+          layout
+          initial={{ scale: 0.6, y: -250, opacity: 0 }}
+          animate={{ scale: 1, y: 0, opacity: 1 }}
+          exit={{ scale: 0.8, y: -30, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 20 }}
           disabled={!isPlayable}
           title={isPlayable ? "Tap card to play" : "Can't play this card right now"}
           onClick={onClick}
-          className={`w-[85px] h-[120px] sm:w-[110px] sm:h-[160px] rounded-2xl border-2 text-left cursor-pointer transition-all relative select-none shrink-0 ${suitStyle} ${
+          className={`${sizeClass} rounded-2xl border-2 text-left cursor-pointer transition-all relative select-none shrink-0 ${suitStyle} ${is3DMode ? 'whot-card-3d' : ''} ${
             isPlayable 
               ? 'ring-[4px] ring-emerald-400 shadow-[0_10px_20px_rgba(0,0,0,0.3)] scale-102 hover:-translate-y-3' 
               : 'opacity-50 grayscale-[15%] cursor-not-allowed scale-95'
           }`}
         >
           {cardContent}
-        </button>
+        </motion.button>
       );
     }
 
     return (
-      <div
+      <motion.div
         key={card.id}
-        className={`w-[75px] h-[110px] sm:w-[95px] sm:h-[140px] rounded-2xl border-2 text-left shadow-md flex-col relative shrink-0 ${suitStyle}`}
+        layoutId={card.id}
+        layout
+        className={`${sizeClass} rounded-2xl border-2 text-left shadow-md flex flex-col relative shrink-0 ${suitStyle}`}
       >
         {cardContent}
-      </div>
+      </motion.div>
     );
   };
 
@@ -1981,6 +2205,82 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                     </label>
                   </div>
                 </div>
+
+                <div className="border-b border-neutral-800 pb-3 pt-4">
+                  <h4 className="font-display font-black text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                    👥 User Directory & Administration
+                  </h4>
+                  <p className="text-[10px] text-neutral-450 mt-0.5 font-mono">Manage registered users, deactivate login sessions, or purge profiles from the database.</p>
+                </div>
+
+                <div className="space-y-3">
+                  {allProfiles.filter(p => p.uid !== userProfile.uid).length === 0 ? (
+                    <div className="text-center py-6 bg-neutral-900/40 rounded-xl border border-neutral-800/80">
+                      <p className="text-xs text-neutral-450 font-mono">No other registered users found in directory.</p>
+                    </div>
+                  ) : (
+                    allProfiles
+                      .filter(p => p.uid !== userProfile.uid)
+                      .map((profile) => (
+                        <div key={profile.uid} className="bg-neutral-900/60 p-4 rounded-xl border border-neutral-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all">
+                          <div className="flex items-center gap-3">
+                            <img 
+                              src={profile.avatar} 
+                              alt={profile.username} 
+                              className="w-10 h-10 rounded-full object-cover border border-neutral-800"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-semibold text-neutral-200">{profile.username}</span>
+                                {profile.deactivated ? (
+                                  <span className="text-[8px] bg-red-950/80 text-red-400 border border-red-800/40 px-1.5 py-0.5 rounded font-mono font-bold uppercase">DEACTIVATED</span>
+                                ) : (
+                                  <span className={`w-2.5 h-2.5 rounded-full border border-neutral-900 ${profile.status === 'online' ? 'bg-emerald-500 animate-pulse' : profile.status === 'in-game' ? 'bg-purple-500 animate-ping' : 'bg-neutral-600'}`} />
+                                )}
+                              </div>
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-[10px] text-neutral-450 mt-0.5 font-mono">
+                                <span>{profile.email}</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span className="flex items-center gap-0.5">Coins: {profile.coins}</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span>W: {profile.wins} / L: {profile.losses}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-end sm:self-auto">
+                            <button
+                              onClick={() => {
+                                if (handleToggleDeactivate) {
+                                  handleToggleDeactivate(profile.uid, !profile.deactivated);
+                                }
+                              }}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
+                                profile.deactivated
+                                  ? 'bg-emerald-500 hover:bg-emerald-600 text-neutral-950'
+                                  : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-750'
+                              }`}
+                            >
+                              {profile.deactivated ? 'Activate' : 'Deactivate'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`⚠️ Are you sure you want to permanently delete the profile for "${profile.username}"? This action is irreversible.`)) {
+                                  if (handleDeleteProfile) {
+                                    handleDeleteProfile(profile.uid);
+                                  }
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 hover:border-rose-500 text-rose-300 hover:text-white rounded-lg text-xs font-bold transition-all cursor-pointer select-none"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -1989,41 +2289,69 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           <div className={`grid grid-cols-1 ${activeChallenge?.opponentType === 'bot' ? 'xl:grid-cols-1' : 'xl:grid-cols-4'} gap-6 items-start`}>
             <div className={`${activeChallenge?.opponentType === 'bot' ? 'xl:col-span-1' : 'xl:col-span-3'} flex flex-col space-y-4`}>
               {/* Real-time escrow safe timer safeguard banner */}
-              <div className="bg-neutral-950/95 border-2 border-purple-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-xl ${timeLeft <= 60 ? 'bg-rose-500/20 text-rose-300 animate-pulse' : 'bg-purple-500/20 text-purple-300'}`}>
+              {/* Mobile: compact strip — tap shield to expand. Desktop: always full. */}
+              <div className="bg-neutral-950/95 border-2 border-purple-500/30 rounded-2xl shadow-xl overflow-hidden">
+
+                {/* Always-visible compact row (mobile-first) */}
+                <div className="flex items-center justify-between gap-3 p-3 sm:p-4">
+                  {/* Shield icon — tappable on mobile to reveal details */}
+                  <button
+                    type="button"
+                    onClick={() => setShowEscrowDetails(v => !v)}
+                    className={`p-2 rounded-xl shrink-0 transition-all cursor-pointer ${
+                      timeLeft <= 60 ? 'bg-rose-500/20 text-rose-300 animate-pulse' : 'bg-purple-500/20 text-purple-300'
+                    }`}
+                    title="Tap to view escrow details"
+                  >
                     <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-white uppercase tracking-wider font-display">🛡️ Escrow Safeguard Active</span>
-                      <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono px-1.5 py-0.5 rounded-md font-bold uppercase">SECURE STADIUM</span>
+                  </button>
+
+                  {/* Label — hidden on mobile, shown on sm+ */}
+                  <span className="hidden sm:block text-xs font-bold text-white uppercase tracking-wider font-display whitespace-nowrap">
+                    🛡️ Escrow Safeguard Active
+                  </span>
+
+                  {/* Spacer */}
+                  <div className="flex-1" />
+
+                  {/* Timer + Reconcile — always visible */}
+                  <div className="flex items-center gap-2">
+                    <div className="text-right shrink-0">
+                      <span className="block text-[9px] text-neutral-450 font-mono font-bold uppercase">Time Left:</span>
+                      <span className={`font-mono text-sm font-black px-2 py-0.5 rounded-lg ${
+                        timeLeft <= 60
+                          ? 'text-rose-400 bg-rose-950/80 border border-rose-500/30'
+                          : 'text-purple-300 bg-purple-950/50 border border-purple-500/20'
+                      }`}>
+                        {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                      </span>
                     </div>
-                    <p className="text-[11px] text-neutral-400 mt-0.5 font-sans">
-                      Match stake of <strong className="text-white font-mono font-bold text-xs">{activeChallenge?.entryFee} Coins</strong> is protected. In case of timeout or disconnects, tap reconcile to automatically resolve stakes safely based on current game points.
-                    </p>
+                    <button
+                      type="button"
+                      onClick={handleMatchTimerExpiry}
+                      className="px-3 py-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white rounded-xl text-xs font-black font-sans shadow-md border border-rose-500/20 cursor-pointer active:scale-95 transition-all select-none uppercase tracking-wider whitespace-nowrap"
+                    >
+                      ⚖️ Reconcile
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                  <div className="text-right shrink-0">
-                    <span className="block text-[10px] text-neutral-450 font-mono font-bold uppercase">Time Remaining:</span>
-                    <span className={`font-mono text-base font-black px-2.5 py-1 rounded-lg ${timeLeft <= 60 ? 'text-rose-400 bg-rose-950/80 border border-rose-500/30' : 'text-purple-300 bg-purple-950/50 border border-purple-500/20'}`}>
-                      {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-                    </span>
+                {/* Expandable detail row — shown when shield tapped on mobile, always shown on sm+ */}
+                {(showEscrowDetails) && (
+                  <div className="px-4 pb-4 text-[11px] text-neutral-400 font-sans border-t border-purple-500/15 pt-3 flex items-start gap-2">
+                    <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono px-1.5 py-0.5 rounded-md font-bold uppercase shrink-0 mt-0.5">SECURE</span>
+                    <p>
+                      Match stake of <strong className="text-white font-mono font-bold text-xs">{activeChallenge?.entryFee} Coins</strong> is protected.
+                      In case of timeout or disconnects, tap <strong className="text-white">Reconcile</strong> to automatically resolve stakes safely based on current game points.
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleMatchTimerExpiry}
-                    className="px-4 py-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white rounded-xl text-xs font-black font-sans shadow-md border border-rose-500/20 cursor-pointer active:scale-95 transition-all select-none uppercase tracking-wider"
-                  >
-                    ⚖️ Reconcile
-                  </button>
-                </div>
+                )}
               </div>
+
             {activeChallenge?.gameType === 'Whot' && whotGameState ? (
               /* Playable Whot card game table! */
-              <div className="rounded-3xl p-4 sm:p-6 shadow-2xl space-y-6 relative overflow-hidden whot-game-table select-none" id="whot-card-table-arena">
+              <LayoutGroup id="whot-game-group">
+                <div className={`rounded-3xl p-4 sm:p-6 shadow-2xl space-y-6 relative overflow-hidden whot-game-table select-none ${is3DMode ? 'mode-3d' : ''} ${getTensionClass()}`} id="whot-card-table-arena">
                 
                 {/* Board header matching parameters */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-white/10 relative">
@@ -2034,30 +2362,42 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                     </span>
                   </div>
                   
-                  {/* Collapsible Rules Toggle */}
-                  <div className="flex flex-col items-end gap-1 select-none">
+                  {/* Collapsible Rules & 3D Toggle */}
+                  <div className="flex flex-row items-center gap-2 select-none">
                     <button
-                      onClick={() => setShowRules(!showRules)}
+                      type="button"
+                      onClick={() => setIs3DMode(!is3DMode)}
                       className="px-2.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-350 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95"
                     >
-                      <span>{showRules ? 'Hide Rules ✕' : 'Show Rules ℹ️'}</span>
+                      <span>{is3DMode ? 'Perspective: 3D ⛶' : 'Perspective: 2D ▢'}</span>
                     </button>
-                    {showRules && (
-                      <div className="bg-amber-950/95 border-2 border-amber-600/60 p-3 rounded-xl text-amber-100 text-[10px] sm:text-[11px] font-sans leading-normal max-w-xs shadow-xl absolute z-30 mt-8 right-0 border-white/10">
-                        <span className="block font-black text-amber-300 uppercase tracking-widest text-xs mb-0.5">💡 Quick Table Rules:</span>
-                        <ul className="list-disc pl-3.5 space-y-1">
-                          <li>Match the card's <strong>Number</strong> (e.g. 5) OR <strong>Suit Shape</strong> (e.g. ▲).</li>
-                          <li><strong>★ WHOT! (20)</strong> is Wild - tap it anytime to pick the active suit!</li>
-                          <li>Must tap draw pile if you do not have a playable card in color.</li>
-                        </ul>
-                      </div>
-                    )}
+                    <div className="relative flex flex-col items-end gap-1">
+                      <button
+                        onClick={() => setShowRules(!showRules)}
+                        className="px-2.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-350 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                      >
+                        <span>{showRules ? 'Hide Rules ✕' : 'Show Rules ℹ️'}</span>
+                      </button>
+                      {showRules && (
+                        <div className="bg-amber-950/95 border-2 border-amber-600/60 p-3 rounded-xl text-amber-100 text-[10px] sm:text-[11px] font-sans leading-normal max-w-xs shadow-xl absolute z-30 mt-8 right-0 border-white/10">
+                          <span className="block font-black text-amber-300 uppercase tracking-widest text-xs mb-0.5">💡 Quick Table Rules:</span>
+                          <ul className="list-disc pl-3.5 space-y-1">
+                            <li>Match the card's <strong>Number</strong> (e.g. 5) OR <strong>Suit Shape</strong> (e.g. ▲).</li>
+                            <li><strong>★ WHOT! (20)</strong> is Wild - tap it anytime to pick the active suit!</li>
+                            <li>Must tap draw pile if you do not have a playable card in color.</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
+                {/* 3D Stage — wraps all zones to preserve the 3D coordinate space */}
+                <div className={is3DMode ? 'whot-3d-stage space-y-6' : 'space-y-6'}>
+
                 {/* Opponent Zone (top space) */}
-                <div className="flex items-center justify-between bg-black/40 p-3.5 rounded-2xl border border-white/5 shadow-md">
-                  <div className="flex items-center gap-3">
+                <div className={`flex flex-col md:flex-row items-center justify-between gap-4 bg-black/40 p-3.5 rounded-2xl border border-white/5 shadow-md ${is3DMode ? 'whot-opponent-zone' : ''}`}>
+                  <div className="flex items-center gap-3 w-full md:w-auto">
                     <img 
                       src={opponentProfile?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80'} 
                       alt="Opponent" 
@@ -2071,33 +2411,46 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                         )}
                       </div>
                       <p className="text-[11px] text-emerald-200/80 font-mono">Opponent's Hand Status</p>
+                      <div className="mt-1 bg-black/60 text-white text-[10px] font-mono px-2.5 py-1 rounded-xl font-bold border border-white/10 inline-block">
+                        {whotGameState.playerHands[opponentId]?.length || 0} Cards
+                      </div>
                     </div>
                   </div>
 
-                  {/* Face-down realistic red opponent cards fanned out at the edge */}
-                  <div className="flex items-center gap-1">
-                    <div className="flex -space-x-4">
-                      {Array.from({ length: Math.min(6, whotGameState.playerHands[opponentId]?.length || 6) }).map((_, i) => (
-                        <div 
-                          key={i} 
-                          className="w-8 h-12 bg-red-700 border-2 border-white rounded-lg shadow-md flex items-center justify-center text-[10px] text-white font-extrabold rotate-12 transition-transform select-none"
-                          style={{ transform: `rotate(${(i - 2.5) * 6}deg)` }}
-                        >
-                          ★
-                        </div>
-                      ))}
-                    </div>
-                    <div className="ml-3 bg-black/60 text-white text-xs font-mono px-2.5 py-1.5 rounded-xl font-bold border border-white/10 shrink-0">
-                      {whotGameState.playerHands[opponentId]?.length || 0} Cards
+                  {/* Opponent Zone Hand: Opened if completed, otherwise face-down lined out */}
+                  <div className="w-full md:flex-1 max-w-full overflow-hidden">
+                    <div className={`flex gap-3 overflow-x-auto pb-4 pt-1 shadow-inner scrollbar-thin select-none max-w-full justify-start md:justify-center whot-cards-row`}>
+                      {whotGameState.status === 'completed' ? (
+                        whotGameState.playerHands[opponentId]?.map((card) => 
+                          renderWhotCard(card, false, undefined, true)
+                        )
+                      ) : (
+                        whotGameState.playerHands[opponentId]?.map((card) => (
+                          <motion.div 
+                            key={card.id} 
+                            layoutId={card.id}
+                            layout
+                            initial={{ scale: 0.6, y: 250, opacity: 0 }}
+                            animate={{ scale: 1, y: 0, opacity: 1 }}
+                            exit={{ scale: 0.8, y: 30, opacity: 0 }}
+                            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                            className={`w-[85px] h-[120px] sm:w-[110px] sm:h-[160px] bg-gradient-to-br from-red-600 to-red-800 border-2 border-white rounded-2xl shadow-lg flex flex-col justify-between p-2.5 text-white relative shrink-0 select-none items-center justify-center font-bold hover:scale-102 transition-transform ${is3DMode ? 'whot-opponent-card-3d' : ''}`}
+                          >
+                            <div className="absolute inset-1.5 border border-dashed border-white/20 rounded-xl flex items-center justify-center">
+                              <span className="text-[10px] sm:text-xs font-serif font-black opacity-95 uppercase tracking-widest">Whot!</span>
+                            </div>
+                          </motion.div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Draw pile & card discard community area - Unified same row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-2 items-stretch">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 py-2 items-stretch">
                   
-                  {/* Left Discard / Draw Pile Community Row (takes 2 columns) */}
-                  <div className="md:col-span-2 bg-black/25 p-5 rounded-3xl border border-white/5 shadow-inner flex flex-col items-center justify-center space-y-4">
+                  {/* Community table: full width on mobile (feed hidden), 2 cols on desktop */}
+                  <div className={`col-span-1 md:col-span-2 bg-black/25 p-5 rounded-3xl border border-white/5 shadow-inner flex flex-col items-center justify-center space-y-4 ${is3DMode ? 'whot-community-table' : ''}`}>
                     <span className="text-[11px] font-mono text-emerald-300 font-extrabold uppercase tracking-widest bg-emerald-950/80 px-3 py-1 rounded-full border border-emerald-800">
                       Community Card Table
                     </span>
@@ -2110,6 +2463,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                           onClick={handleHumanDrawCard}
                           disabled={whotGameState.activePlayerId !== userProfile.uid || whotGameState.status === 'completed'}
                           className={`relative group shrink-0 select-none ${
+                            is3DMode ? 'whot-draw-deck-3d' : ''
+                          } ${
                             whotGameState.activePlayerId === userProfile.uid && whotGameState.status !== 'completed'
                               ? 'opacity-100 cursor-pointer active:scale-95'
                               : 'opacity-50 cursor-not-allowed'
@@ -2133,7 +2488,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                       {/* Discard Pile (active card) */}
                       <div className="flex flex-col items-center space-y-2">
                         <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider">Active Play</span>
-                        <div className="p-1.5 bg-[#0c4021] rounded-2xl border border-[#1b6b3b] shadow-inner">
+                        <div className={`p-1.5 bg-[#0c4021] rounded-2xl border border-[#1b6b3b] shadow-inner ${is3DMode ? 'whot-discard-card-3d' : ''}`}>
                           {renderWhotCard(whotGameState.discardPile[0], false)}
                         </div>
                       </div>
@@ -2156,8 +2511,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                     </div>
                   </div>
 
-                  {/* Alerts Feed panel (takes 1 column) */}
-                  <div className="bg-black/35 p-4 rounded-3xl border border-white/5 text-xs text-white leading-relaxed font-sans flex flex-col justify-between">
+                  {/* Alerts Feed panel — hidden on mobile, visible on md+ */}
+                  <div className="hidden md:flex bg-black/35 p-4 rounded-3xl border border-white/5 text-xs text-white leading-relaxed font-sans flex-col justify-between">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-amber-300 font-extrabold text-xs uppercase tracking-wider">
                         <Hash className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -2180,6 +2535,17 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                         : "⌛ Wait for opponent..."}
                     </div>
                   </div>
+
+                  {/* Mobile-only: compact penalty alert strip (only shows when penalty is active) */}
+                  {whotGameState.penaltyCount > 0 && (
+                    <div className="md:hidden flex items-center gap-2 font-mono text-[10px] font-black text-rose-100 bg-rose-950/70 border border-rose-500/30 p-2.5 rounded-xl animate-pulse">
+                      <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span>Draw {whotGameState.penaltyCount} cards or play matching value!</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Close 3D Stage wrapper */}
                 </div>
 
                 {/* Suit declaration overlay choice card */}
@@ -2212,55 +2578,260 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 </AnimatePresence>
 
                 {/* Human Player Hand card tray (bottom space) */}
-                <div className="space-y-4 border-t border-white/10 pt-5">
+                <div className={`space-y-4 border-t border-white/10 pt-5 ${is3DMode ? 'whot-player-zone' : ''}`}>
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 text-xs">
                     <span className="font-black text-white text-sm flex items-center gap-1.5 font-display uppercase tracking-wider">
                       <User className="w-5 h-5 text-amber-400 shrink-0" />
                       Your Hand Deck ({whotGameState.playerHands[userProfile.uid]?.length || 0} cards)
                     </span>
                     
-                    <span className={`text-xs font-mono tracking-wider font-extrabold px-3 py-1.5 rounded-full border ${
-                      whotGameState.activePlayerId === userProfile.uid 
-                        ? (turnTimeLeft <= 15 
-                            ? 'bg-rose-500 text-white border-white shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-bounce' 
-                            : 'bg-emerald-400 text-neutral-950 border-white shadow-[0_0_15px_rgba(52,211,153,0.3)] animate-pulse')
-                        : 'bg-black/40 text-emerald-300 border-white/10'
-                    }`}>
-                      {whotGameState.activePlayerId === userProfile.uid 
-                        ? `👉 YOUR TURN: Tap card to play! (${turnTimeLeft}s left)` 
-                        : `⌛ ${opponentProfile?.username || 'Opponent'}'s turn... (${turnTimeLeft}s)`}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {/* Fan / Spin mode toggle — most useful on mobile */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsFanMode(v => !v);
+                          setFanCenterIndex(0);
+                        }}
+                        title={isFanMode ? 'Switch to scroll layout' : 'Switch to fan/spin layout'}
+                        className="px-2.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95 select-none"
+                      >
+                        <span>{isFanMode ? '↔ Scroll' : '🌀 Fan'}</span>
+                      </button>
+
+                      <span className={`text-xs font-mono tracking-wider font-extrabold px-3 py-1.5 rounded-full border ${
+                        whotGameState.activePlayerId === userProfile.uid 
+                          ? (turnTimeLeft <= 15 
+                              ? 'bg-rose-500 text-white border-white shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-bounce' 
+                              : 'bg-emerald-400 text-neutral-950 border-white shadow-[0_0_15px_rgba(52,211,153,0.3)] animate-pulse')
+                          : 'bg-black/40 text-emerald-300 border-white/10'
+                      }`}>
+                        {whotGameState.activePlayerId === userProfile.uid 
+                          ? `👉 YOUR TURN: Tap card to play! (${turnTimeLeft}s left)` 
+                          : `⌛ ${opponentProfile?.username || 'Opponent'}'s turn... (${turnTimeLeft}s)`}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex gap-3 overflow-x-auto pb-4 pt-1 shadow-inner scrollbar-thin select-none max-w-full justify-start md:justify-center">
-                    {whotGameState.playerHands[userProfile.uid]?.map((card) => 
-                      renderWhotCard(card, true, () => handlePlayCard(card))
-                    )}
-                  </div>
+                  {isFanMode ? (
+                    /* ── FAN / SPIN LAYOUT ── */
+                    (() => {
+                      const hand = whotGameState.playerHands[userProfile.uid] || [];
+                      const count = hand.length;
+                      if (count === 0) return null;
+
+                      // clamp center index
+                      const safeCenter = Math.max(0, Math.min(fanCenterIndex, count - 1));
+
+                      // fan spread: max 120deg total, each card gets up to 18deg
+                      const maxSpread = Math.min(120, count * 14);
+                      const spreadPerCard = count > 1 ? maxSpread / (count - 1) : 0;
+
+                      // radius of the arc (larger = cards spread out more)
+                      const arcRadius = Math.max(160, 120 + count * 8);
+
+                      return (
+                        <div
+                          className="relative w-full select-none"
+                          style={{ height: `${arcRadius * 0.72 + 20}px` }}
+                          onTouchStart={(e) => {
+                            fanTouchStartX.current = e.touches[0].clientX;
+                            fanTouchStartY.current = e.touches[0].clientY;
+                          }}
+                          onTouchEnd={(e) => {
+                            const dx = e.changedTouches[0].clientX - fanTouchStartX.current;
+                            const dy = e.changedTouches[0].clientY - fanTouchStartY.current;
+                            // Only treat as horizontal swipe (dx dominates)
+                            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+                              if (dx < 0) {
+                                // swipe left → next card
+                                setFanCenterIndex(i => Math.min(count - 1, i + 1));
+                              } else {
+                                // swipe right → previous card
+                                setFanCenterIndex(i => Math.max(0, i - 1));
+                              }
+                            }
+                          }}
+                        >
+                          {/* Arc of cards */}
+                          {hand.map((card, i) => {
+                            const offset = i - safeCenter;
+                            const angleDeg = offset * spreadPerCard;
+                            const angleRad = (angleDeg * Math.PI) / 180;
+                            const tx = Math.sin(angleRad) * arcRadius;
+                            const ty = arcRadius - Math.cos(angleRad) * arcRadius;
+                            const scale = i === safeCenter ? 1.08 : Math.max(0.72, 1 - Math.abs(offset) * 0.08);
+                            const opacity = i === safeCenter ? 1 : Math.max(0.45, 1 - Math.abs(offset) * 0.12);
+                            const zIndex = count - Math.abs(offset);
+
+                            return (
+                              <div
+                                key={card.id}
+                                style={{
+                                  position: 'absolute',
+                                  bottom: 0,
+                                  left: '50%',
+                                  transform: `translateX(calc(-50% + ${tx}px)) translateY(${-ty * 0.55}px) rotate(${angleDeg * 0.75}deg) scale(${scale})`,
+                                  zIndex,
+                                  opacity,
+                                  transition: 'transform 0.32s cubic-bezier(0.2,0.8,0.2,1), opacity 0.28s ease',
+                                  transformOrigin: 'bottom center',
+                                }}
+                                onClick={() => {
+                                  if (i !== safeCenter) {
+                                    // First tap brings card to center
+                                    setFanCenterIndex(i);
+                                  } else {
+                                    // Second tap on center card plays it
+                                    handlePlayCard(card);
+                                  }
+                                }}
+                              >
+                                {renderWhotCard(card, false)}
+                                {/* Center card glow indicator */}
+                                {i === safeCenter && (
+                                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
+                                )}
+                              </div>
+                            );
+                          })}
+
+                          {/* Left / Right navigation arrows */}
+                          <button
+                            type="button"
+                            onClick={() => setFanCenterIndex(i => Math.max(0, i - 1))}
+                            disabled={safeCenter === 0}
+                            className="absolute left-0 bottom-2 z-50 w-9 h-9 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center disabled:opacity-30 hover:bg-black/80 active:scale-90 transition-all cursor-pointer"
+                          >
+                            ‹
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFanCenterIndex(i => Math.min(count - 1, i + 1))}
+                            disabled={safeCenter === count - 1}
+                            className="absolute right-0 bottom-2 z-50 w-9 h-9 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center disabled:opacity-30 hover:bg-black/80 active:scale-90 transition-all cursor-pointer"
+                          >
+                            ›
+                          </button>
+
+                          {/* Card counter label */}
+                          <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border border-white/10">
+                            {safeCenter + 1} / {count} · tap center to play
+                          </div>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    /* ── SCROLL LAYOUT (default) ── */
+                    <div className="flex gap-3 overflow-x-auto pb-4 pt-1 shadow-inner scrollbar-thin select-none max-w-full justify-start md:justify-center whot-cards-row">
+                      {whotGameState.playerHands[userProfile.uid]?.map((card) => 
+                        renderWhotCard(card, true, () => handlePlayCard(card))
+                      )}
+                    </div>
+                  )}
                 </div>
 
+                {/* Game Over Screen */}
+                {whotGameState.status === 'completed' && (
+                  <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center z-[80] p-4 text-center space-y-6">
+                    {/* Animated Confetti / Cheers */}
+                    <div className="relative">
+                      <motion.div 
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 10, ease: 'linear' }}
+                        className="absolute inset-0 -m-8 bg-gradient-to-tr from-purple-500/20 via-pink-500/20 to-amber-500/20 rounded-full blur-2xl opacity-75"
+                      />
+                      <motion.div
+                        initial={{ scale: 0.3, opacity: 0 }}
+                        animate={{ scale: [1, 1.1, 1], opacity: 1 }}
+                        transition={{ repeat: Infinity, repeatType: 'reverse', duration: 1.5 }}
+                        className="text-5xl sm:text-6xl"
+                      >
+                        {whotGameState.winnerId === userProfile.uid ? '🎉🏆👑' : '💩🤖💤'}
+                      </motion.div>
+                    </div>
+
+                    <div className="space-y-2 max-w-sm">
+                      <h3 className="text-2xl font-black tracking-tight text-glow-purple uppercase font-display">
+                        {whotGameState.winnerId === userProfile.uid ? 'Congratulations!' : 'Bot Victory!'}
+                      </h3>
+                      <p className="text-sm font-bold text-amber-305">
+                        {whotGameState.winnerId === userProfile.uid 
+                          ? 'You won the match!' 
+                          : `${opponentProfile?.username || 'Opponent'} won the match.`}
+                      </p>
+                      <p className="text-xs text-neutral-400 font-mono leading-relaxed mt-2 bg-neutral-900/80 p-3.5 rounded-xl border border-white/5">
+                        {whotGameState.lastActionMessage}
+                      </p>
+                    </div>
+
+                    {/* Rematch & Back to Games Actions */}
+                    <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs pt-2">
+                      <button
+                        onClick={handleRematch}
+                        className="flex-1 py-3 bg-purple-350 hover:bg-purple-400 text-neutral-950 font-bold rounded-2xl shadow-lg hover:shadow-purple-500/25 transition-all text-xs font-display uppercase tracking-wider cursor-pointer animate-pulse"
+                      >
+                        🔄 Rematch
+                      </button>
+                      <button
+                        onClick={handleBackToLobbies}
+                        className="flex-1 py-3 bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-white font-bold rounded-2xl shadow-md transition-all text-xs font-display uppercase tracking-wider cursor-pointer"
+                      >
+                        🎮 Games Lobby
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Floating game alert notifications (semi last card, last card, checkup) */}
+                <AnimatePresence>
+                  {whotNotification && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8, y: -50 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.8, y: 50 }}
+                      transition={{ type: 'spring', stiffness: 350, damping: 20 }}
+                      className={`absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-[99] px-6 py-4 rounded-3xl border-2 shadow-2xl flex flex-col items-center justify-center space-y-1.5 text-center font-display font-black uppercase tracking-wider select-none ${
+                        whotNotification.type === 'semi'
+                          ? 'bg-amber-400 border-amber-300 text-neutral-950 shadow-amber-500/30'
+                          : whotNotification.type === 'last'
+                          ? 'bg-rose-600 border-rose-400 text-white shadow-rose-600/30 animate-pulse'
+                          : 'bg-emerald-500 border-emerald-300 text-neutral-950 shadow-emerald-500/30'
+                      }`}
+                    >
+                      <span className="text-[10px] opacity-80 font-mono tracking-widest font-black uppercase">
+                        {whotNotification.type === 'semi' ? '⚠️ Alert Warning' : whotNotification.type === 'last' ? '🚨 Danger Alert' : '🏆 Game Outcome'}
+                      </span>
+                      <span className="text-sm sm:text-base whitespace-nowrap font-black">
+                        {whotNotification.text}
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
               </div>
+            </LayoutGroup>
             ) : activeChallenge?.gameType === 'Ludo' ? (
               <InteractiveLudoBoard
                 entryFee={activeChallenge.entryFee}
-                opponentName={activeChallenge?.senderId === 'friend_user' ? activeChallenge.senderName : (selectedBot?.username || 'Bot')}
-                opponentAvatar={activeChallenge?.senderId === 'friend_user' ? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&q=80' : (selectedBot?.avatar || '')}
+                opponentName={opponentProfile?.username || 'Bot'}
+                opponentAvatar={opponentProfile?.avatar || ''}
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
               />
             ) : activeChallenge?.gameType === 'Draft' ? (
               <InteractiveDraftBoard
                 entryFee={activeChallenge.entryFee}
-                opponentName={activeChallenge?.senderId === 'friend_user' ? activeChallenge.senderName : (selectedBot?.username || 'Bot')}
-                opponentAvatar={activeChallenge?.senderId === 'friend_user' ? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&q=80' : (selectedBot?.avatar || '')}
+                opponentName={opponentProfile?.username || 'Bot'}
+                opponentAvatar={opponentProfile?.avatar || ''}
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
               />
             ) : (
               <InteractiveChessBoard
                 entryFee={activeChallenge.entryFee}
-                opponentName={activeChallenge?.senderId === 'friend_user' ? activeChallenge.senderName : (selectedBot?.username || 'Bot')}
-                opponentAvatar={activeChallenge?.senderId === 'friend_user' ? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&q=80' : (selectedBot?.avatar || '')}
+                opponentName={opponentProfile?.username || 'Bot'}
+                opponentAvatar={opponentProfile?.avatar || ''}
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
               />

@@ -60,7 +60,8 @@ export function useProfiles() {
             losses: 0,
             draws: 0,
             coins: 1000,
-            status: 'online'
+            status: 'online',
+            favorites: []
           };
           await setDoc(userDocRef, newProfile);
           setUserProfile(newProfile);
@@ -173,7 +174,8 @@ export function useProfiles() {
       losses: 0,
       draws: 0,
       coins: 1000, // mandatory 1,000 Starting Coins rule!
-      status: 'online'
+      status: 'online',
+      favorites: []
     };
 
     try {
@@ -201,6 +203,18 @@ export function useProfiles() {
     }
   };
 
+  // Toggle Deactivate Status of a User Profile
+  const handleToggleDeactivate = async (uid: string, deactivated: boolean) => {
+    try {
+      const updateRef = doc(db, 'users', uid);
+      await updateDoc(updateRef, { deactivated });
+      return { success: true };
+    } catch (e: any) {
+      console.error("Failed to update user deactivation status:", e);
+      return { success: false, message: e.message };
+    }
+  };
+
   return {
     allProfiles,
     userProfile,
@@ -210,6 +224,7 @@ export function useProfiles() {
     handleChangePassword,
     handleSwitchProfile,
     handleDeleteProfile,
-    handleAddProfile
+    handleAddProfile,
+    handleToggleDeactivate
   };
 }

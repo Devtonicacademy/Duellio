@@ -76,6 +76,13 @@ export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({
         try { usersList = JSON.parse(raw); } catch (e) {}
       }
 
+      let matchedInFirestore = allProfiles.find(p => p.uid === firebaseUser.uid || p.email.trim().toLowerCase() === firebaseUser.email?.trim().toLowerCase());
+      if (matchedInFirestore && matchedInFirestore.deactivated) {
+        setLoginError("🔒 Account Deactivated: This profile has been deactivated by the system administrator.");
+        await auth.signOut();
+        return;
+      }
+
       let matched = usersList.find(u => u.uid === firebaseUser.uid || u.email.trim().toLowerCase() === firebaseUser.email?.trim().toLowerCase());
       if (!matched) {
         const newProfile: UserProfile = {
@@ -87,7 +94,8 @@ export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({
           losses: 0,
           draws: 0,
           coins: 1000,
-          status: 'online'
+          status: 'online',
+          favorites: []
         };
         usersList.push(newProfile);
         localStorage.setItem('duellio-users', JSON.stringify(usersList));
@@ -133,6 +141,13 @@ export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({
         try { usersList = JSON.parse(raw); } catch (e) {}
       }
 
+      let matchedInFirestore = allProfiles.find(p => p.uid === firebaseUser.uid || p.email.trim().toLowerCase() === firebaseUser.email?.trim().toLowerCase());
+      if (matchedInFirestore && matchedInFirestore.deactivated) {
+        setLoginError("🔒 Account Deactivated: This profile has been deactivated by the system administrator.");
+        await auth.signOut();
+        return;
+      }
+
       let matched = usersList.find(u => u.uid === firebaseUser.uid || u.email.trim().toLowerCase() === firebaseUser.email?.trim().toLowerCase());
       if (!matched) {
         matched = {
@@ -144,7 +159,8 @@ export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({
           losses: 0,
           draws: 0,
           coins: 1000,
-          status: 'online'
+          status: 'online',
+          favorites: []
         };
         usersList.push(matched);
         localStorage.setItem('duellio-users', JSON.stringify(usersList));

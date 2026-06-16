@@ -13,6 +13,9 @@ export interface UserProfile {
   draws: number;
   coins: number;
   status: 'online' | 'offline' | 'in-game';
+  favorites?: string[];
+  archived?: string[];
+  deactivated?: boolean;
 }
 
 export interface UserReport {
@@ -33,6 +36,11 @@ export interface ChatMessage {
   senderAvatar: string;
   text: string;
   timestamp: string;
+  isChallenge?: boolean;
+  challengeId?: string;
+  gameType?: 'Chess' | 'Ludo' | 'Whot' | 'Draft';
+  entryFee?: number;
+  challengeStatus?: 'pending' | 'accepted' | 'declined';
 }
 
 export interface MatchChallenge {

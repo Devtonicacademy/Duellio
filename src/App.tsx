@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'motion/react';
+import { db } from './firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 // Custom Hooks
 import { useTheme } from './hooks/useTheme';
@@ -27,6 +29,8 @@ const PhaseSandboxTab = lazy(() => import('./components/PhaseSandboxTab').then(m
 const ProfileTab = lazy(() => import('./components/ProfileTab').then(m => ({ default: m.ProfileTab })));
 const AuthEntrancePortal = lazy(() => import('./components/AuthEntrancePortal').then(m => ({ default: m.AuthEntrancePortal })));
 const SpectateTab = lazy(() => import('./components/SpectateTab').then(m => ({ default: m.SpectateTab })));
+const ChatTab = lazy(() => import('./components/ChatTab').then(m => ({ default: m.ChatTab })));
+const AdminTab = lazy(() => import('./components/AdminTab').then(m => ({ default: m.AdminTab })));
 
 // Premium loading placeholder for Suspense boundaries
 const LoadingFallback = () => (
@@ -48,7 +52,8 @@ export default function App() {
     handleChangePassword,
     handleSwitchProfile,
     handleDeleteProfile,
-    handleAddProfile
+    handleAddProfile,
+    handleToggleDeactivate
   } = useProfiles();
 
   const {
@@ -63,7 +68,7 @@ export default function App() {
     setFriendInvite
   } = useFriendInvite();
 
-  const [activeTab, setActiveTab] = useState<'discover' | 'tournaments' | 'lobbies' | 'profile' | 'play-arena' | 'spectate'>('discover');
+  const [activeTab, setActiveTab] = useState<'discover' | 'tournaments' | 'lobbies' | 'profile' | 'play-arena' | 'spectate' | 'chat' | 'admin'>('discover');
 
   // High fidelity quick state connectors
   const [preselectedGame, setPreselectedGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | null>(null);
@@ -78,10 +83,11 @@ export default function App() {
     rewardMultiplier?: number;
   } | null>(null);
 
-  // Voice/Speech synthesis accessibility state
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(() => {
     return localStorage.getItem('duellio-voice-enabled') !== 'false';
   });
+
+  const [isGameActive, setIsGameActive] = useState<boolean>(false);
 
   const toggleVoice = () => {
     setVoiceEnabled(prev => {
@@ -95,6 +101,30 @@ export default function App() {
   const handleAddProfileWrapper = (username: string, email: string, pass: string, avatar: string) => {
     return handleAddProfile(username, email, pass, avatar, addTransaction);
   };
+
+  const [totalUnread, setTotalUnread] = useState(0);
+
+  useEffect(() => {
+    if (!userProfile) {
+      setTotalUnread(0);
+      return;
+    }
+
+    const chatsRef = collection(db, 'chats');
+    const q = query(chatsRef, where('users', 'array-contains', userProfile.uid));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let count = 0;
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const unread = data.unreadCount?.[userProfile.uid] || 0;
+        count += unread;
+      });
+      setTotalUnread(count);
+    });
+
+    return () => unsubscribe();
+  }, [userProfile]);
 
   // Direct card-to-matchmaker connector
   const handleSelectGameFromDiscover = (gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft', stake: number) => {
@@ -155,20 +185,23 @@ export default function App() {
     <div className={`min-h-screen bg-[#070709] text-neutral-100 font-sans antialiased pb-12 selection:bg-purple-500/30 selection:text-white ${theme}`} id="applet-viewport">
       
       {/* Extract Premium Glowing Navigation Header Bar */}
-      <Header
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        setPreselectedGame={setPreselectedGame}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        userProfile={userProfile}
-        onHeaderFaucet={() => handleHeaderFaucet(userProfile, setUserProfile)}
-        voiceEnabled={voiceEnabled}
-        toggleVoice={toggleVoice}
-      />
+      {!isGameActive && (
+        <Header
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          setPreselectedGame={setPreselectedGame}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          userProfile={userProfile}
+          onHeaderFaucet={() => handleHeaderFaucet(userProfile, setUserProfile)}
+          voiceEnabled={voiceEnabled}
+          toggleVoice={toggleVoice}
+          totalUnread={totalUnread}
+        />
+      )}
 
       {/* Main viewport with Suspense boundary for lazy components */}
-      <main className="max-w-7xl mx-auto px-4 md:px-8 mt-10">
+      <main className={`max-w-7xl mx-auto px-4 md:px-8 ${isGameActive ? 'mt-4 md:mt-6' : 'mt-10'}`}>
         <Suspense fallback={<LoadingFallback />}>
           <motion.div
             key={activeTab}
@@ -215,6 +248,9 @@ export default function App() {
                 allProfiles={allProfiles}
                 theme={theme}
                 voiceEnabled={voiceEnabled}
+                handleToggleDeactivate={handleToggleDeactivate}
+                handleDeleteProfile={handleDeleteProfile}
+                onGameActiveChange={setIsGameActive}
               />
             )}
 
@@ -239,6 +275,23 @@ export default function App() {
                 setUserProfile={setUserProfile}
                 onAddTransaction={addTransaction}
               />
+            )}
+
+            {/* Chat View */}
+            {activeTab === 'chat' && (
+              <ChatTab 
+                userProfile={userProfile}
+                setUserProfile={setUserProfile}
+                allProfiles={allProfiles}
+                setActiveTab={setActiveTab}
+                setFriendChallenge={setFriendChallenge}
+                addTransaction={addTransaction}
+              />
+            )}
+
+            {/* Admin Dashboard Tab */}
+            {activeTab === 'admin' && userProfile?.email === 'devtonicllc@gmail.com' && (
+              <AdminTab />
             )}
           </motion.div>
         </Suspense>
