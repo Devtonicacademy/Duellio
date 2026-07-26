@@ -28,7 +28,7 @@ interface AuthEntrancePortalProps {
   onLoginSuccess: (user: UserProfile) => void;
   onRegisterSuccess: (user: UserProfile) => void;
   allProfiles: UserProfile[];
-  onAddProfile: (username: string, email: string, pass: string, avatar: string) => { success: boolean; message: string; user?: UserProfile };
+  onAddProfile: (username: string, email: string, pass: string, avatar: string) => Promise<{ success: boolean; message: string; user?: UserProfile }>;
 }
 
 export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({

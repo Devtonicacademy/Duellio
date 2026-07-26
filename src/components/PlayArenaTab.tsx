@@ -27,7 +27,7 @@ interface PlayArenaTabProps {
   userProfile: UserProfile;
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
   onLaunchMatch: (matchData: {
-    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft';
+    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
     opponentType: 'bot' | 'player';
     botDifficulty?: 'easy' | 'medium' | 'hard';
     entryFee: number;
@@ -82,6 +82,17 @@ const AVAILABLE_GAMES = [
     color: 'from-amber-500/10 to-orange-500/10 border-amber-500/20',
     image: '/assets/draft_bg.png',
     gradientBg: 'from-amber-500/30 via-orange-500/10 to-transparent'
+  },
+  {
+    id: 'TicTacToe' as const,
+    name: 'Cyber Tic-Tac-Toe Grid',
+    metric: '3x3 Holographic Matrix',
+    desc: 'Rapid tactical alignment duel. Command neon X and O nodes across an illuminated cybernetic grid. Features Minimax unbeatable bot AI, live move history feeds, and instant match stakes.',
+    icon: '/assets/tictactoe_icon.png',
+    difficultyRecommendation: 'Fast-Paced Strategy',
+    color: 'from-sky-500/10 to-indigo-500/10 border-sky-500/20',
+    image: '/assets/tictactoe_bg.png',
+    gradientBg: 'from-sky-500/30 via-indigo-500/10 to-transparent'
   }
 ];
 
@@ -91,7 +102,7 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
   onLaunchMatch,
   allProfiles
 }) => {
-  const [selectedGame, setSelectedGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | null>(null);
+  const [selectedGame, setSelectedGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | null>(null);
   const [opponentStyle, setOpponentStyle] = useState<'bot' | 'player'>('bot');
   const [botPlayMode, setBotPlayMode] = useState<'practice' | 'staked'>('staked');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');

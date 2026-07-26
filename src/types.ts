@@ -38,7 +38,7 @@ export interface ChatMessage {
   timestamp: string;
   isChallenge?: boolean;
   challengeId?: string;
-  gameType?: 'Chess' | 'Ludo' | 'Whot' | 'Draft';
+  gameType?: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
   entryFee?: number;
   challengeStatus?: 'pending' | 'accepted' | 'declined';
 }
@@ -48,7 +48,7 @@ export interface MatchChallenge {
   senderId: string;
   senderName: string;
   receiverId: string;
-  gameType: 'Whot' | 'Ludo' | 'Chess' | 'Draft';
+  gameType: 'Whot' | 'Ludo' | 'Chess' | 'Draft' | 'TicTacToe';
   entryFee: number;
   status: 'pending' | 'accepted' | 'declined' | 'completed';
   timestamp: string;
@@ -130,6 +130,18 @@ export interface DraftGameState {
   activePlayerId: string;
   status: 'playing' | 'completed';
   winnerId?: string;
+  turnTimer: number;
+  lastMoveMessage?: string;
+}
+
+export interface TicTacToeGameState {
+  sessionId: string;
+  playerIds: string[];
+  board: Array<'X' | 'O' | null>;
+  activePlayerId: string;
+  status: 'playing' | 'completed';
+  winnerId?: string | 'draw';
+  winningLine?: number[];
   turnTimer: number;
   lastMoveMessage?: string;
 }

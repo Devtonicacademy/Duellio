@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, WalletTransaction } from '../types';
 import { db, auth, signOut } from '../firebase';
 import { 
@@ -15,18 +15,15 @@ export function useProfiles() {
   const [allProfiles, setAllProfiles] = useState<UserProfile[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const lastSyncedProfileJsonRef = useRef<string | null>(null);
 
   // Sync users list from Firestore in real-time
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'users'), async (snapshot) => {
+    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
       const profilesList: UserProfile[] = [];
       snapshot.forEach((docSnap) => {
         const profile = docSnap.data() as UserProfile;
-        if (profile.uid && profile.uid.startsWith('bot_')) {
-          deleteDoc(doc(db, 'users', profile.uid)).catch(err =>
-            console.error("Failed to delete bot profile from Firestore:", err)
-          );
-        } else {
+        if (!profile.uid || !profile.uid.startsWith('bot_')) {
           profilesList.push(profile);
         }
       });
@@ -42,59 +39,78 @@ export function useProfiles() {
     let unsubscribeUserDoc: () => void = () => {};
 
     const unsubscribeAuth = auth.onAuthStateChanged(async (firebaseUser) => {
-      setAuthLoading(true);
       unsubscribeUserDoc();
 
       if (firebaseUser) {
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const snap = await getDoc(userDocRef);
+        try {
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const snap = await getDoc(userDocRef);
 
-        if (!snap.exists()) {
-          // Create a new Firestore document for newly authenticated users
-          const newProfile: UserProfile = {
-            uid: firebaseUser.uid,
-            username: firebaseUser.displayName || `Gamer_${firebaseUser.uid.substring(0, 5)}`,
-            email: firebaseUser.email || '',
-            avatar: firebaseUser.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
-            wins: 0,
-            losses: 0,
-            draws: 0,
-            coins: 1000,
-            status: 'online',
-            favorites: []
-          };
-          await setDoc(userDocRef, newProfile);
-          setUserProfile(newProfile);
-        } else {
-          setUserProfile(snap.data() as UserProfile);
-        }
-
-        // Live track changes on the current user's profile
-        unsubscribeUserDoc = onSnapshot(userDocRef, (docSnap) => {
-          if (docSnap.exists()) {
-            setUserProfile(docSnap.data() as UserProfile);
+          let activeProfile: UserProfile;
+          if (!snap.exists()) {
+            // Create a new Firestore document for newly authenticated users
+            activeProfile = {
+              uid: firebaseUser.uid,
+              username: firebaseUser.displayName || `Gamer_${firebaseUser.uid.substring(0, 5)}`,
+              email: firebaseUser.email || '',
+              avatar: firebaseUser.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+              wins: 0,
+              losses: 0,
+              draws: 0,
+              coins: 1000,
+              status: 'online',
+              favorites: []
+            };
+            await setDoc(userDocRef, activeProfile);
+          } else {
+            activeProfile = snap.data() as UserProfile;
           }
-        });
 
-        localStorage.setItem('duellio-current-user-uid', firebaseUser.uid);
-      } else {
-        setUserProfile(null);
-        localStorage.setItem('duellio-current-user-uid', 'none');
+          const jsonStr = JSON.stringify(activeProfile);
+          lastSyncedProfileJsonRef.current = jsonStr;
+          setUserProfile(activeProfile);
+
+          // Live track changes on the current user's profile
+          unsubscribeUserDoc = onSnapshot(userDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data() as UserProfile;
+              const newJson = JSON.stringify(data);
+              if (newJson !== lastSyncedProfileJsonRef.current) {
+                lastSyncedProfileJsonRef.current = newJson;
+                setUserProfile(data);
+              }
+            }
+          });
+
+          localStorage.setItem('duellio-current-user-uid', firebaseUser.uid);
+        } catch (e) {
+          console.error("Error fetching user profile from Firestore:", e);
+        }
       }
       setAuthLoading(false);
     });
 
+    // Safety fallback: ensure authLoading is turned off after 1s max to prevent infinite spinner
+    const timeout = setTimeout(() => {
+      setAuthLoading(false);
+    }, 1000);
+
     return () => {
+      clearTimeout(timeout);
       unsubscribeAuth();
       unsubscribeUserDoc();
     };
   }, []);
 
-  // Sync profile edits (e.g. status updates) back to Firestore
+  // Sync profile edits (e.g. status updates) back to Firestore safely
   useEffect(() => {
     if (userProfile && auth.currentUser) {
-      const updateRef = doc(db, 'users', userProfile.uid);
-      updateDoc(updateRef, { ...userProfile }).catch(err => console.error("Firestore user sync error:", err));
+      const currentJson = JSON.stringify(userProfile);
+      if (currentJson !== lastSyncedProfileJsonRef.current) {
+        lastSyncedProfileJsonRef.current = currentJson;
+        const updateRef = doc(db, 'users', userProfile.uid);
+        updateDoc(updateRef, { ...userProfile }).catch(err => console.error("Firestore user sync error:", err));
+      }
     }
   }, [userProfile]);
 

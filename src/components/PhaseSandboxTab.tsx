@@ -31,6 +31,7 @@ import { INITIAL_CHAT, getRandomBotResponse } from '../data/simulation';
 import { InteractiveLudoBoard } from './InteractiveLudoBoard';
 import { InteractiveChessBoard } from './InteractiveChessBoard';
 import { InteractiveDraftBoard } from './InteractiveDraftBoard';
+import { InteractiveTicTacToeBoard } from './InteractiveTicTacToeBoard';
 import { db } from '../firebase';
 import { doc, setDoc, increment, updateDoc, onSnapshot, collection, query, where, getDoc } from 'firebase/firestore';
 
@@ -39,12 +40,12 @@ interface PhaseSandboxTabProps {
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
   transactions: WalletTransaction[];
   setTransactions: React.Dispatch<React.SetStateAction<WalletTransaction[]>>;
-  preselectedGame?: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | null;
-  setPreselectedGame?: React.Dispatch<React.SetStateAction<'Chess' | 'Ludo' | 'Whot' | 'Draft' | null>>;
+  preselectedGame?: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | null;
+  setPreselectedGame?: React.Dispatch<React.SetStateAction<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | null>>;
   suggestedStake?: number;
   friendChallenge?: {
     senderName: string;
-    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft';
+    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
     entryFee: number;
     opponentType?: 'bot' | 'player';
     botDifficulty?: 'easy' | 'medium' | 'hard';
@@ -54,7 +55,7 @@ interface PhaseSandboxTabProps {
   } | null;
   setFriendChallenge?: React.Dispatch<React.SetStateAction<{
     senderName: string;
-    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft';
+    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
     entryFee: number;
     opponentType?: 'bot' | 'player';
     botDifficulty?: 'easy' | 'medium' | 'hard';
@@ -198,7 +199,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const [onlineBots, setOnlineBots] = useState<UserProfile[]>(() => otherUsers);
   
   // Custom Friend Challenge state parameters
-  const [friendGame, setFriendGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft'>('Chess');
+  const [friendGame, setFriendGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe'>('Chess');
   const [friendStake, setFriendStake] = useState<number>(300);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
@@ -206,7 +207,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const [activeChallenge, setActiveChallenge] = useState<MatchChallenge | null>(null);
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [selectedBot, setSelectedBot] = useState<UserProfile | null>(() => otherUsers[0] || null);
-  const [gameType, setGameType] = useState<'Whot' | 'Ludo' | 'Chess' | 'Draft'>('Chess');
+  const [gameType, setGameType] = useState<'Whot' | 'Ludo' | 'Chess' | 'Draft' | 'TicTacToe'>('Chess');
   const [entryFee, setEntryFee] = useState<number>(300);
 
   // Notification alert state for semi last card, last card, checkup
@@ -487,6 +488,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           activeSuit: starterCard.suit as any,
           activePlayerId: startPlayerId,
           status: 'playing',
+          turnTimer: 30,
           penaltyCount: 0,
           lastActionMessage: isHumanTurn
             ? `Friend Challenge started! Top card is ${starterCard.suit} ${starterCard.value}. Lead Developer's turn.`
@@ -2158,7 +2160,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
               <div className="flex justify-between text-neutral-400">
                 <span>State Node:</span>
                 <span className="px-1.5 py-0.5 rounded-md bg-neutral-800 text-[10px] text-amber-300 font-bold animate-pulse">
-                  {gamePlayStatus.toUpperCase()}
+                  {(gamePlayStatus as string).toUpperCase()}
                 </span>
               </div>
             </div>
@@ -2285,8 +2287,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                     {/* Select Game base */}
                     <div className="space-y-1.5">
                       <label className="text-[10px] text-neutral-450 font-mono font-bold uppercase tracking-wider">Configure Arena Option</label>
-                      <div className="grid grid-cols-4 gap-1.5 font-sans">
-                        {(['Chess', 'Ludo', 'Whot', 'Draft'] as const).map((game) => (
+                      <div className="grid grid-cols-5 gap-1 font-sans">
+                        {(['Chess', 'Ludo', 'Whot', 'Draft', 'TicTacToe'] as const).map((game) => (
                           <button
                             key={game}
                             onClick={() => setFriendGame(game)}
@@ -3273,6 +3275,15 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
               />
+            ) : activeChallenge?.gameType === 'TicTacToe' ? (
+              <InteractiveTicTacToeBoard
+                entryFee={activeChallenge.entryFee}
+                opponentName={opponentProfile?.username || 'Bot'}
+                opponentAvatar={opponentProfile?.avatar || ''}
+                onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
+                onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
+                botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
+              />
             ) : (
               <InteractiveChessBoard
                 entryFee={activeChallenge.entryFee}
@@ -3362,8 +3373,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs text-neutral-550 font-mono font-semibold">Select Game Base</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {(['Whot', 'Ludo', 'Chess', 'Draft'] as const).map((g) => (
+                <div className="grid grid-cols-5 gap-1.5">
+                  {(['Whot', 'Ludo', 'Chess', 'Draft', 'TicTacToe'] as const).map((g) => (
                     <button
                       key={g}
                       onClick={() => setGameType(g)}

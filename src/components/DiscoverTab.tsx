@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 interface DiscoverTabProps {
-  onSelectGame: (gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft', suggestedStake: number) => void;
+  onSelectGame: (gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe', suggestedStake: number) => void;
   userCoins: number;
 }
 
@@ -27,7 +27,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
   const [activeCategory, setActiveTab] = useState<'all' | 'strategy' | 'classic' | 'fast' | 'high'>('all');
   const [searchInput, setSearchInput] = useState('');
   const [quickStake, setQuickStake] = useState<number>(250);
-  const [selectedQuickGame, setSelectedQuickGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft'>('Chess');
+  const [selectedQuickGame, setSelectedQuickGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe'>('Chess');
 
   const featuredGames = [
     {
@@ -85,6 +85,20 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
       tags: ['STRATEGY', 'DRAFT'],
       image: '/assets/draft_bg.png',
       isFeatured: false
+    },
+    {
+      id: 'cyber-tictactoe',
+      title: 'Cyber Tic-Tac-Toe',
+      gameType: 'TicTacToe' as const,
+      category: 'fast',
+      stakeMin: 5,
+      stakeMax: 300,
+      totalStaked: 5400,
+      playersLive: '2.1k Live',
+      rating: 4.9,
+      tags: ['RAPID DUEL', 'TIC-TAC-TOE'],
+      image: '/assets/tictactoe_bg.png',
+      isFeatured: true
     }
   ];
 
@@ -203,8 +217,8 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
           </div>
 
           <div className="space-y-3">
-            <div className="grid grid-cols-4 gap-1.5 p-1 bg-white/5 rounded-xl border border-white/5 text-[10px] font-mono font-bold">
-              {(['Chess', 'Ludo', 'Whot', 'Draft'] as const).map(g => (
+            <div className="grid grid-cols-5 gap-1 p-1 bg-white/5 rounded-xl border border-white/5 text-[10px] font-mono font-bold">
+              {(['Chess', 'Ludo', 'Whot', 'Draft', 'TicTacToe'] as const).map(g => (
                 <button
                   key={g}
                   onClick={() => setSelectedQuickGame(g)}

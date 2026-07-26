@@ -17,7 +17,7 @@ export function useWallet(userProfile: UserProfile | null) {
 
   // Sync transactions from Firestore in real-time
   useEffect(() => {
-    if (!userProfile) {
+    if (!userProfile?.uid) {
       setTransactions([]);
       return;
     }
@@ -34,7 +34,7 @@ export function useWallet(userProfile: UserProfile | null) {
       setTransactions(txList.sort((a, b) => b.id.localeCompare(a.id)));
     });
     return () => unsubscribe();
-  }, [userProfile]);
+  }, [userProfile?.uid]);
 
   const handleHeaderFaucet = async (
     user: UserProfile | null,

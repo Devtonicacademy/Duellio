@@ -28,9 +28,9 @@ interface ProfileTabProps {
   userProfile: UserProfile;
   transactions: WalletTransaction[];
   onLogout: () => void;
-  onChangePassword: (currentPass: string, newPass: string) => { success: boolean; message: string };
+  onChangePassword: (currentPass: string, newPass: string) => Promise<{ success: boolean; message: string }>;
   onDeleteProfile: (uid: string) => void;
-  onAddProfile: (username: string, email: string, pass: string, avatar: string) => { success: boolean; message: string; user?: UserProfile };
+  onAddProfile: (username: string, email: string, pass: string, avatar: string) => Promise<{ success: boolean; message: string; user?: UserProfile }>;
   onSwitchProfile: (uid: string) => void;
   allProfiles: UserProfile[];
 }
@@ -77,7 +77,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       revUnsub();
       txUnsub();
     };
-  }, [userProfile]);
+  }, [userProfile?.email]);
   const [newPass, setNewPass] = useState('');
   const [confirmNewPass, setConfirmNewPass] = useState('');
   const [showPassState, setShowPassState] = useState<{ current: boolean; new: boolean; confirm: boolean }>({
@@ -104,7 +104,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80'
   ];
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setPwdMsg(null);
 
@@ -123,7 +123,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       return;
     }
 
-    const res = onChangePassword(currentPass, newPass);
+    const res = await onChangePassword(currentPass, newPass);
     if (res.success) {
       setPwdMsg({ type: 'success', text: res.message });
       setCurrentPass('');
@@ -134,7 +134,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     }
   };
 
-  const handleCreateProfile = (e: React.FormEvent) => {
+  const handleCreateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegMsg(null);
 
@@ -148,7 +148,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       return;
     }
 
-    const res = onAddProfile(regUsername, regEmail, regPass, regSelectedAvatar);
+    const res = await onAddProfile(regUsername, regEmail, regPass, regSelectedAvatar);
     if (res.success) {
       setRegMsg({ type: 'success', text: 'Profile created with 1,000 Coins starting gift! Swapping sessions...' });
       setTimeout(() => {

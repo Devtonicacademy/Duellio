@@ -107,7 +107,7 @@ export default function App() {
   const [totalUnread, setTotalUnread] = useState(0);
 
   useEffect(() => {
-    if (!userProfile) {
+    if (!userProfile?.uid) {
       setTotalUnread(0);
       return;
     }
@@ -126,7 +126,7 @@ export default function App() {
     });
 
     return () => unsubscribe();
-  }, [userProfile]);
+  }, [userProfile?.uid]);
 
   // Direct card-to-matchmaker connector
   const handleSelectGameFromDiscover = (gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft', stake: number) => {

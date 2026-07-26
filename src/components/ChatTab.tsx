@@ -148,7 +148,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     });
 
     return () => unsubscribe();
-  }, [userProfile]);
+  }, [userProfile?.uid]);
 
   // Listen to Game Group chats metadata to track latest message timestamps
   useEffect(() => {
@@ -442,7 +442,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
 
       setFriendChallenge({
         senderName: activeChat.name,
-        gameType: msg.gameType,
+        gameType: msg.gameType as any,
         entryFee: msg.entryFee,
         opponentType: 'player'
       });
@@ -802,7 +802,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                       status: item.profile.status,
                       wins: item.profile.wins,
                       coins: item.profile.coins,
-                      rawProfile: item.profile
+                      rawProfile: item.profile as UserProfile
                     })}
                     className={`group relative flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer select-none ${
                       isSelected
