@@ -118,9 +118,12 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
   // Hard: Stake * 3.5 payout (high difficulty high reward!)
   const getMultiplier = () => {
     if (opponentStyle === 'player') return 1.0;
-    if (difficulty === 'easy') return 1.0;
-    if (difficulty === 'medium') return 1.5;
-    return 2.5;
+    if (botPlayMode === 'practice') {
+      if (difficulty === 'easy') return 1.0;
+      if (difficulty === 'medium') return 1.5;
+      return 2.5;
+    }
+    return 1.0; // Standard 1.0 multiplier for staked bot games
   };
 
   const selectedOpponent = onlinePlayers.find(p => p.uid === selectedPlayerUid) || onlinePlayers[0];
@@ -139,7 +142,7 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
     const { origin, pathname } = window.location;
     const multiplier = isPractice ? 0 : getMultiplier();
     const opponentName = opponentStyle === 'bot' 
-      ? `Nebula_AI (${difficulty.toUpperCase()})${isPractice ? ' [PRACTICE]' : ''}` 
+      ? (isPractice ? `Nebula_AI (${difficulty.toUpperCase()}) [PRACTICE]` : 'Nebula_AI') 
       : (selectedOpponent?.username || 'Challenger');
 
     let sessionId: string | undefined = undefined;
@@ -454,61 +457,52 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
 
             {/* ── Bot Difficulty / Player Selection ── */}
             {opponentStyle === 'bot' ? (
-              <div className="space-y-2.5 animate-fade-in bg-purple-500/[0.03] border border-purple-500/10 p-3 sm:p-4 rounded-2xl">
-                <div className="flex justify-between items-center gap-2">
-                  <label className="text-[10px] font-mono font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1 shrink-0">
-                    <Brain className="w-3.5 h-3.5" />
-                    Difficulty
-                  </label>
-                  <span className="bg-purple-500/20 text-purple-350 font-mono text-[9px] px-2 py-0.5 rounded-md font-bold uppercase whitespace-nowrap">
-                    Multipliers
-                  </span>
+              botPlayMode === 'practice' && (
+                <div className="space-y-2.5 animate-fade-in bg-purple-500/[0.03] border border-purple-500/10 p-3 sm:p-4 rounded-2xl">
+                  <div className="flex justify-between items-center gap-2">
+                    <label className="text-[10px] font-mono font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1 shrink-0">
+                      <Brain className="w-3.5 h-3.5" />
+                      Difficulty
+                    </label>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2 font-sans">
+                    <button
+                      type="button"
+                      onClick={() => setDifficulty('easy')}
+                      className={`py-2 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                        difficulty === 'easy'
+                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                          : 'bg-neutral-900/60 border-transparent text-neutral-400 hover:bg-neutral-850 hover:text-neutral-200'
+                      }`}
+                    >
+                      <span className="text-[11px] sm:text-xs font-bold font-display">Easy</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDifficulty('medium')}
+                      className={`py-2 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                        difficulty === 'medium'
+                          ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                          : 'bg-neutral-900/60 border-transparent text-neutral-400 hover:bg-neutral-850 hover:text-neutral-200'
+                      }`}
+                    >
+                      <span className="text-[11px] sm:text-xs font-bold font-display">Medium</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDifficulty('hard')}
+                      className={`py-2 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                        difficulty === 'hard'
+                          ? 'bg-rose-500/15 border-rose-500/45 text-rose-305'
+                          : 'bg-neutral-900/60 border-transparent text-neutral-400 hover:bg-neutral-850 hover:text-neutral-200'
+                      }`}
+                    >
+                      <span className="text-[11px] sm:text-xs font-bold font-display">Hard</span>
+                    </button>
+                  </div>
                 </div>
-                
-                <div className="grid grid-cols-3 gap-2 font-sans">
-                  <button
-                    type="button"
-                    onClick={() => setDifficulty('easy')}
-                    className={`py-2.5 px-1 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
-                      difficulty === 'easy'
-                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                        : 'bg-neutral-900/60 border-transparent text-neutral-400 hover:bg-neutral-850 hover:text-neutral-200'
-                    }`}
-                  >
-                    <span className="text-[11px] sm:text-xs font-bold font-display">Easy</span>
-                    <span className="text-[8px] sm:text-[9px] font-mono font-bold opacity-80">1.0x</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDifficulty('medium')}
-                    className={`py-2.5 px-1 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
-                      difficulty === 'medium'
-                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
-                        : 'bg-neutral-900/60 border-transparent text-neutral-400 hover:bg-neutral-850 hover:text-neutral-200'
-                    }`}
-                  >
-                    <span className="text-[11px] sm:text-xs font-bold font-display">Medium</span>
-                    <span className="text-[8px] sm:text-[9px] font-mono font-bold opacity-80">1.5x</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDifficulty('hard')}
-                    className={`py-2.5 px-1 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
-                      difficulty === 'hard'
-                        ? 'bg-rose-500/15 border-rose-500/45 text-rose-305'
-                        : 'bg-neutral-900/60 border-transparent text-neutral-400 hover:bg-neutral-850 hover:text-neutral-200'
-                    }`}
-                  >
-                    <span className="text-[11px] sm:text-xs font-bold font-display">Hard</span>
-                    <span className="text-[8px] sm:text-[9px] font-mono font-bold opacity-80">2.5x</span>
-                  </button>
-                </div>
-
-                <p className="text-[10px] text-neutral-400 leading-normal flex items-start gap-1">
-                  <span>💡</span>
-                  <span>Higher difficulty = higher stake multiplier on win.</span>
-                </p>
-              </div>
+              )
             ) : (
               <div className="space-y-3 animate-fade-in bg-cyan-500/[0.03] border border-cyan-500/10 p-3 sm:p-4 rounded-2xl">
                 <label className="text-[10px] font-mono font-bold text-cyan-300 uppercase tracking-wider block">
@@ -627,17 +621,10 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
                 </span>
               </div>
 
-              {opponentStyle === 'bot' && botPlayMode === 'staked' && (
-                <div className="flex justify-between items-center text-[11px] sm:text-xs border-b border-dashed border-white/[0.06] pb-2">
-                  <span className="text-purple-355">Multiplier</span>
-                  <span className="text-purple-300 font-mono font-bold">×{getMultiplier().toFixed(1)}</span>
-                </div>
-              )}
-
               <div className="flex justify-between items-center pt-1 border-t border-white/[0.04]">
                 <strong className="text-white font-black font-display uppercase text-[10px] sm:text-xs tracking-tight">Win Payout</strong>
                 <strong className="text-emerald-400 font-mono font-bold text-sm sm:text-base">
-                  +{opponentStyle === 'bot' && botPlayMode === 'practice' ? 0 : Math.floor(stake * (1 + getMultiplier()))}c
+                  +{opponentStyle === 'bot' && botPlayMode === 'practice' ? 0 : stake * 2}c
                 </strong>
               </div>
             </div>

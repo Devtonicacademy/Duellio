@@ -83,7 +83,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
       const botMoveIndex = TicTacToeLogicService.getBotMove(
         gameState.board,
         'O',
-        botDifficulty
+        (botDifficulty || 'medium') as 'easy' | 'medium' | 'hard'
       );
 
       if (botMoveIndex === -1) {

@@ -1125,27 +1125,27 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
   const renderChatPanelContent = () => {
     return (
-      <div className="flex-1 flex flex-col bg-neutral-900 overflow-hidden h-full">
-        <div className="flex-1 p-4 overflow-y-auto space-y-3.5">
+      <div className="flex-1 flex flex-col bg-black/30 backdrop-blur-md overflow-hidden h-full">
+        <div className="flex-1 p-4 overflow-y-auto space-y-4">
           {chatMessages.map((msg) => {
             const isMe = msg.senderId === userProfile.uid;
             return (
-              <div key={msg.id} className={`flex items-start gap-2.5 ${isMe ? 'flex-row-reverse' : ''}`}>
+              <div key={msg.id} className={`flex items-start gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
                 <img 
                   src={msg.senderAvatar} 
                   alt={msg.senderName} 
-                  className="w-8 h-8 rounded-full object-cover border border-neutral-800"
+                  className="w-9 h-9 rounded-full object-cover border border-white/15 shadow-md"
                   referrerPolicy="no-referrer"
                 />
-                <div className="max-w-[70%] space-y-1">
-                  <div className={`flex items-baseline gap-2 text-[10px] text-neutral-550 ${isMe ? 'flex-row-reverse' : ''}`}>
-                    <span className="font-semibold text-neutral-350">{msg.senderName}</span>
+                <div className="max-w-[75%] space-y-1">
+                  <div className={`flex items-baseline gap-2 text-[10px] text-neutral-400 font-mono ${isMe ? 'flex-row-reverse' : ''}`}>
+                    <span className="font-bold text-neutral-300">{msg.senderName}</span>
                     <span>{msg.timestamp}</span>
                   </div>
-                  <div className={`p-3 rounded-2xl text-xs leading-relaxed ${
+                  <div className={`p-3.5 rounded-2xl text-xs leading-relaxed font-sans shadow-md ${
                     isMe 
-                      ? 'bg-amber-400 text-neutral-950 font-medium rounded-tr-none' 
-                      : 'bg-neutral-800 text-neutral-100 rounded-tl-none border border-neutral-700/50'
+                      ? 'bg-purple-350 text-neutral-950 font-bold rounded-tr-none shadow-[0_0_15px_rgba(235,211,255,0.15)]' 
+                      : 'bg-white/5 text-neutral-100 rounded-tl-none border border-white/10 backdrop-blur-md'
                   }`}>
                     {msg.text}
                   </div>
@@ -1155,8 +1155,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           })}
           
           {isTyping && (
-            <div className="flex items-center gap-2 text-xs text-neutral-550 font-mono pl-3.5">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse animate-ping" />
+            <div className="flex items-center gap-2 text-xs text-purple-300 font-mono pl-3.5 animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping" />
               <span>{typingBot} is typing...</span>
             </div>
           )}
@@ -1164,30 +1164,30 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         </div>
 
         {/* Emoji Selector Bar */}
-        <div className="px-3 py-1.5 bg-neutral-920 border-t border-neutral-800 flex flex-wrap gap-1.5 justify-start select-none">
+        <div className="px-4 py-2 bg-black/40 border-t border-white/10 flex flex-wrap gap-1.5 justify-start select-none backdrop-blur-md">
           {['😂', '😮', '👑', '🔥', '💀', '🧠', '🃏', '♟️', '🎲', '👍', '🎉', '💪'].map((emoji) => (
             <button
               key={emoji}
               type="button"
               onClick={() => setInputMessage(prev => prev + emoji)}
-              className="p-1 px-1.5 text-xs rounded-lg hover:bg-neutral-800 hover:text-white transition-colors cursor-pointer select-none active:scale-90"
+              className="p-1 px-2 text-xs rounded-xl bg-white/5 border border-white/5 hover:border-purple-500/30 hover:bg-white/10 hover:text-white transition-all cursor-pointer select-none active:scale-90"
             >
               {emoji}
             </button>
           ))}
         </div>
 
-        <form onSubmit={handleSendMessage} className="p-3 bg-neutral-920 border-t border-neutral-800 flex gap-2">
+        <form onSubmit={handleSendMessage} className="p-3.5 bg-black/60 border-t border-white/10 flex gap-2.5 backdrop-blur-md">
           <input
             type="text"
             value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Send a message..."
-            className="flex-1 bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-2 text-xs font-sans text-white outline-hidden focus:border-neutral-700"
+            onChange={(e) => setSearchInput ? setInputMessage(e.target.value) : setInputMessage(e.target.value)}
+            placeholder="Type your message in lobby chat..."
+            className="flex-1 bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-2xl px-4 py-2.5 text-xs font-sans text-white placeholder:text-neutral-500 outline-none transition-all backdrop-blur-md"
           />
           <button
             type="submit"
-            className="p-2.5 bg-amber-400 hover:bg-amber-500 text-neutral-950 rounded-xl cursor-pointer font-bold transition-all"
+            className="px-4 py-2.5 bg-purple-350 hover:bg-purple-300 text-neutral-950 rounded-2xl cursor-pointer font-extrabold transition-all shadow-[0_0_15px_rgba(235,211,255,0.2)] hover:scale-105 active:scale-95 flex items-center justify-center"
           >
             <Send className="w-4 h-4" />
           </button>
@@ -2046,75 +2046,79 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       {/* Profile Sidebar */}
       {gamePlayStatus === 'none' && (
         <div className="lg:col-span-1 space-y-4">
-        <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800 shadow-md flex flex-col items-center text-center space-y-4">
+        <div className="glass-card p-6 rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center text-center space-y-4 relative overflow-hidden backdrop-blur-xl group hover:border-purple-500/30 transition-all">
+          <div className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-purple-500/15 via-purple-500/5 to-transparent pointer-events-none" />
+
           <div className="relative">
             <img 
               src={userProfile.avatar} 
               alt={userProfile.username} 
-              className="w-16 h-16 rounded-full ring-2 ring-amber-400/55 object-cover"
+              className="w-20 h-20 rounded-full ring-2 ring-purple-400/60 shadow-[0_0_20px_rgba(168,85,247,0.35)] object-cover group-hover:scale-105 transition-transform duration-300"
               referrerPolicy="no-referrer"
             />
-            <span className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-neutral-900 animate-pulse" />
+            <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-[#070709] shadow-[0_0_10px_rgba(52,211,153,0.8)] animate-pulse" />
           </div>
           <div>
-            <h3 className="font-sans font-semibold text-sm text-neutral-100">{userProfile.username}</h3>
-            <span className="text-[9px] font-mono text-neutral-400 px-2 py-0.5 bg-neutral-800 rounded-full">presence: {userProfile.status}</span>
+            <h3 className="font-display font-extrabold text-base text-white tracking-tight">{userProfile.username}</h3>
+            <span className="text-[9px] font-mono font-bold text-purple-300 px-3 py-0.5 bg-purple-500/15 border border-purple-500/30 rounded-full uppercase tracking-wider mt-1 inline-block">
+              ● {userProfile.status}
+            </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-1 w-full border-t border-b border-neutral-800 py-3 text-xs">
-            <div>
-              <span className="block font-sans font-medium text-neutral-200">{userProfile.wins}</span>
-              <span className="text-[10px] text-neutral-500 uppercase font-mono">Wins</span>
+          <div className="grid grid-cols-3 gap-2 w-full border-y border-white/10 py-3.5 text-xs font-mono">
+            <div className="bg-emerald-500/10 border border-emerald-500/20 py-2 rounded-xl">
+              <span className="block font-bold text-emerald-400 text-sm">{userProfile.wins}</span>
+              <span className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider">Wins</span>
             </div>
-            <div>
-              <span className="block font-sans font-medium text-neutral-200">{userProfile.losses}</span>
-              <span className="text-[10px] text-neutral-500 uppercase font-mono font-medium">Loss</span>
+            <div className="bg-rose-500/10 border border-rose-500/20 py-2 rounded-xl">
+              <span className="block font-bold text-rose-400 text-sm">{userProfile.losses}</span>
+              <span className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider">Loss</span>
             </div>
-            <div>
-              <span className="block font-sans font-medium text-neutral-200">{userProfile.draws}</span>
-              <span className="text-[10px] text-neutral-500 uppercase font-mono font-medium">Draws</span>
+            <div className="bg-amber-500/10 border border-amber-500/20 py-2 rounded-xl">
+              <span className="block font-bold text-amber-400 text-sm">{userProfile.draws}</span>
+              <span className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider">Draws</span>
             </div>
           </div>
 
-          <div className="w-full flex items-center justify-between bg-neutral-920 px-3 py-2.5 rounded-xl border border-neutral-800">
-            <div className="flex items-center gap-1.5 text-xs text-neutral-300">
-              <Wallet className="w-4 h-4 text-emerald-400 animate-pulse" />
-              <span className="font-semibold text-emerald-400">Wallet Coins</span>
+          <div className="w-full flex items-center justify-between bg-black/40 px-4 py-3 rounded-2xl border border-white/10 backdrop-blur-md">
+            <div className="flex items-center gap-2 text-xs text-neutral-300">
+              <Wallet className="w-4 h-4 text-purple-400 animate-pulse" />
+              <span className="font-bold font-display uppercase tracking-wider text-[11px] text-purple-300">Wallet Coins</span>
             </div>
-            <span className="font-mono text-sm font-bold text-neutral-100">{userProfile.coins}</span>
+            <span className="font-mono text-base font-extrabold text-white tracking-tight">{userProfile.coins.toLocaleString()}</span>
           </div>
 
           <button
             onClick={handleFountainCredit}
-            className="w-full text-xs font-mono py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-lg transition-all cursor-pointer font-bold select-none shadow-md shadow-emerald-950/20"
+            className="w-full text-xs font-display py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-neutral-950 rounded-xl transition-all cursor-pointer font-black select-none shadow-[0_0_20px_rgba(16,185,129,0.25)] hover:scale-[1.02] active:scale-[0.98] uppercase tracking-wider flex items-center justify-center gap-1.5"
           >
-            Faucet: Claim +1000 Coins
+            <span>Claim +1,000 Free Coins</span>
           </button>
         </div>
 
         {/* Challenge match info widget */}
         {gamePlayStatus !== 'none' && (
-          <div className="bg-neutral-950 p-5 rounded-2xl text-white border border-neutral-800 shadow-md space-y-3 font-mono text-xs">
+          <div className="glass-card p-5 rounded-3xl text-white border border-purple-500/30 shadow-2xl space-y-3 font-mono text-xs backdrop-blur-xl">
             <div className="flex items-center gap-2">
-              <Swords className="w-4 h-4 text-amber-500 animate-pulse" />
-              <h4 className="text-xs font-medium text-amber-400">Escrow Match State</h4>
+              <Swords className="w-4 h-4 text-purple-400 animate-pulse" />
+              <h4 className="text-xs font-bold text-purple-300 font-display uppercase tracking-wider">Escrow Match State</h4>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <div className="flex justify-between text-neutral-400">
                 <span>Opponent:</span>
-                <span className="font-medium text-neutral-250">
+                <span className="font-bold text-white">
                   {activeChallenge?.senderId === userProfile.uid ? selectedBot?.username : activeChallenge?.senderName}
                 </span>
               </div>
               <div className="flex justify-between text-neutral-400">
                 <span>Staking Pool:</span>
-                <span className="font-medium text-emerald-400 font-bold">
+                <span className="font-bold text-emerald-400">
                   {Math.floor((activeChallenge?.entryFee || 300) * (1 + (activeChallenge?.rewardMultiplier !== undefined ? activeChallenge.rewardMultiplier : 1.0)))} Units
                 </span>
               </div>
-              <div className="flex justify-between text-neutral-400">
+              <div className="flex justify-between text-neutral-400 items-center">
                 <span>State Node:</span>
-                <span className="px-1.5 py-0.5 rounded-md bg-neutral-800 text-[10px] text-amber-300 font-bold animate-pulse">
+                <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-[10px] text-purple-300 font-bold border border-purple-500/30 uppercase tracking-wider animate-pulse">
                   {(gamePlayStatus as string).toUpperCase()}
                 </span>
               </div>
@@ -2129,57 +2133,63 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         
         {/* If no match is running, show lobby panels */}
         {gamePlayStatus === 'none' ? (
-          <div className="bg-neutral-900 rounded-2xl border border-neutral-800 shadow-xl flex flex-col h-[490px] overflow-hidden">
-            <div className="flex justify-between items-center px-4 py-3 bg-neutral-920 border-b border-neutral-800">
-              <div className="flex gap-2">
+          <div className="glass-card rounded-3xl border border-white/10 shadow-2xl flex flex-col h-[530px] overflow-hidden backdrop-blur-xl">
+            <div className="flex justify-between items-center px-4 py-3.5 bg-neutral-950/80 border-b border-white/10 gap-2 overflow-x-auto">
+              <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setActiveTab('chat')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all flex items-center gap-1.5 cursor-pointer font-medium ${
-                    activeTab === 'chat' ? 'bg-amber-400 text-neutral-950 font-bold' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800'
+                  className={`px-4 py-2 rounded-xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold ${
+                    activeTab === 'chat' ? 'bg-purple-350 text-neutral-950 shadow-[0_0_15px_rgba(235,211,255,0.25)]' : 'text-neutral-300 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <Send className="w-3.5 h-3.5" />
-                  Lobby Chat
+                  <span>Lobby Chat</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('wallet')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all flex items-center gap-1.5 cursor-pointer font-medium ${
-                    activeTab === 'wallet' ? 'bg-amber-400 text-neutral-950 font-bold' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800'
+                  className={`px-4 py-2 rounded-xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold ${
+                    activeTab === 'wallet' ? 'bg-purple-350 text-neutral-950 shadow-[0_0_15px_rgba(235,211,255,0.25)]' : 'text-neutral-300 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <Wallet className="w-3.5 h-3.5" />
-                  Wallet Ledger
+                  <span>Wallet Ledger</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('presence')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all flex items-center gap-1.5 cursor-pointer font-medium ${
-                    activeTab === 'presence' ? 'bg-amber-400 text-neutral-950 font-bold' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800'
+                  className={`px-4 py-2 rounded-xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold ${
+                    activeTab === 'presence' ? 'bg-purple-350 text-neutral-950 shadow-[0_0_15px_rgba(235,211,255,0.25)]' : 'text-neutral-300 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <Users className="w-3.5 h-3.5" />
-                  Online Challengers ({onlineBots.filter(b => b.status === 'online').length})
+                  <span>Challengers</span>
+                  <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 text-[10px] font-mono rounded-full border border-purple-500/30">
+                    {onlineBots.filter(b => b.status === 'online').length}
+                  </span>
                 </button>
                 <button
                   onClick={() => setActiveTab('settings')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all flex items-center gap-1.5 cursor-pointer font-medium ${
-                    activeTab === 'settings' ? 'bg-amber-400 text-neutral-950 font-bold' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800'
+                  className={`px-4 py-2 rounded-xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold ${
+                    activeTab === 'settings' ? 'bg-purple-350 text-neutral-950 shadow-[0_0_15px_rgba(235,211,255,0.25)]' : 'text-neutral-300 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  👑 Admin Settings
+                  <span>👑 Admin Settings</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('active-sessions')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all flex items-center gap-1.5 cursor-pointer font-medium ${
-                    activeTab === 'active-sessions' ? 'bg-amber-400 text-neutral-950 font-bold' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800'
+                  className={`px-4 py-2 rounded-xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold ${
+                    activeTab === 'active-sessions' ? 'bg-purple-350 text-neutral-950 shadow-[0_0_15px_rgba(235,211,255,0.25)]' : 'text-neutral-300 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <Swords className="w-3.5 h-3.5" />
-                  Active Duels ({activeSessions.length})
+                  <span>Active Duels</span>
+                  <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 text-[10px] font-mono rounded-full border border-purple-500/30">
+                    {activeSessions.length}
+                  </span>
                 </button>
               </div>
-              <div className="flex items-center gap-1 text-[10px] font-mono text-neutral-400 bg-neutral-900 px-2.5 py-1 rounded-md border border-neutral-800">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Lobby Live Server</span>
+              <div className="flex items-center gap-1.5 text-[10px] font-mono text-neutral-300 bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 shrink-0">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span className="font-bold">LOBBY ENCRYPTED</span>
               </div>
             </div>
             {/* Lobby messages sub-tab */}
@@ -2187,13 +2197,13 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
             {/* Wallet sub-tab */}
             {activeTab === 'wallet' && (
-              <div className="flex-1 p-4 overflow-y-auto bg-neutral-920/40">
-                <div className="space-y-2">
+              <div className="flex-1 p-5 overflow-y-auto bg-black/20">
+                <div className="space-y-3">
                   {transactions.map((tx) => (
-                    <div key={tx.id} className="bg-neutral-900 p-3.5 rounded-xl border border-neutral-800 shadow-sm flex justify-between items-center">
+                    <div key={tx.id} className="glass-card p-4 rounded-2xl border border-white/10 hover:border-purple-500/30 transition-all flex justify-between items-center">
                       <div className="space-y-1">
-                        <span className="text-xs font-semibold text-neutral-200 block">{tx.description}</span>
-                        <div className="flex items-center gap-2 text-[10px] font-mono text-neutral-500">
+                        <span className="text-xs font-bold text-white block">{tx.description}</span>
+                        <div className="flex items-center gap-2 text-[10px] font-mono text-neutral-400">
                           <span>TxID: {tx.id}</span>
                           <span>•</span>
                           <span>{tx.timestamp}</span>
@@ -2201,14 +2211,14 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                       </div>
                       <div className="flex items-center gap-1.5 font-mono text-xs font-bold">
                         {tx.type === 'credit' || tx.type === 'win_payout' ? (
-                          <div className="text-emerald-400 flex items-center bg-emerald-950/40 border border-emerald-500/30 px-2.5 py-1 rounded-lg">
-                            <ArrowDownLeft className="w-3.5 h-3.5 mr-0.5" />
-                            +{tx.amount}
+                          <div className="text-emerald-300 flex items-center bg-emerald-500/15 border border-emerald-500/30 px-3 py-1.5 rounded-xl">
+                            <ArrowDownLeft className="w-3.5 h-3.5 mr-1 text-emerald-400" />
+                            +{tx.amount.toLocaleString()}
                           </div>
                         ) : (
-                          <div className="text-amber-400 flex items-center bg-amber-950/40 border border-amber-500/30 px-2.5 py-1 rounded-lg">
-                            <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" />
-                            -{tx.amount}
+                          <div className="text-purple-300 flex items-center bg-purple-500/15 border border-purple-500/30 px-3 py-1.5 rounded-xl">
+                            <ArrowUpRight className="w-3.5 h-3.5 mr-1 text-purple-400" />
+                            -{tx.amount.toLocaleString()}
                           </div>
                         )}
                       </div>

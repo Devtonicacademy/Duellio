@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Swords, ShieldCheck, Timer, Award, AlertTriangle, Play, Eye, EyeOff, HelpCircle, Trophy } from 'lucide-react';
+import { Chess3DScene } from './Chess3DScene';
 
 interface InteractiveChessBoardProps {
   entryFee: number;
@@ -602,89 +603,86 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
 
       {/* 8x8 CHESS GRID MAP (Left Section) */}
       <div className="col-span-12 lg:col-span-8 flex flex-col items-center justify-center p-2">
-        <div 
-          className="relative transition-all duration-1000 ease-out flex items-center justify-center w-full"
-          style={{
-            transform: view3D 
-              ? 'perspective(1000px) rotateX(38deg) rotateZ(-15deg) translateY(-2%) scale(0.95)' 
-              : 'perspective(1000px) rotateX(0deg) rotateZ(0deg) translateY(0) scale(1)',
-            transformStyle: 'preserve-3d'
-          }}
-        >
-          {/* Holographic matrix underlay projection */}
-          {view3D && (
-            <div className="absolute inset-[-30px] bg-[linear-gradient(rgba(6,182,212,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.03)_1px,transparent_1px)] bg-[size:28px_28px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)] pointer-events-none" />
-          )}
-
-          <div 
-            className="w-full max-w-[440px] aspect-square bg-[#070D18]/95 border border-cyan-500/35 p-1.5 sm:p-2.5 rounded-2xl sm:rounded-[28px] shadow-[0_30px_70px_rgba(0,0,0,0.8),0_0_35px_rgba(6,182,212,0.15)] flex flex-col relative chess-grid-canvas"
-            style={{ transform: view3D ? 'translateZ(10px)' : 'none', transformStyle: 'preserve-3d' }}
-          >
-            {/* Ambient inner bezel glow */}
-            <div className="absolute inset-0 rounded-2xl sm:rounded-[28px] border border-cyan-500/10 pointer-events-none" />
-
-            <div className="grid grid-cols-8 grid-rows-8 w-full h-full rounded-2xl overflow-hidden border border-neutral-850 bg-[#02050b]">
-              {board.map((row, rIdx) => 
-                row.map((cell, cIdx) => {
-                  const isSelected = selectedSquare && selectedSquare[0] === rIdx && selectedSquare[1] === cIdx;
-                  const isDark = (rIdx + cIdx) % 2 === 1;
-                  const isValidTarget = validDestinations.some(d => d[0] === rIdx && d[1] === cIdx);
-
-                  // Color themes
-                  let tileBg = isDark 
-                    ? 'bg-[#040813]/90 hover:bg-[#071025]/80 border border-cyan-500/5' 
-                    : 'bg-[#091122]/60 hover:bg-[#0f1a35]/70 border border-cyan-500/5';
-                  
-                  if (isSelected) {
-                    tileBg = 'bg-cyan-500/15 border border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.35)] z-10';
-                  }
-
-                  return (
-                    <button
-                      key={`${rIdx}_${cIdx}`}
-                      onClick={() => handleTileClick(rIdx, cIdx)}
-                      className={`aspect-square relative flex items-center justify-center cursor-pointer select-none transition-all ${tileBg}`}
-                      style={{ transformStyle: 'preserve-3d' }}
-                    >
-                      {/* Render Chess pieces visually */}
-                      {cell && renderChessPieceItem(cell, !!isSelected)}
-
-                      {/* Tactical glowing valid targets indicators overlay */}
-                      {isValidTarget && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/5 cursor-pointer z-10 text-emerald-400">
-                          <span className="w-3.5 h-3.5 rounded-full bg-emerald-400/35 border-2 border-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)] animate-pulse" />
-                        </div>
-                      )}
-
-                      {/* Left & Right rank numbers for clear line-of-sight tracking */}
-                      {cIdx === 0 && (
-                        <span className="absolute top-1 left-1.5 text-[9px] font-mono leading-none select-none font-extrabold text-cyan-450/60 pointer-events-none">
-                          {8 - rIdx}
-                        </span>
-                      )}
-                      {cIdx === 7 && (
-                        <span className="absolute top-1 right-1.5 text-[9px] font-mono leading-none select-none font-extrabold text-cyan-450/60 pointer-events-none">
-                          {8 - rIdx}
-                        </span>
-                      )}
-
-                      {/* Top & Bottom file letters for clear column-of-sight tracking */}
-                      {rIdx === 0 && (
-                        <span className="absolute bottom-1 left-1.5 text-[9px] font-mono leading-none select-none font-extrabold text-cyan-455/60 pointer-events-none">
-                          {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'][cIdx]}
-                        </span>
-                      )}
-                      {rIdx === 7 && (
-                        <span className="absolute bottom-1 right-1.5 text-[9px] font-mono leading-none select-none font-extrabold text-cyan-455/60 pointer-events-none">
-                          {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'][cIdx]}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })
-              )}
+        <div className="relative transition-all duration-700 ease-out flex items-center justify-center w-full max-w-[500px]">
+          {view3D ? (
+            <div className="w-full aspect-square bg-[#03060e] border border-cyan-500/35 p-1 rounded-2xl sm:rounded-[28px] shadow-[0_30px_70px_rgba(0,0,0,0.85),0_0_35px_rgba(6,182,212,0.2)] relative overflow-hidden flex items-center justify-center">
+              <Chess3DScene
+                board={board}
+                selectedSquare={selectedSquare}
+                validDestinations={validDestinations}
+                activeColor={activeColor}
+                onTileClick={handleTileClick}
+              />
             </div>
-          </div>
+          ) : (
+            <div 
+              className="w-full max-w-[440px] aspect-square bg-[#070D18]/95 border border-cyan-500/35 p-1.5 sm:p-2.5 rounded-2xl sm:rounded-[28px] shadow-[0_30px_70px_rgba(0,0,0,0.8),0_0_35px_rgba(6,182,212,0.15)] flex flex-col relative chess-grid-canvas"
+            >
+              {/* Ambient inner bezel glow */}
+              <div className="absolute inset-0 rounded-2xl sm:rounded-[28px] border border-cyan-500/10 pointer-events-none" />
+
+              <div className="grid grid-cols-8 grid-rows-8 w-full h-full rounded-2xl overflow-hidden border border-neutral-850 bg-[#02050b]">
+                {board.map((row, rIdx) => 
+                  row.map((cell, cIdx) => {
+                    const isSelected = selectedSquare && selectedSquare[0] === rIdx && selectedSquare[1] === cIdx;
+                    const isDark = (rIdx + cIdx) % 2 === 1;
+                    const isValidTarget = validDestinations.some(d => d[0] === rIdx && d[1] === cIdx);
+
+                    // Color themes
+                    let tileBg = isDark 
+                      ? 'bg-[#040813]/90 hover:bg-[#071025]/80 border border-cyan-500/5' 
+                      : 'bg-[#091122]/60 hover:bg-[#0f1a35]/70 border border-cyan-500/5';
+                    
+                    if (isSelected) {
+                      tileBg = 'bg-cyan-500/15 border border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.35)] z-10';
+                    }
+
+                    return (
+                      <button
+                        key={`${rIdx}_${cIdx}`}
+                        onClick={() => handleTileClick(rIdx, cIdx)}
+                        className={`aspect-square relative flex items-center justify-center cursor-pointer select-none transition-all ${tileBg}`}
+                      >
+                        {/* Render Chess pieces visually */}
+                        {cell && renderChessPieceItem(cell, !!isSelected)}
+
+                        {/* Tactical glowing valid targets indicators overlay */}
+                        {isValidTarget && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/5 cursor-pointer z-10 text-emerald-400">
+                            <span className="w-3.5 h-3.5 rounded-full bg-emerald-400/35 border-2 border-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)] animate-pulse" />
+                          </div>
+                        )}
+
+                        {/* Left & Right rank numbers for clear line-of-sight tracking */}
+                        {cIdx === 0 && (
+                          <span className="absolute top-1 left-1.5 text-[9px] font-mono leading-none select-none font-extrabold text-cyan-450/60 pointer-events-none">
+                            {8 - rIdx}
+                          </span>
+                        )}
+                        {cIdx === 7 && (
+                          <span className="absolute top-1 right-1.5 text-[9px] font-mono leading-none select-none font-extrabold text-cyan-450/60 pointer-events-none">
+                            {8 - rIdx}
+                          </span>
+                        )}
+
+                        {/* Top & Bottom file letters for clear column-of-sight tracking */}
+                        {rIdx === 0 && (
+                          <span className="absolute bottom-1 left-1.5 text-[9px] font-mono leading-none select-none font-extrabold text-cyan-455/60 pointer-events-none">
+                            {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'][cIdx]}
+                          </span>
+                        )}
+                        {rIdx === 7 && (
+                          <span className="absolute bottom-1 right-1.5 text-[9px] font-mono leading-none select-none font-extrabold text-cyan-455/60 pointer-events-none">
+                            {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'][cIdx]}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
