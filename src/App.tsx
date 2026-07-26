@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { motion } from 'motion/react';
+import { motion, useScroll, useSpring } from 'motion/react';
 import { db } from './firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
@@ -87,6 +87,19 @@ export default function App() {
   } | null>(null);
 
   const [isGameActive, setIsGameActive] = useState<boolean>(false);
+
+  // Framer Motion Smooth Scroll Progress Spring Indicator
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 120,
+    damping: 30,
+    restDelta: 0.001
+  });
+
+  // Smooth scroll to top on tab change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
 
   // Match & Forfeit Notifications State
   const [notifications, setNotifications] = useState<NotificationItem[]>([
@@ -299,6 +312,12 @@ export default function App() {
   return (
     <div className={`relative min-h-screen bg-[#070709] text-neutral-100 font-sans antialiased pb-12 selection:bg-purple-500/30 selection:text-white ${theme}`} id="applet-viewport">
       
+      {/* Framer Motion Smooth Scroll Progress Bar */}
+      <motion.div 
+        className="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-500 via-cyan-400 to-emerald-400 z-[100] origin-left shadow-[0_0_12px_rgba(168,85,247,0.9)] pointer-events-none"
+        style={{ scaleX }}
+      />
+
       {/* Dynamic Ambient Glassmorphism Gradient Mesh Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10 select-none">
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-purple-600/15 rounded-full blur-[120px] animate-pulse"></div>

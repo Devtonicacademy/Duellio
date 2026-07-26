@@ -220,10 +220,14 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
       {/* Board Cards Grid Layout */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {filteredBoards.length > 0 ? (
-          filteredBoards.map((game) => {
+          filteredBoards.map((game, index) => {
             return (
-              <div 
+              <motion.div 
                 key={game.id}
+                initial={{ opacity: 0, y: 35 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.45, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
                 className="glass-bento glass-bento-hover rounded-3xl overflow-hidden group flex flex-col justify-between border border-white/10 col-span-1"
               >
                 {/* Product Cover image */}
@@ -283,7 +287,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })
         ) : (
