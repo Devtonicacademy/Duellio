@@ -57,6 +57,22 @@ export interface MatchChallenge {
   rewardMultiplier?: number;
 }
 
+export interface NotificationItem {
+  id: string;
+  type: 'challenge' | 'forfeit' | 'system';
+  title: string;
+  message: string;
+  senderId?: string;
+  senderName: string;
+  senderAvatar?: string;
+  gameType?: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman';
+  entryFee?: number;
+  sessionId?: string;
+  timestamp: string;
+  read: boolean;
+  status?: 'pending' | 'accepted' | 'declined';
+}
+
 export interface WalletTransaction {
   id: string;
   userId?: string;

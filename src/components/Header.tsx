@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Trophy, 
   Compass,
@@ -12,20 +12,34 @@ import {
   Menu,
   X,
   MessageSquare,
-  ShieldAlert
+  ShieldAlert,
+  Bell,
+  Flag,
+  Check,
+  Trash2,
+  Sparkles,
+  CheckCheck
 } from 'lucide-react';
 import { DuellioLogo } from './DuellioLogo';
-import { UserProfile } from '../types';
+import { UserProfile, NotificationItem } from '../types';
 
 interface HeaderProps {
   activeTab: 'discover' | 'tournaments' | 'lobbies' | 'profile' | 'play-arena' | 'spectate' | 'chat' | 'admin';
   setActiveTab: (tab: 'discover' | 'tournaments' | 'lobbies' | 'profile' | 'play-arena' | 'spectate' | 'chat' | 'admin') => void;
-  setPreselectedGame: (game: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | null) => void;
+  setPreselectedGame: (game: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman' | null) => void;
   theme: 'dark' | 'light';
   toggleTheme: () => void;
   userProfile: UserProfile | null;
   onHeaderFaucet: () => void;
   totalUnread?: number;
+  notifications?: NotificationItem[];
+  onAcceptChallenge?: (notification: NotificationItem) => void;
+  onDeclineChallenge?: (notificationId: string) => void;
+  onAcceptForfeit?: (notification: NotificationItem) => void;
+  onDeclineForfeit?: (notificationId: string) => void;
+  onClearNotifications?: () => void;
+  onMarkNotificationsRead?: () => void;
+  onSimulateNotification?: (type: 'challenge' | 'forfeit') => void;
 }
 
 export function Header({
@@ -36,9 +50,21 @@ export function Header({
   toggleTheme,
   userProfile,
   onHeaderFaucet,
-  totalUnread = 0
+  totalUnread = 0,
+  notifications = [],
+  onAcceptChallenge,
+  onDeclineChallenge,
+  onAcceptForfeit,
+  onDeclineForfeit,
+  onClearNotifications,
+  onMarkNotificationsRead,
+  onSimulateNotification
 }: HeaderProps) {
   const [isSideNavOpen, setIsSideNavOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   // Lock background scroll and listen for Escape key when mobile menu is open
   useEffect(() => {
@@ -54,6 +80,21 @@ export function Header({
       };
     }
   }, [isSideNavOpen]);
+
+  // Close notifications dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+    if (isNotificationsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNotificationsOpen]);
 
   return (
     <>
@@ -217,16 +258,186 @@ export function Header({
             )}
           </nav>
 
-          {/* Wallet action, faucet and profile image link on right - Desktop Only */}
+          {/* Wallet action, faucet, notifications and profile image link on right - Desktop Only */}
           <div className="hidden lg:flex items-center gap-2.5 shrink-0">
             <button 
               onClick={toggleTheme}
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-              className="flex items-center justify-center p-2 2xl:p-2.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl transition-all cursor-pointer font-sans shrink-0"
+              className="flex items-center justify-center p-2.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl transition-all cursor-pointer font-sans shrink-0"
               id="theme-mode-toggle"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
             </button>
+
+            {/* Notification Bell Button & Dropdown Container */}
+            <div className="relative" ref={dropdownRef}>
+              <button 
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                title="Match & Arena Notifications"
+                className={`relative flex items-center justify-center p-2.5 rounded-xl transition-all cursor-pointer font-sans shrink-0 border ${
+                  unreadCount > 0
+                    ? 'bg-purple-500/25 text-purple-300 border-purple-500/60 shadow-lg shadow-purple-500/20'
+                    : 'bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border-purple-500/30'
+                }`}
+              >
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-extrabold text-white animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Center Dropdown */}
+              {isNotificationsOpen && (
+                <div className="absolute right-0 top-full mt-3 w-80 sm:w-96 max-w-[92vw] bg-[#0B0B0E]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] z-50 p-4 font-sans text-xs text-white">
+                  <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+                    <div className="flex items-center gap-2">
+                      <Bell className="w-4 h-4 text-purple-400" />
+                      <span className="font-extrabold font-display tracking-wider uppercase text-[11px]">Match Notifications</span>
+                      {unreadCount > 0 && (
+                        <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold">
+                          {unreadCount} new
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={onMarkNotificationsRead}
+                          title="Mark all read"
+                          className="p-1 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                        >
+                          <CheckCheck className="w-4 h-4" />
+                        </button>
+                      )}
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={onClearNotifications}
+                          title="Clear all"
+                          className="p-1 text-neutral-400 hover:text-red-400 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setIsNotificationsOpen(false)}
+                        className="p-1 text-neutral-400 hover:text-white cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Interactive Simulation Controls */}
+                  <div className="flex items-center gap-2 mb-3 bg-purple-500/10 p-2 rounded-xl border border-purple-500/20 text-[10px]">
+                    <span className="text-purple-300 font-bold shrink-0">Simulate:</span>
+                    <button
+                      onClick={() => onSimulateNotification?.('challenge')}
+                      className="flex-1 py-1 px-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 rounded-lg font-bold transition-all text-center cursor-pointer"
+                    >
+                      + Challenge
+                    </button>
+                    <button
+                      onClick={() => onSimulateNotification?.('forfeit')}
+                      className="flex-1 py-1 px-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 rounded-lg font-bold transition-all text-center cursor-pointer"
+                    >
+                      + Forfeit
+                    </button>
+                  </div>
+
+                  {/* List of Notification Cards */}
+                  <div className="space-y-2.5 max-h-80 overflow-y-auto custom-scrollbar pr-1">
+                    {notifications.length === 0 ? (
+                      <div className="py-8 text-center text-neutral-500 space-y-1">
+                        <Bell className="w-6 h-6 mx-auto opacity-30" />
+                        <p className="text-xs font-mono">No notifications right now</p>
+                      </div>
+                    ) : (
+                      notifications.map((item) => (
+                        <div
+                          key={item.id}
+                          className={`p-3 rounded-xl border transition-all ${
+                            item.read ? 'bg-neutral-900/40 border-white/5' : 'bg-purple-950/20 border-purple-500/30'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-2">
+                              {item.type === 'challenge' && (
+                                <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 shrink-0">
+                                  <Swords className="w-3.5 h-3.5" />
+                                </div>
+                              )}
+                              {item.type === 'forfeit' && (
+                                <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">
+                                  <Flag className="w-3.5 h-3.5" />
+                                </div>
+                              )}
+                              {item.type === 'system' && (
+                                <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                </div>
+                              )}
+                              <div>
+                                <h4 className="font-bold font-display text-white text-[11px] leading-tight">{item.title}</h4>
+                                <span className="text-[9px] font-mono text-neutral-400">{item.timestamp}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <p className="text-[11px] text-neutral-300 leading-snug mb-2">{item.message}</p>
+
+                          {/* Action buttons for Challenges */}
+                          {item.type === 'challenge' && item.status === 'pending' && (
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                onClick={() => onAcceptChallenge?.(item)}
+                                className="flex-1 py-1.5 px-3 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold rounded-lg text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 cursor-pointer"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Accept Challenge</span>
+                              </button>
+                              <button
+                                onClick={() => onDeclineChallenge?.(item.id)}
+                                className="py-1.5 px-3 bg-white/5 hover:bg-white/10 text-neutral-300 font-bold rounded-lg text-[10px] uppercase transition-all cursor-pointer"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Action buttons for Forfeits */}
+                          {item.type === 'forfeit' && item.status === 'pending' && (
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                onClick={() => onAcceptForfeit?.(item)}
+                                className="flex-1 py-1.5 px-3 bg-amber-500 hover:bg-amber-400 text-black font-extrabold rounded-lg text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-500/20 cursor-pointer"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Claim Victory</span>
+                              </button>
+                              <button
+                                onClick={() => onDeclineForfeit?.(item.id)}
+                                className="py-1.5 px-3 bg-white/5 hover:bg-white/10 text-neutral-300 font-bold rounded-lg text-[10px] uppercase transition-all cursor-pointer"
+                              >
+                                Dismiss
+                              </button>
+                            </div>
+                          )}
+
+                          {item.status === 'accepted' && (
+                            <div className="text-[9px] font-mono text-emerald-400 font-bold uppercase pt-1">✓ Accepted</div>
+                          )}
+                          {item.status === 'declined' && (
+                            <div className="text-[9px] font-mono text-neutral-500 uppercase pt-1">Declined</div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <button 
               onClick={onHeaderFaucet}
@@ -261,7 +472,7 @@ export function Header({
           </div>
 
           {/* Mobile/Tablet Quick Actions + Hamburger Menu Toggle */}
-          <div className="flex xl:hidden items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex lg:hidden items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Quick Faucet / Coin indicator on mobile/tablet */}
             <button 
               onClick={onHeaderFaucet} 
@@ -270,6 +481,24 @@ export function Header({
             >
               <Coins className="w-3.5 h-3.5 animate-bounce" />
               <span className="hidden min-[380px]:inline">{(userProfile?.coins || 0).toLocaleString()}</span>
+            </button>
+
+            {/* Quick Notification Bell on mobile/tablet */}
+            <button 
+              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+              title="Notifications"
+              className={`relative flex items-center justify-center p-2 rounded-xl transition-all cursor-pointer font-sans shrink-0 border ${
+                unreadCount > 0
+                  ? 'bg-purple-500/25 text-purple-300 border-purple-500/60 shadow-lg shadow-purple-500/20'
+                  : 'bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border-purple-500/30'
+              }`}
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-extrabold text-white animate-pulse">
+                  {unreadCount}
+                </span>
+              )}
             </button>
 
             {/* Quick profile avatar link on mobile/tablet */}

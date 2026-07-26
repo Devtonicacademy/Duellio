@@ -71,6 +71,20 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
       tags: ['POPULAR ARENA', 'LUDO'],
       image: '/assets/ludo_bg.png',
       isFeatured: false
+    },
+    {
+      id: 'cyber-tictactoe',
+      title: 'Cyber Tic-Tac-Toe',
+      gameType: 'TicTacToe' as const,
+      category: 'fast',
+      stakeMin: 5,
+      stakeMax: 300,
+      totalStaked: 5400,
+      playersLive: '2.1k Live',
+      rating: 4.9,
+      tags: ['RAPID DUEL', 'TIC-TAC-TOE'],
+      image: '/assets/tictactoe_bg.png',
+      isFeatured: false
     }
   ];
 
@@ -203,8 +217,8 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
         </div>
       </section>
 
-      {/* 3-Card Bento Grid Layout */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Board Cards Grid Layout */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {filteredBoards.length > 0 ? (
           filteredBoards.map((game) => {
             return (

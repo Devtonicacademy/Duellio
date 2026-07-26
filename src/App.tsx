@@ -19,7 +19,7 @@ import { Header } from './components/Header';
 import { FriendInviteModal } from './components/FriendInviteModal';
 
 // Types
-import { WalletTransaction } from './types';
+import { WalletTransaction, NotificationItem } from './types';
 
 // Lazy-loaded Tabs for code-splitting and improved bundle/load performance
 const DiscoverTab = lazy(() => import('./components/DiscoverTab').then(m => ({ default: m.DiscoverTab })));
@@ -32,16 +32,17 @@ const SpectateTab = lazy(() => import('./components/SpectateTab').then(m => ({ d
 const ChatTab = lazy(() => import('./components/ChatTab').then(m => ({ default: m.ChatTab })));
 const AdminTab = lazy(() => import('./components/AdminTab').then(m => ({ default: m.AdminTab })));
 
-// Premium loading placeholder for Suspense boundaries
-const LoadingFallback = () => (
-  <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-    <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-    <p className="text-xs font-mono text-purple-400 uppercase tracking-widest animate-pulse">Loading Arena View...</p>
-  </div>
-);
+function LoadingFallback() {
+  return (
+    <div className="py-20 text-center space-y-4">
+      <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+      <p className="text-[11px] font-mono text-neutral-400 uppercase tracking-widest animate-pulse">Loading view...</p>
+    </div>
+  );
+}
 
 export default function App() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, voiceEnabled, toggleVoice } = useTheme();
   
   const {
     allProfiles,
@@ -87,6 +88,34 @@ export default function App() {
 
   const [isGameActive, setIsGameActive] = useState<boolean>(false);
 
+  // Match & Forfeit Notifications State
+  const [notifications, setNotifications] = useState<NotificationItem[]>([
+    {
+      id: 'notif-1',
+      type: 'challenge',
+      title: 'Match Challenge Received!',
+      message: 'Grandmaster_Alex has challenged you to a Chess match for 500 Coins!',
+      senderName: 'Grandmaster_Alex',
+      gameType: 'Chess',
+      entryFee: 500,
+      timestamp: 'Just now',
+      read: false,
+      status: 'pending'
+    },
+    {
+      id: 'notif-2',
+      type: 'forfeit',
+      title: 'Forfeit Request Submitted',
+      message: 'Shadow_Knight has requested a forfeit in your Whot match. Accept to claim +300 Coins victory payout!',
+      senderName: 'Shadow_Knight',
+      gameType: 'Whot',
+      entryFee: 300,
+      timestamp: '5m ago',
+      read: false,
+      status: 'pending'
+    }
+  ]);
+
   // Wrapper for profile registration to automatically log the onboarding transaction
   const handleAddProfileWrapper = (username: string, email: string, pass: string, avatar: string) => {
     return handleAddProfile(username, email, pass, avatar, addTransaction);
@@ -115,6 +144,99 @@ export default function App() {
 
     return () => unsubscribe();
   }, [userProfile?.uid]);
+
+  // Notification Handlers
+  const handleAcceptChallenge = (notification: NotificationItem) => {
+    setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true, status: 'accepted' } : n));
+    setFriendChallenge({
+      senderName: notification.senderName,
+      gameType: notification.gameType as any || 'Chess',
+      entryFee: notification.entryFee || 300,
+      opponentType: 'player',
+      isHost: false
+    });
+    setActiveTab('lobbies');
+  };
+
+  const handleDeclineChallenge = (notificationId: string) => {
+    setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true, status: 'declined' } : n));
+  };
+
+  const handleAcceptForfeit = (notification: NotificationItem) => {
+    setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true, status: 'accepted' } : n));
+    const reward = notification.entryFee ? notification.entryFee * 2 : 500;
+    if (userProfile) {
+      setUserProfile({
+        ...userProfile,
+        coins: userProfile.coins + reward,
+        wins: (userProfile.wins || 0) + 1
+      });
+    }
+    addTransaction({
+      id: `TX-${Math.floor(100000 + Math.random() * 900000)}`,
+      userId: userProfile!.uid,
+      type: 'credit',
+      amount: reward,
+      description: `Forfeit Victory payout vs ${notification.senderName} (${notification.gameType})`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: 'completed'
+    });
+  };
+
+  const handleDeclineForfeit = (notificationId: string) => {
+    setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true, status: 'declined' } : n));
+  };
+
+  const handleClearNotifications = () => {
+    setNotifications([]);
+  };
+
+  const handleMarkNotificationsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const handleSimulateNotification = (type: 'challenge' | 'forfeit') => {
+    const opponents = ['CyberNinja', 'NeonQueen', 'Valkyrie', 'ProGamer99'];
+    const randomOpponent = opponents[Math.floor(Math.random() * opponents.length)];
+    const games: Array<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe'> = ['Chess', 'Whot', 'Ludo', 'Draft', 'TicTacToe'];
+    const randomGame = games[Math.floor(Math.random() * games.length)];
+    const randomStake = (Math.floor(Math.random() * 5) + 1) * 200;
+    const newId = `notif-${Date.now()}`;
+
+    if (type === 'challenge') {
+      setNotifications(prev => [
+        {
+          id: newId,
+          type: 'challenge',
+          title: 'New Player Challenge!',
+          message: `${randomOpponent} challenged you to a ${randomGame} match for ${randomStake} Coins!`,
+          senderName: randomOpponent,
+          gameType: randomGame,
+          entryFee: randomStake,
+          timestamp: 'Just now',
+          read: false,
+          status: 'pending'
+        },
+        ...prev
+      ]);
+    } else {
+      setNotifications(prev => [
+        {
+          id: newId,
+          type: 'forfeit',
+          title: 'Forfeit Request Submitted',
+          message: `${randomOpponent} requested to forfeit their active ${randomGame} match. Claim your +${randomStake} Coins victory!`,
+          senderName: randomOpponent,
+          gameType: randomGame,
+          entryFee: randomStake,
+          timestamp: 'Just now',
+          read: false,
+          status: 'pending'
+        },
+        ...prev
+      ]);
+    }
+  };
 
   // Direct card-to-matchmaker connector
   const handleSelectGameFromDiscover = (gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman', stake: number) => {
@@ -195,6 +317,14 @@ export default function App() {
           userProfile={userProfile}
           onHeaderFaucet={() => handleHeaderFaucet(userProfile, setUserProfile)}
           totalUnread={totalUnread}
+          notifications={notifications}
+          onAcceptChallenge={handleAcceptChallenge}
+          onDeclineChallenge={handleDeclineChallenge}
+          onAcceptForfeit={handleAcceptForfeit}
+          onDeclineForfeit={handleDeclineForfeit}
+          onClearNotifications={handleClearNotifications}
+          onMarkNotificationsRead={handleMarkNotificationsRead}
+          onSimulateNotification={handleSimulateNotification}
         />
       )}
 
