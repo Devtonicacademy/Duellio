@@ -167,6 +167,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const [fanCenterIndex, setFanCenterIndex] = useState<number>(0);
   const fanTouchStartX = useRef<number>(0);
   const fanTouchStartY = useRef<number>(0);
+  const scrollRowRef = useRef<HTMLDivElement>(null);
+  const opponentScrollRowRef = useRef<HTMLDivElement>(null);
 
   // Escrow details expand/collapse on mobile
   const [showEscrowDetails, setShowEscrowDetails] = useState<boolean>(false);
@@ -1181,7 +1183,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           <input
             type="text"
             value={inputMessage}
-            onChange={(e) => setSearchInput ? setInputMessage(e.target.value) : setInputMessage(e.target.value)}
+            onChange={(e) => setInputMessage(e.target.value)}
             placeholder="Type your message in lobby chat..."
             className="flex-1 bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-2xl px-4 py-2.5 text-xs font-sans text-white placeholder:text-neutral-500 outline-none transition-all backdrop-blur-md"
           />
@@ -1972,37 +1974,37 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     }
 
     const cardContent = (
-      <div className="h-full flex flex-col justify-between p-1.5 sm:p-2.5 relative">
-        {/* Top Corner with Big Numbers for easy reading by anyone of any age */}
+      <div className="h-full flex flex-col justify-between p-1 sm:p-2.5 relative">
+        {/* Top Corner with Big Numbers */}
         <div className="flex justify-between items-start leading-none">
-          <span className="font-mono text-sm sm:text-xl font-black tracking-tighter">{card.value}</span>
-          <span className={`text-[10px] sm:text-xs uppercase font-extrabold ${symbolColor}`}>{symbol}</span>
+          <span className="font-mono text-xs xs:text-sm sm:text-lg md:text-xl font-black tracking-tighter">{card.value}</span>
+          <span className={`text-[8px] xs:text-[10px] sm:text-xs uppercase font-extrabold ${symbolColor}`}>{symbol}</span>
         </div>
         
         {/* Large Central Icon/Shape */}
-        <div className="flex flex-col items-center justify-center flex-1 my-1">
-          <span className={`text-3xl sm:text-5xl font-black leading-none drop-shadow-sm ${symbolColor}`}>{symbol}</span>
-          <span className="text-[8px] sm:text-[10px] font-mono tracking-wider font-extrabold opacity-75 mt-0.5 sm:mt-1 uppercase text-gray-700">
+        <div className="flex flex-col items-center justify-center flex-1 my-0.5 sm:my-1">
+          <span className={`text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black leading-none drop-shadow-sm ${symbolColor}`}>{symbol}</span>
+          <span className="text-[7px] xs:text-[8px] sm:text-[10px] font-mono tracking-wider font-extrabold opacity-75 mt-0.5 uppercase text-gray-700">
             {card.suit === 'Whot' ? 'WHOT!' : card.suit}
           </span>
         </div>
         
         {/* Bottom Corner with Big Numbers */}
         <div className="flex justify-between items-end leading-none">
-          <span className="text-[8px] sm:text-[10px] opacity-75 font-mono text-gray-500 font-bold">#{card.id}</span>
+          <span className="text-[7px] xs:text-[8px] sm:text-[10px] opacity-75 font-mono text-gray-500 font-bold">#{card.id}</span>
           {card.suit === 'Stars' && (
-            <span className="text-[7px] sm:text-[9px] bg-amber-400 text-amber-950 px-1 rounded font-bold uppercase font-mono tracking-wider">
+            <span className="text-[6px] xs:text-[7px] sm:text-[9px] bg-amber-400 text-amber-950 px-1 rounded font-bold uppercase font-mono tracking-wider">
               2x
             </span>
           )}
-          <span className="font-mono text-sm sm:text-xl font-black tracking-tighter">{card.value}</span>
+          <span className="font-mono text-xs xs:text-sm sm:text-lg md:text-xl font-black tracking-tighter">{card.value}</span>
         </div>
       </div>
     );
 
     const sizeClass = (isButton || isHand)
-      ? 'w-[85px] h-[120px] sm:w-[110px] sm:h-[160px]'
-      : 'w-[75px] h-[110px] sm:w-[95px] sm:h-[140px]';
+      ? 'w-[70px] h-[102px] xs:w-[82px] xs:h-[120px] sm:w-[100px] sm:h-[148px] md:w-[110px] md:h-[160px]'
+      : 'w-[64px] h-[94px] xs:w-[74px] xs:h-[108px] sm:w-[88px] sm:h-[130px] md:w-[98px] md:h-[144px]';
 
     if (isButton) {
       return (
@@ -2019,7 +2021,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           onClick={onClick}
           className={`${sizeClass} rounded-2xl border-2 text-left cursor-pointer transition-all relative select-none shrink-0 ${suitStyle} ${is3DMode ? 'whot-card-3d' : ''} ${
             isPlayable 
-              ? 'ring-[4px] ring-emerald-400 shadow-[0_10px_20px_rgba(0,0,0,0.3)] scale-102 hover:-translate-y-3' 
+              ? 'ring-[4px] ring-emerald-400 shadow-[0_10px_20px_rgba(0,0,0,0.3)] scale-102 hover:-translate-y-2.5' 
               : 'opacity-50 grayscale-[15%] cursor-not-allowed scale-95'
           }`}
         >
@@ -2829,30 +2831,35 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                   </div>
 
                   {/* Opponent Zone Hand: Opened if completed, otherwise face-down lined out */}
-                  <div className="w-full md:flex-1 max-w-full overflow-hidden">
-                    <div className={`flex gap-3 overflow-x-auto pb-4 pt-1 shadow-inner scrollbar-thin select-none max-w-full justify-start md:justify-center whot-cards-row`}>
-                      {whotGameState.status === 'completed' ? (
-                        whotGameState.playerHands[opponentId]?.map((card) => 
-                          renderWhotCard(card, false, undefined, true)
-                        )
-                      ) : (
-                        whotGameState.playerHands[opponentId]?.map((card) => (
-                          <motion.div 
-                            key={card.id} 
-                            layoutId={card.id}
-                            layout
-                            initial={{ scale: 0.6, y: 250, opacity: 0 }}
-                            animate={{ scale: 1, y: 0, opacity: 1 }}
-                            exit={{ scale: 0.8, y: 30, opacity: 0 }}
-                            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                            className={`w-[85px] h-[120px] sm:w-[110px] sm:h-[160px] bg-gradient-to-br from-red-600 to-red-800 border-2 border-white rounded-2xl shadow-lg flex flex-col justify-between p-2.5 text-white relative shrink-0 select-none items-center justify-center font-bold hover:scale-102 transition-transform ${is3DMode ? 'whot-opponent-card-3d' : ''}`}
-                          >
-                            <div className="absolute inset-1.5 border border-dashed border-white/20 rounded-xl flex items-center justify-center">
-                              <span className="text-[10px] sm:text-xs font-serif font-black opacity-95 uppercase tracking-widest">Whot!</span>
-                            </div>
-                          </motion.div>
-                        ))
-                      )}
+                  <div className="w-full md:flex-1 max-w-full overflow-hidden relative group">
+                    <div 
+                      ref={opponentScrollRowRef}
+                      className="w-full max-w-full overflow-x-auto overflow-y-hidden pb-3 pt-1 shadow-inner scrollbar-thin select-none touch-pan-x whot-cards-row scroll-smooth"
+                    >
+                      <div className="flex gap-2 sm:gap-3 min-w-max mx-auto px-3 justify-center items-center">
+                        {whotGameState.status === 'completed' ? (
+                          whotGameState.playerHands[opponentId]?.map((card) => 
+                            renderWhotCard(card, false, undefined, true)
+                          )
+                        ) : (
+                          whotGameState.playerHands[opponentId]?.map((card) => (
+                            <motion.div 
+                              key={card.id} 
+                              layoutId={card.id}
+                              layout
+                              initial={{ scale: 0.6, y: 250, opacity: 0 }}
+                              animate={{ scale: 1, y: 0, opacity: 1 }}
+                              exit={{ scale: 0.8, y: 30, opacity: 0 }}
+                              transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                              className={`w-[70px] h-[102px] xs:w-[82px] xs:h-[120px] sm:w-[100px] sm:h-[148px] md:w-[110px] md:h-[160px] bg-gradient-to-br from-red-600 to-red-800 border-2 border-white rounded-2xl shadow-lg flex flex-col justify-between p-2 sm:p-2.5 text-white relative shrink-0 select-none items-center justify-center font-bold hover:scale-102 transition-transform ${is3DMode ? 'whot-opponent-card-3d' : ''}`}
+                            >
+                              <div className="absolute inset-1 sm:inset-1.5 border border-dashed border-white/20 rounded-xl flex items-center justify-center">
+                                <span className="text-[9px] xs:text-[10px] sm:text-xs font-serif font-black opacity-95 uppercase tracking-widest">Whot!</span>
+                              </div>
+                            </motion.div>
+                          ))
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3134,10 +3141,46 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                     })()
                   ) : (
                     /* ── SCROLL LAYOUT (default) ── */
-                    <div className="flex gap-3 overflow-x-auto pb-4 pt-1 shadow-inner scrollbar-thin select-none max-w-full justify-start md:justify-center whot-cards-row">
-                      {whotGameState.playerHands[userProfile.uid]?.map((card) => 
-                        renderWhotCard(card, true, () => handlePlayCard(card))
-                      )}
+                    <div className="relative w-full max-w-full group">
+                      {/* Left scroll navigation arrow */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (scrollRowRef.current) {
+                            scrollRowRef.current.scrollBy({ left: -220, behavior: 'smooth' });
+                          }
+                        }}
+                        className="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/70 hover:bg-black/90 border border-white/20 text-white flex items-center justify-center shadow-lg transition-all active:scale-90 cursor-pointer opacity-80 sm:opacity-0 group-hover:opacity-100 select-none"
+                        title="Scroll hand left"
+                      >
+                        ‹
+                      </button>
+                      
+                      {/* Right scroll navigation arrow */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (scrollRowRef.current) {
+                            scrollRowRef.current.scrollBy({ left: 220, behavior: 'smooth' });
+                          }
+                        }}
+                        className="absolute right-1 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/70 hover:bg-black/90 border border-white/20 text-white flex items-center justify-center shadow-lg transition-all active:scale-90 cursor-pointer opacity-80 sm:opacity-0 group-hover:opacity-100 select-none"
+                        title="Scroll hand right"
+                      >
+                        ›
+                      </button>
+
+                      {/* Responsive horizontal card scroll track */}
+                      <div 
+                        ref={scrollRowRef}
+                        className="w-full max-w-full overflow-x-auto overflow-y-hidden pb-4 pt-2.5 shadow-inner scrollbar-thin select-none touch-pan-x whot-cards-row scroll-smooth"
+                      >
+                        <div className="flex gap-2 sm:gap-3 min-w-max mx-auto px-4 justify-center items-center">
+                          {whotGameState.playerHands[userProfile.uid]?.map((card) => 
+                            renderWhotCard(card, true, () => handlePlayCard(card))
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

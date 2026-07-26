@@ -222,14 +222,26 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             Technical duelist specializing in high-performance board games and ELO matrix manipulation. Currently ranking in the top 0.5% of the global Duellio escrow cycle.
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-1">
-            <div className="bg-white/5 p-3.5 rounded-xl border border-white/5 hover:border-purple-500/15 transition-all">
-              <span className="text-neutral-500 font-mono text-[9px] font-bold block uppercase tracking-wider">TOTAL MATCH WINS</span>
-              <div className="mt-2.5">
-                <div className="w-full h-1.5 bg-neutral-900 rounded-full overflow-hidden">
-                  <div className="h-full bg-linear-to-r from-purple-400 to-cyan-400 w-[75%] shadow-md"></div>
-                </div>
-              </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-1 font-mono">
+            <div className="bg-white/5 p-3.5 rounded-2xl border border-white/10 hover:border-purple-500/30 transition-all">
+              <span className="text-neutral-400 text-[9px] font-bold block uppercase tracking-wider">TOTAL MATCH WINS</span>
+              <span className="text-xl font-extrabold text-emerald-400 font-display block mt-1">{userProfile.wins}</span>
+            </div>
+            <div className="bg-white/5 p-3.5 rounded-2xl border border-white/10 hover:border-purple-500/30 transition-all">
+              <span className="text-neutral-400 text-[9px] font-bold block uppercase tracking-wider">LOSSES / DRAWS</span>
+              <span className="text-xl font-extrabold text-rose-400 font-display block mt-1">{userProfile.losses} / {userProfile.draws}</span>
+            </div>
+            <div className="bg-white/5 p-3.5 rounded-2xl border border-white/10 hover:border-purple-500/30 transition-all">
+              <span className="text-neutral-400 text-[9px] font-bold block uppercase tracking-wider">VICTORY RATE</span>
+              <span className="text-xl font-extrabold text-purple-300 font-display block mt-1">
+                {userProfile.wins + userProfile.losses > 0 
+                  ? Math.round((userProfile.wins / (userProfile.wins + userProfile.losses)) * 100) 
+                  : 100}%
+              </span>
+            </div>
+            <div className="bg-white/5 p-3.5 rounded-2xl border border-white/10 hover:border-purple-500/30 transition-all">
+              <span className="text-neutral-400 text-[9px] font-bold block uppercase tracking-wider">WALLET COINS</span>
+              <span className="text-xl font-extrabold text-amber-300 font-display block mt-1">{userProfile.coins.toLocaleString()}</span>
             </div>
           </div>
         </div>
