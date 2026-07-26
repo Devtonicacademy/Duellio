@@ -40,6 +40,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
       totalStaked: 45000,
       playersLive: '5.4k Live',
       rating: 5.0,
+      desc: 'FIDE-standard strategic board game. Battle against grandmaster AI or real players with real-time move telemetry.',
       tags: ['#1 MOST PLAYED', 'CHESS'],
       image: '/assets/chess_bg.png',
       isFeatured: true
@@ -54,6 +55,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
       totalStaked: 3200,
       playersLive: '1.2k Live',
       rating: 4.9,
+      desc: 'Fast-paced tactical card duels. Play special action cards, hold off penalty pick-ups, and clear your hand first.',
       tags: ['TRENDING CARDS', 'WHOT'],
       image: '/assets/whot_bg.png',
       isFeatured: false
@@ -68,6 +70,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
       totalStaked: 12450,
       playersLive: '4.8k Live',
       rating: 4.8,
+      desc: 'Classic 4-token board race with verified seed generation. Capture opponent tokens and reach home quadrant safe zones.',
       tags: ['POPULAR ARENA', 'LUDO'],
       image: '/assets/ludo_bg.png',
       isFeatured: false
@@ -82,8 +85,39 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
       totalStaked: 5400,
       playersLive: '2.1k Live',
       rating: 4.9,
+      desc: 'Ultra-rapid tactical grid duel. Lock rows, columns, or diagonal lines in fast-paced instant matches.',
       tags: ['RAPID DUEL', 'TIC-TAC-TOE'],
       image: '/assets/tictactoe_bg.png',
+      isFeatured: false
+    },
+    {
+      id: 'quantum-checkers',
+      title: 'Quantum Drafts',
+      gameType: 'Draft' as const,
+      category: 'strategy',
+      stakeMin: 2,
+      stakeMax: 250,
+      totalStaked: 1800,
+      playersLive: '950 Live',
+      rating: 4.7,
+      desc: 'High-stakes diagonal checkers arena. Execute multi-piece jump captures and king promotion maneuvers.',
+      tags: ['STRATEGY', 'DRAFT'],
+      image: '/assets/draft_bg.png',
+      isFeatured: false
+    },
+    {
+      id: 'stickman-arena',
+      title: 'Stickman Kung-Fu Arena',
+      gameType: 'Stickman' as const,
+      category: 'fast',
+      stakeMin: 5,
+      stakeMax: 1500,
+      totalStaked: 62000,
+      playersLive: '6.8k Live',
+      rating: 5.0,
+      desc: 'High-octane 2D stickman martial arts duel. Land combos, dodge attacks, and knock down your opponent.',
+      tags: ['COMBAT ARENA', 'STICKMAN'],
+      image: '/assets/stickman_bg.png',
       isFeatured: false
     }
   ];
@@ -217,8 +251,8 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
         </div>
       </section>
 
-      {/* Board Cards Grid Layout */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Board Cards Grid Layout - 3 Cards Per Row */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredBoards.length > 0 ? (
           filteredBoards.map((game, index) => {
             return (
@@ -228,26 +262,26 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{ duration: 0.45, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
-                className="glass-bento glass-bento-hover rounded-3xl overflow-hidden group flex flex-col justify-between border border-white/10 col-span-1"
+                className="glass-bento glass-bento-hover rounded-3xl overflow-hidden group flex flex-col justify-between border border-white/10 col-span-1 min-h-[30rem]"
               >
-                {/* Product Cover image */}
-                <div className="relative overflow-hidden w-full aspect-[4/3]">
+                {/* Tall Vertical Product Cover image */}
+                <div className="relative overflow-hidden w-full h-64 sm:h-72 lg:h-80">
                   <img 
                     src={game.image} 
                     alt={game.title} 
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F13] via-[#0F0F13]/20 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F13] via-[#0F0F13]/25 to-transparent"></div>
                   
                   {/* Floating Tags */}
                   <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
                     {game.tags.map(t => (
-                      <span key={t} className="px-2.5 py-1 bg-black/70 backdrop-blur-md text-purple-300 font-display font-bold text-[9px] tracking-wider rounded-lg border border-purple-500/30 uppercase">
+                      <span key={t} className="px-3 py-1 bg-black/75 backdrop-blur-md text-purple-300 font-display font-bold text-[9px] tracking-wider rounded-xl border border-purple-500/30 uppercase shadow-md">
                         {t}
                       </span>
                     ))}
-                    <div className="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-[10px] font-mono text-center">
+                    <div className="bg-black/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/10 text-[10px] font-mono text-center shadow-md">
                       <span className="text-neutral-400 block text-[8px] font-bold uppercase">STAKE RANGE</span>
                       <span className="text-purple-300 font-bold">{game.stakeMin} - {game.stakeMax} Coins</span>
                     </div>
@@ -255,16 +289,16 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
                 </div>
 
                 {/* Info and Actions */}
-                <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                  <div>
+                <div className="p-6 flex-1 flex flex-col justify-between space-y-5">
+                  <div className="space-y-2.5">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="text-white font-display text-base font-bold tracking-tight">
+                        <h4 className="text-white font-display text-lg font-bold tracking-tight">
                           {game.title}
                         </h4>
                         <div className="flex items-center gap-1.5 text-xs text-neutral-400 mt-1 font-mono">
                           <Wallet className="w-3.5 h-3.5 text-purple-400" />
-                          <span>Total Staked: {game.totalStaked.toLocaleString()} C</span>
+                          <span>Total Staked: {game.totalStaked.toLocaleString()} Coins</span>
                         </div>
                       </div>
 
@@ -273,16 +307,20 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
                         <span>{game.rating.toFixed(1)}</span>
                       </div>
                     </div>
+
+                    <p className="text-neutral-400 text-xs leading-relaxed font-sans line-clamp-2">
+                      {game.desc}
+                    </p>
                   </div>
 
                   <div className="flex gap-2.5 items-center pt-2">
                     <button 
                       onClick={() => onSelectGame(game.gameType, game.stakeMin * 10)}
-                      className="flex-1 py-2.5 bg-purple-350 hover:bg-purple-300 text-neutral-950 font-bold uppercase text-[10px] tracking-wider rounded-xl transition-all neon-glow-primary cursor-pointer font-display"
+                      className="flex-1 py-3 bg-purple-350 hover:bg-purple-300 text-neutral-950 font-bold uppercase text-[10px] tracking-wider rounded-xl transition-all neon-glow-primary cursor-pointer font-display"
                     >
                       Place Stake & Play
                     </button>
-                    <div className="px-3 py-2.5 bg-white/5 rounded-xl text-neutral-300 font-mono text-[10px] border border-white/10 font-bold">
+                    <div className="px-3.5 py-3 bg-white/5 rounded-xl text-neutral-300 font-mono text-[10px] border border-white/10 font-bold">
                       {game.playersLive}
                     </div>
                   </div>

@@ -135,9 +135,11 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
       {/* Top Header Controls & Info */}
       <div className="w-full flex flex-wrap items-center justify-between gap-3 mb-3 px-2 border-b border-zinc-800/60 pb-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-pink-500/20 border border-cyan-500/30 flex items-center justify-center shadow-lg">
-            <Swords className="w-5 h-5 text-cyan-400 animate-pulse" />
-          </div>
+          <img 
+            src="/assets/stickman_icon.png" 
+            alt="Stickman Kung-Fu" 
+            className="w-10 h-10 rounded-xl object-cover border border-cyan-500/40 shadow-lg shrink-0" 
+          />
           <div>
             <h3 className="text-base md:text-lg font-black uppercase tracking-wider text-white flex items-center gap-2">
               Stickman Kung-Fu Arena
