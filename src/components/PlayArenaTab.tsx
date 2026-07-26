@@ -139,10 +139,14 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
       alert(`🎉 Multiplayer Match Ready!\n\nWe copied the invitation link to your clipboard:\n\n${inviteLink}\n\nShare this link with your challenger to start instantly!`);
     }
 
+    const effectiveBotDifficulty = opponentStyle === 'bot'
+      ? (!isPractice ? 'hard' : difficulty)
+      : undefined;
+
     onLaunchMatch({
       gameType: selectedGame,
       opponentType: opponentStyle,
-      botDifficulty: opponentStyle === 'bot' ? difficulty : undefined,
+      botDifficulty: effectiveBotDifficulty,
       entryFee: actualStake,
       opponentName,
       multiplier,
@@ -169,12 +173,12 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
             Choose Chess, Ludo, or Whot. Play against zero-trust AI Bots with incremental difficulty score boosts, or lock atomic stakes with live peer users.
           </p>
         </div>
-        <div className="bg-[#0F0F13] border border-white/[0.05] p-3 px-5 rounded-2xl flex items-center gap-3.5 shadow-md">
-          <div className="bg-purple-500/10 p-2.5 rounded-xl border border-purple-500/25">
+        <div className="glass-bento p-3 px-5 rounded-2xl flex items-center gap-3.5 shadow-lg border border-white/10">
+          <div className="bg-purple-500/20 p-2.5 rounded-xl border border-purple-500/30">
             <Coins className="w-5 h-5 text-purple-300 animate-pulse" />
           </div>
           <div>
-            <span className="block text-[10px] font-mono text-neutral-500 uppercase tracking-widest leading-none">Your Escrow Holdings</span>
+            <span className="block text-[10px] font-mono text-neutral-400 uppercase tracking-widest leading-none">Your Escrow Holdings</span>
             <strong className="text-xl font-bold font-mono text-white tracking-tight mt-0.5 block">
               {userProfile.coins.toLocaleString()} Coins
             </strong>
@@ -199,10 +203,10 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
                   key={game.id}
                   onClick={() => setSelectedGame(game.id)}
                   id={`arena-game-card-${game.id}`}
-                  className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer select-none flex flex-col md:flex-row items-center gap-6 p-6 ${
+                  className={`group relative overflow-hidden rounded-3xl border transition-all duration-300 cursor-pointer select-none flex flex-col md:flex-row items-center gap-6 p-6 ${
                     isActive 
-                      ? 'bg-purple-500/[0.04] border-purple-500/70 shadow-[0_0_25px_rgba(147,51,234,0.15)] ring-1 ring-purple-500/20' 
-                      : 'bg-[#0B0B0E]/60 border-white/[0.05] hover:border-white/[0.12] hover:bg-[#0B0B0E]/80 hover:-translate-y-0.5'
+                      ? 'glass-bento border-purple-500/80 shadow-[0_0_30px_rgba(168,85,247,0.25)] ring-2 ring-purple-500/40' 
+                      : 'glass-bento glass-bento-hover border-white/10 hover:border-white/20'
                   }`}
                 >
                   {/* Background element */}

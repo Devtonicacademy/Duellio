@@ -187,8 +187,15 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen bg-[#070709] text-neutral-100 font-sans antialiased pb-12 selection:bg-purple-500/30 selection:text-white ${theme}`} id="applet-viewport">
+    <div className={`relative min-h-screen bg-[#070709] text-neutral-100 font-sans antialiased pb-12 selection:bg-purple-500/30 selection:text-white ${theme}`} id="applet-viewport">
       
+      {/* Dynamic Ambient Glassmorphism Gradient Mesh Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10 select-none">
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-purple-600/15 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute top-1/3 -right-40 w-[30rem] h-[30rem] bg-cyan-600/10 rounded-full blur-[140px]"></div>
+        <div className="absolute -bottom-40 left-1/4 w-[35rem] h-[35rem] bg-indigo-600/10 rounded-full blur-[160px]"></div>
+      </div>
+
       {/* Extract Premium Glowing Navigation Header Bar */}
       {!isGameActive && (
         <Header

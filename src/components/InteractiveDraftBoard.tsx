@@ -15,6 +15,7 @@ interface InteractiveDraftBoardProps {
   opponentAvatar: string;
   onGameOver: (winnerIsMe: boolean) => void;
   onAddLog: (log: string) => void;
+  botDifficulty?: 'easy' | 'medium' | 'hard';
 }
 
 export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
@@ -22,7 +23,8 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   opponentName,
   opponentAvatar,
   onGameOver,
-  onAddLog
+  onAddLog,
+  botDifficulty
 }) => {
   const player1Id = 'player-user';
   const player2Id = 'bot-user';
@@ -119,11 +121,21 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
         return;
       }
 
-      // Prioritize capture moves!
+      // Prioritize moves based on difficulty
+      const isHard = botDifficulty === 'hard' || entryFee > 0;
       const captureMoves = availableMoves.filter(m => m.isCapture);
-      const chosenMove = captureMoves.length > 0
-        ? captureMoves[Math.floor(Math.random() * captureMoves.length)]
-        : availableMoves[Math.floor(Math.random() * availableMoves.length)];
+      
+      let chosenMove: typeof availableMoves[0];
+      if (captureMoves.length > 0) {
+        chosenMove = captureMoves[0];
+      } else if (isHard) {
+        // Hard mode: prioritize King promotions (reaching row 7) and advancing forward
+        const kingMoves = availableMoves.filter(m => m.targetRow === 7);
+        const forwardMoves = [...availableMoves].sort((a, b) => b.targetRow - a.targetRow);
+        chosenMove = kingMoves[0] || forwardMoves[0] || availableMoves[0];
+      } else {
+        chosenMove = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+      }
 
       const originalPiece = gameState.pieces.find(p => p.id === chosenMove.pieceId)!;
       const targetPosStr = `(${chosenMove.targetRow}, ${chosenMove.targetCol})`;

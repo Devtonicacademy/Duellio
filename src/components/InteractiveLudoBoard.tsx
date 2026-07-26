@@ -13,6 +13,7 @@ interface InteractiveLudoBoardProps {
   opponentAvatar: string;
   onGameOver: (winnerIsMe: boolean) => void;
   onAddLog: (log: string) => void;
+  botDifficulty?: 'easy' | 'medium' | 'hard';
 }
 
 interface LudoToken {
@@ -58,7 +59,8 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   opponentName,
   opponentAvatar,
   onGameOver,
-  onAddLog
+  onAddLog,
+  botDifficulty
 }) => {
   // Game mode configuration
   const [view3D, setView3D] = useState<boolean>(true);
@@ -159,8 +161,24 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       }
 
       // Heuristic select token
-      const exiting = playable.find(t => t.status === 'home');
-      const selection = exiting || playable[0];
+      const isHard = botDifficulty === 'hard' || entryFee > 0;
+      let selection: LudoToken;
+
+      if (isHard) {
+        const redTokens = tokens.filter(t => t.color === 'red' && t.status === 'board');
+        const captureMove = playable.find(t => {
+          if (t.status !== 'board') return false;
+          const nextPos = t.position + outcome1;
+          return redTokens.some(r => r.position === nextPos);
+        });
+        const exiting = playable.find(t => t.status === 'home');
+        const furthestOnBoard = [...playable.filter(t => t.status === 'board')].sort((a, b) => b.position - a.position)[0];
+
+        selection = captureMove || exiting || furthestOnBoard || playable[0];
+      } else {
+        const exiting = playable.find(t => t.status === 'home');
+        selection = exiting || playable[0];
+      }
 
       setTimeout(() => {
         onAddLog(`[BOT PIECE MOVE] Bot moves token ${selection.id.toUpperCase()}`);

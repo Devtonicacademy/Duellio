@@ -417,7 +417,9 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         entryFee: friendChallenge.entryFee,
         status: 'accepted',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        botDifficulty: friendChallenge.botDifficulty,
+        botDifficulty: (friendChallenge.opponentType === 'bot' && friendChallenge.entryFee > 0)
+          ? 'hard'
+          : friendChallenge.botDifficulty,
         opponentType: friendChallenge.opponentType,
         rewardMultiplier: friendChallenge.rewardMultiplier
       };
@@ -1324,6 +1326,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       entryFee,
       status: 'pending',
       opponentType: 'bot',
+      botDifficulty: entryFee > 0 ? 'hard' : undefined,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
@@ -1648,11 +1651,20 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     const playableCards = botHand.filter(isPlayable);
 
     if (playableCards.length > 0) {
-      // Pick strategy
-      const specCards = playableCards.filter(c => [1, 2, 5, 8, 14, 20].includes(c.value));
-      playedCard = specCards.length > 0 
-        ? specCards[Math.floor(Math.random() * specCards.length)] 
-        : playableCards[Math.floor(Math.random() * playableCards.length)];
+      // Pick strategy based on difficulty
+      const isHard = activeChallenge?.botDifficulty === 'hard' || (activeChallenge?.opponentType === 'bot' && (activeChallenge?.entryFee || 0) > 0);
+      
+      if (isHard) {
+        // Hard mode: prioritize attack cards (Pick 2, Pick 3, Hold On, Whot wildcards) and high value cards
+        const attackCards = playableCards.filter(c => [2, 5, 1, 14, 20].includes(c.value));
+        const highValueCards = [...playableCards].sort((a, b) => b.value - a.value);
+        playedCard = attackCards[0] || highValueCards[0] || playableCards[0];
+      } else {
+        const specCards = playableCards.filter(c => [1, 2, 5, 8, 14, 20].includes(c.value));
+        playedCard = specCards.length > 0 
+          ? specCards[Math.floor(Math.random() * specCards.length)] 
+          : playableCards[Math.floor(Math.random() * playableCards.length)];
+      }
 
       if (playedCard.suit === 'Whot') {
         const remainingSuits = botHand
@@ -3250,6 +3262,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 opponentAvatar={opponentProfile?.avatar || ''}
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
+                botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
               />
             ) : activeChallenge?.gameType === 'Draft' ? (
               <InteractiveDraftBoard
@@ -3258,6 +3271,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 opponentAvatar={opponentProfile?.avatar || ''}
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
+                botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
               />
             ) : (
               <InteractiveChessBoard
@@ -3266,6 +3280,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 opponentAvatar={opponentProfile?.avatar || ''}
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
+                botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
               />
             )}
           </div>

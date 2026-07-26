@@ -13,6 +13,7 @@ interface InteractiveChessBoardProps {
   opponentAvatar: string;
   onGameOver: (winnerIsMe: boolean) => void;
   onAddLog: (log: string) => void;
+  botDifficulty?: 'easy' | 'medium' | 'hard';
 }
 
 type PieceType = 'p' | 'r' | 'n' | 'b' | 'q' | 'k';
@@ -87,7 +88,8 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
   opponentName,
   opponentAvatar,
   onGameOver,
-  onAddLog
+  onAddLog,
+  botDifficulty
 }) => {
   const [board, setBoard] = useState<BoardGrid>(JSON.parse(JSON.stringify(INITIAL_BOARD)));
   const [activeColor, setActiveColor] = useState<Color>('w'); // 'w' = Player, 'b' = Bot
@@ -353,9 +355,19 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
 
                 if (validateMoveHeuristic(r, c, tr, tc)) {
                   let moveScore = 1;
+                  const isHard = botDifficulty === 'hard' || entryFee > 0;
                   if (targetPiece) {
-                    // capture is higher score priority
-                    moveScore = targetPiece.type === 'k' ? 100 : targetPiece.type === 'q' ? 25 : 10;
+                    if (isHard) {
+                      // Hard mode: high priority tactical captures
+                      const pieceVal: Record<PieceType, number> = { k: 999, q: 90, r: 50, b: 30, n: 30, p: 10 };
+                      moveScore = (pieceVal[targetPiece.type] || 10) * 10;
+                    } else {
+                      moveScore = targetPiece.type === 'k' ? 100 : targetPiece.type === 'q' ? 25 : 10;
+                    }
+                  } else if (isHard) {
+                    // Position/advancement bonus in hard mode
+                    if ((tr === 3 || tr === 4) && (tc >= 2 && tc <= 5)) moveScore += 3;
+                    if (piece.type === 'p') moveScore += tr; // pawn push bonus
                   }
                   availableMoves.push({ from: [r, c], to: [tr, tc], score: moveScore });
                 }
