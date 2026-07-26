@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Swords, ShieldCheck, Timer, Award, AlertTriangle, Play, Eye, EyeOff, HelpCircle, Trophy } from 'lucide-react';
 import { Chess3DScene } from './Chess3DScene';
+import { ChessRulesService, CastlingRights, INITIAL_CASTLING_RIGHTS } from '../services/chessRulesService';
 
 interface InteractiveChessBoardProps {
   entryFee: number;
@@ -95,10 +96,13 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
   const [board, setBoard] = useState<BoardGrid>(JSON.parse(JSON.stringify(INITIAL_BOARD)));
   const [activeColor, setActiveColor] = useState<Color>('w'); // 'w' = Player, 'b' = Bot
   const [selectedSquare, setSelectedSquare] = useState<[number, number] | null>(null);
+  const [castlingRights, setCastlingRights] = useState<CastlingRights>({ ...INITIAL_CASTLING_RIGHTS });
+  const [enPassantTarget, setEnPassantTarget] = useState<[number, number] | null>(null);
+  const [isCheck, setIsCheck] = useState<boolean>(false);
   const [whiteTimer, setWhiteTimer] = useState<number>(300); // 5 minutes standard speed
   const [blackTimer, setBlackTimer] = useState<number>(300);
   const [fenString, setFenString] = useState<string>('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
-  const [gameResult, setGameResult] = useState<'playing' | 'white_won' | 'black_won'>('playing');
+  const [gameResult, setGameResult] = useState<'playing' | 'white_won' | 'black_won' | 'draw'>('playing');
   const [moveAttemptLogs, setMoveAttemptLogs] = useState<string[]>([]);
   const [botIsThinking, setBotIsThinking] = useState<boolean>(false);
   const [view3D, setView3D] = useState<boolean>(true);
@@ -218,12 +222,12 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
         return;
       }
 
-      // Legal movement vector bounds filtering
-      const isWalkable = validateMoveHeuristic(selRow, selCol, row, col);
-      if (!isWalkable) {
-        onAddLog(`[SAN VALIDATOR] Blocked illegal path: Selected move violates piece vectors!`);
+      // FIDE Legal movement check
+      const isLegal = ChessRulesService.isMoveLegal(board, selRow, selCol, row, col, castlingRights, enPassantTarget);
+      if (!isLegal) {
+        onAddLog(`[SAN VALIDATOR] Blocked move: Violates FIDE rules or leaves King in check!`);
         const itemType = actingPiece ? PIECE_NAMES[actingPiece.type] : 'Piece';
-        setInvalidMoveMessage(`Blocked Movement! Overlaid coordinates violate the moving vector rules of your ${itemType}. Look for the pulsing green destination markers.`);
+        setInvalidMoveMessage(`Illegal Move! Overlaid coordinates violate movement rules for your ${itemType} or expose your King to check.`);
         setSelectedSquare(null);
         return;
       }
@@ -241,190 +245,165 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
     }
   };
 
-  // Basic move validity vectors heuristic to block cheating in preview mode
-  const validateMoveHeuristic = (fromR: number, fromC: number, toR: number, toC: number): boolean => {
-    const piece = board[fromR][fromC];
-    if (!piece) return false;
-
-    const rowDiff = Math.abs(toR - fromR);
-    const colDiff = Math.abs(toC - fromC);
-
-    // Simple path validation for previews
-    if (piece.type === 'p') {
-      // White pawn moves "up" (row decrease), Black pawn "down" (row increase)
-      if (piece.color === 'w') {
-        if (fromR === 6 && rowDiff === 2 && colDiff === 0 && !board[5][fromC] && !board[4][fromC]) return true; // first double-step
-        return fromR - toR === 1 && colDiff === 0 && !board[toR][toC] || (fromR - toR === 1 && colDiff === 1 && board[toR][toC] !== null);
-      } else {
-        if (fromR === 1 && rowDiff === 2 && colDiff === 0 && !board[2][fromC] && !board[3][fromC]) return true;
-        return toR - fromR === 1 && colDiff === 0 && !board[toR][toC] || (toR - fromR === 1 && colDiff === 1 && board[toR][toC] !== null);
-      }
-    }
-
-    if (piece.type === 'n') {
-      // L shape
-      return (rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2);
-    }
-
-    if (piece.type === 'b') {
-      // Diagonals
-      return rowDiff === colDiff;
-    }
-
-    if (piece.type === 'r') {
-      // Straight
-      return rowDiff === 0 || colDiff === 0;
-    }
-
-    if (piece.type === 'q') {
-      // Diagonal or straight
-      return rowDiff === colDiff || rowDiff === 0 || colDiff === 0;
-    }
-
-    if (piece.type === 'k') {
-      // King gets 1 step
-      return rowDiff <= 1 && colDiff <= 1;
-    }
-
-    return true;
-  };
-
   const executeChessMove = (fromR: number, fromC: number, toR: number, toC: number) => {
     const piece = board[fromR][fromC]!;
-    const startCoord = getAlgebraicPos(fromR, fromC);
     const destCoord = getAlgebraicPos(toR, toC);
     const destPiece = board[toR][toC];
 
-    onAddLog(`[SAN VALIDATOR] Player playing move: ${piece.type.toUpperCase()} from ${startCoord} to ${destCoord}.`);
+    const isWhite = piece.color === 'w';
+    const nextColor: Color = isWhite ? 'b' : 'w';
 
-    // Synchronize timings drift check logs
-    const driftOffset = Math.floor(Math.random() * 18) + 5; // e.g., 5ms - 23ms
-    onAddLog(`[TIMING INTEGRITY] Local client dispatch timestamp: ${Date.now() - driftOffset}.`);
-    onAddLog(`[TIMING INTEGRITY] Secure Server atomic timestamp: ${Date.now()}.`);
-    onAddLog(`[CLOCK SYNC] Server-time subtraction reports drift: +${driftOffset}ms (Criteria: ±50ms).`);
+    // 1. Calculate board mutation
+    const newBoard = board.map(row => [...row]);
+    newBoard[fromR][fromC] = null;
 
-    // Mutate the board copy
-    setBoard(prev => {
-      const copy = prev.map(row => [...row]);
-      copy[toR][toC] = piece;
-      copy[fromR][fromC] = null;
-      return copy;
-    });
+    // Handle En Passant capture removal
+    let capturedPiece = destPiece;
+    if (piece.type === 'p' && enPassantTarget && toR === enPassantTarget[0] && toC === enPassantTarget[1]) {
+      const pawnRowToRemove = isWhite ? toR + 1 : toR - 1;
+      capturedPiece = newBoard[pawnRowToRemove][toC];
+      newBoard[pawnRowToRemove][toC] = null;
+    }
 
-    setSelectedSquare(null);
-    setActiveColor('b'); // hand turn to bot
-
-    // Check if black king captured (simulated simplified termination wins)
-    if (destPiece && destPiece.type === 'k') {
-      setGameResult('white_won');
-      if (entryFee > 0) {
-        onAddLog(`[SUCCESS] Opponent King Captured! Dispatching prize wallet transactions...`);
-      } else {
-        onAddLog(`[SUCCESS] Opponent King Captured! Free practice match completed.`);
+    // Handle Castling rook move
+    let castlingNotation = '';
+    if (piece.type === 'k' && Math.abs(toC - fromC) === 2) {
+      if (toC === 6) { // Kingside
+        const rook = newBoard[fromR][7];
+        newBoard[fromR][5] = rook;
+        newBoard[fromR][7] = null;
+        castlingNotation = 'O-O';
+      } else if (toC === 2) { // Queenside
+        const rook = newBoard[fromR][0];
+        newBoard[fromR][3] = rook;
+        newBoard[fromR][0] = null;
+        castlingNotation = 'O-O-O';
       }
-      setTimeout(() => onGameOver(true), 2500);
+    }
+
+    // Handle Pawn Promotion (Auto-promote to Queen on back rank)
+    let isPromoted = false;
+    if (piece.type === 'p' && (toR === 0 || toR === 7)) {
+      newBoard[toR][toC] = { type: 'q', color: piece.color };
+      isPromoted = true;
+    } else {
+      newBoard[toR][toC] = piece;
+    }
+
+    // 2. Update Castling Rights & En Passant Target
+    const nextCastling = { ...castlingRights };
+    if (piece.type === 'k') {
+      if (isWhite) { nextCastling.wK = false; nextCastling.wQ = false; }
+      else { nextCastling.bK = false; nextCastling.bQ = false; }
+    }
+    if (piece.type === 'r') {
+      if (fromR === 7 && fromC === 0) nextCastling.wQ = false;
+      if (fromR === 7 && fromC === 7) nextCastling.wK = false;
+      if (fromR === 0 && fromC === 0) nextCastling.bQ = false;
+      if (fromR === 0 && fromC === 7) nextCastling.bK = false;
+    }
+
+    let nextEnPassant: [number, number] | null = null;
+    if (piece.type === 'p' && Math.abs(toR - fromR) === 2) {
+      const midR = fromR + (isWhite ? -1 : 1);
+      nextEnPassant = [midR, fromC];
+    }
+
+    setCastlingRights(nextCastling);
+    setEnPassantTarget(nextEnPassant);
+    setBoard(newBoard);
+    setSelectedSquare(null);
+
+    // 3. Check for Check, Checkmate, and Stalemate
+    const checkState = ChessRulesService.isKingInCheck(newBoard, nextColor);
+    setIsCheck(checkState);
+
+    const outcome = ChessRulesService.getGameStateOutcome(newBoard, nextColor, nextCastling, nextEnPassant);
+
+    const moveNotation = castlingNotation 
+      ? castlingNotation 
+      : `${piece.type.toUpperCase()}${capturedPiece ? 'x' : ''}${destCoord}${isPromoted ? '=Q' : ''}${checkState ? '+' : ''}`;
+
+    onAddLog(`[SAN VALIDATOR] ${isWhite ? 'Player' : opponentName} move: ${moveNotation}`);
+
+    if (outcome === 'checkmate') {
+      const winnerState = isWhite ? 'white_won' : 'black_won';
+      setGameResult(winnerState);
+      onAddLog(`[CHECKMATE] ${isWhite ? 'White' : 'Black'} has delivered CHECKMATE! Match concluded.`);
+      setTimeout(() => onGameOver(isWhite), 2500);
+      return;
+    } else if (outcome === 'stalemate') {
+      setGameResult('draw');
+      onAddLog(`[STALEMATE] No legal moves available. Match declared a Draw.`);
       return;
     }
 
-    // Trigger subtle logger values
+    setActiveColor(nextColor);
+
     setMoveAttemptLogs(prev => [
-      `White: ${piece.type.toUpperCase()}${destPiece ? 'x' : ''}${destCoord}`,
+      `${isWhite ? 'White' : 'Black'}: ${moveNotation}`,
       ...prev
     ]);
   };
 
-  // Bot Turn Simulator
+  // Bot Turn Engine
   useEffect(() => {
     if (activeColor !== 'b' || gameResult !== 'playing' || botIsThinking) return;
 
     setBotIsThinking(true);
-    onAddLog(`[TURN KICK] Bot player ${opponentName} analyzing FEN parameters state map.`);
+    onAddLog(`[TURN KICK] Bot player ${opponentName} evaluating legal moves with FEN engine.`);
 
     setTimeout(() => {
-      // Find all black pieces that have playable moves
-      const availableMoves: Array<{ from: [number, number]; to: [number, number]; score: number }> = [];
+      const legalMoves = ChessRulesService.getAllLegalMoves(board, 'b', castlingRights, enPassantTarget);
 
-      for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
-          const piece = board[r][c];
-          if (piece && piece.color === 'b') {
-            // Find valid destination moves
-            for (let tr = 0; tr < 8; tr++) {
-              for (let tc = 0; tc < 8; tc++) {
-                const targetPiece = board[tr][tc];
-                if (targetPiece && targetPiece.color === 'b') continue;
-
-                if (validateMoveHeuristic(r, c, tr, tc)) {
-                  let moveScore = 1;
-                  const isHard = botDifficulty === 'hard' || entryFee > 0;
-                  if (targetPiece) {
-                    if (isHard) {
-                      // Hard mode: high priority tactical captures
-                      const pieceVal: Record<PieceType, number> = { k: 999, q: 90, r: 50, b: 30, n: 30, p: 10 };
-                      moveScore = (pieceVal[targetPiece.type] || 10) * 10;
-                    } else {
-                      moveScore = targetPiece.type === 'k' ? 100 : targetPiece.type === 'q' ? 25 : 10;
-                    }
-                  } else if (isHard) {
-                    // Position/advancement bonus in hard mode
-                    if ((tr === 3 || tr === 4) && (tc >= 2 && tc <= 5)) moveScore += 3;
-                    if (piece.type === 'p') moveScore += tr; // pawn push bonus
-                  }
-                  availableMoves.push({ from: [r, c], to: [tr, tc], score: moveScore });
-                }
-              }
-            }
-          }
+      if (legalMoves.length === 0) {
+        const inCheck = ChessRulesService.isKingInCheck(board, 'b');
+        if (inCheck) {
+          onAddLog(`[CHECKMATE] Bot is in checkmate! White wins.`);
+          setGameResult('white_won');
+          setTimeout(() => onGameOver(true), 2500);
+        } else {
+          onAddLog(`[STALEMATE] Bot has no legal moves. Match is a draw.`);
+          setGameResult('draw');
         }
-      }
-
-      if (availableMoves.length === 0) {
-        onAddLog(`[TURN EXPLOIT] Bot has no valid moves. Conceding or declaring Stalemate.`);
-        setGameResult('white_won');
-        setTimeout(() => onGameOver(true), 2500);
+        setBotIsThinking(false);
         return;
       }
 
-      // Sort moves by score priority
-      availableMoves.sort((x, y) => y.score - x.score);
-      const chosen = availableMoves[0]; // best weight play
+      // Score moves
+      const scoredMoves = legalMoves.map(m => {
+        const actingPiece = board[m.from[0]][m.from[1]]!;
+        const targetPiece = board[m.to[0]][m.to[1]];
+        let moveScore = 1;
+        const isHard = botDifficulty === 'hard' || entryFee > 0;
 
-      const [fr, fc] = chosen.from;
-      const [tr, tc] = chosen.to;
+        if (targetPiece) {
+          const pieceVal: Record<PieceType, number> = { k: 999, q: 90, r: 50, b: 30, n: 30, p: 10 };
+          moveScore = (pieceVal[targetPiece.type] || 10) * 10;
+        } else if (isHard) {
+          if ((m.to[0] === 3 || m.to[0] === 4) && (m.to[1] >= 2 && m.to[1] <= 5)) moveScore += 3;
+          if (actingPiece.type === 'p') moveScore += m.to[0];
+        }
 
-      const botPiece = board[fr][fc]!;
-      const startCoord = getAlgebraicPos(fr, fc);
-      const destCoord = getAlgebraicPos(tr, tc);
-      const destPiece = board[tr][tc];
+        // Prioritize check delivery
+        const tempBoard = board.map(row => [...row]);
+        tempBoard[m.to[0]][m.to[1]] = actingPiece;
+        tempBoard[m.from[0]][m.from[1]] = null;
+        if (ChessRulesService.isKingInCheck(tempBoard, 'w')) {
+          moveScore += 15;
+        }
 
-      onAddLog(`[STATE TRANSITION] ${opponentName} played ${botPiece.type.toUpperCase()} to ${destCoord}.`);
-
-      setBoard(prev => {
-        const copy = prev.map(row => [...row]);
-        copy[tr][tc] = botPiece;
-        copy[fr][fc] = null;
-        return copy;
+        return { ...m, score: moveScore };
       });
 
-      // Turn transition back
-      setActiveColor('w');
+      scoredMoves.sort((x, y) => y.score - x.score);
+      const chosen = scoredMoves[0];
+
+      executeChessMove(chosen.from[0], chosen.from[1], chosen.to[0], chosen.to[1]);
       setBotIsThinking(false);
+    }, 1500);
 
-      if (destPiece && destPiece.type === 'k') {
-        setGameResult('black_won');
-        onAddLog(`[CRITICAL] Your King was captured! Gamedev session lost.`);
-        setTimeout(() => onGameOver(false), 2500);
-        return;
-      }
-
-      setMoveAttemptLogs(prev => [
-        `Black: ${botPiece.type.toUpperCase()}${destPiece ? 'x' : ''}${destCoord}`,
-        ...prev
-      ]);
-
-    }, 2000);
-
-  }, [activeColor, board, gameResult]);
+  }, [activeColor, board, gameResult, castlingRights, enPassantTarget]);
 
   // Format digital timers
   const formatTime = (totalSeconds: number): string => {
@@ -433,20 +412,10 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  // Pre-calculate valid target destinations for the active selected piece to render overlays
-  const validDestinations: Array<[number, number]> = [];
-  if (selectedSquare && activeColor === 'w') {
-    const [selR, selC] = selectedSquare;
-    for (let r = 0; r < 8; r++) {
-      for (let c = 0; c < 8; c++) {
-        const targetPiece = board[r][c];
-        if (targetPiece && targetPiece.color === 'w') continue; // cannot capture own
-        if (validateMoveHeuristic(selR, selC, r, c)) {
-          validDestinations.push([r, c]);
-        }
-      }
-    }
-  }
+  // Pre-calculate valid target destinations using FIDE rule legal checks
+  const validDestinations = (selectedSquare && activeColor === 'w')
+    ? ChessRulesService.getLegalMovesForPiece(board, selectedSquare[0], selectedSquare[1], castlingRights, enPassantTarget)
+    : [];
 
   // Render highly-polished transparent glass cylindrical chess piece
   const renderChessPieceItem = (piece: ChessPiece, isSelected: boolean) => {
@@ -582,7 +551,27 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
             </motion.div>
           )}
 
-          {!invalidMoveMessage && selectedPieceTips && (
+          {isCheck && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -5 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -5 }}
+              className="bg-amber-500/15 border-2 border-amber-500/60 p-3 rounded-xl flex items-center justify-between text-xs text-amber-200 shadow-[0_0_20px_rgba(245,158,11,0.25)] animate-pulse"
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 animate-bounce" />
+                <div>
+                  <p className="font-black uppercase tracking-wider text-amber-400 text-[11px]">⚠️ KING UNDER THREAT (+ CHECK)</p>
+                  <p className="font-mono text-slate-300 text-[10px]">Your commander is in check! You must make a move that protects or moves your King.</p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 bg-amber-500 text-neutral-950 font-black font-mono text-[10px] rounded uppercase tracking-widest shadow">
+                CHECK!
+              </span>
+            </motion.div>
+          )}
+
+          {!invalidMoveMessage && !isCheck && selectedPieceTips && (
             <motion.div
               initial={{ opacity: 0, height: 0, y: -5 }}
               animate={{ opacity: 1, height: 'auto', y: 0 }}
