@@ -71,12 +71,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'discover' | 'tournaments' | 'lobbies' | 'profile' | 'play-arena' | 'spectate' | 'chat' | 'admin'>('discover');
 
   // High fidelity quick state connectors
-  const [preselectedGame, setPreselectedGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | null>(null);
+  const [preselectedGame, setPreselectedGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | null>(null);
   const [suggestedStake, setSuggestedStake] = useState<number>(300);
 
   const [friendChallenge, setFriendChallenge] = useState<{
     senderName: string;
-    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft';
+    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
     entryFee: number;
     opponentType?: 'bot' | 'player';
     botDifficulty?: 'easy' | 'medium' | 'hard';
@@ -129,7 +129,7 @@ export default function App() {
   }, [userProfile?.uid]);
 
   // Direct card-to-matchmaker connector
-  const handleSelectGameFromDiscover = (gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft', stake: number) => {
+  const handleSelectGameFromDiscover = (gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe', stake: number) => {
     setPreselectedGame(gameType);
     setSuggestedStake(stake);
     setActiveTab('lobbies');
@@ -137,7 +137,7 @@ export default function App() {
 
   // Direct card-to-matchmaker connector from play arena tab
   const handleLaunchArenaMatch = (matchData: {
-    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft';
+    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
     opponentType: 'bot' | 'player';
     botDifficulty?: 'easy' | 'medium' | 'hard';
     entryFee: number;

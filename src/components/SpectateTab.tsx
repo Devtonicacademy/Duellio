@@ -23,7 +23,7 @@ interface SpectateTabProps {
 
 interface LiveMatch {
   id: string;
-  gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft';
+  gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
   playerA: { username: string; avatar: string; wins: number; odds: number };
   playerB: { username: string; avatar: string; wins: number; odds: number };
   pool: number;
@@ -105,6 +105,20 @@ export const SpectateTab: React.FC<SpectateTabProps> = ({
         'Mwangi moved row 4 col 3 -> row 5 col 4.',
         'Zanele captured row 3 col 2 -> row 5 col 4.',
         'Zanele captured row 5 col 4 -> row 7 col 6 (KINGED).',
+      ]
+    },
+    {
+      id: 'match_4',
+      gameType: 'TicTacToe',
+      playerA: { username: 'Cyber_Strike', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80', wins: 88, odds: 1.75 },
+      playerB: { username: 'Matrix_Node', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80', wins: 91, odds: 2.15 },
+      pool: 3500,
+      spectators: 145,
+      status: 'Cell 5 (Center) claimed by Cyber_Strike. Active turn: Matrix_Node.',
+      logs: [
+        'Cyber_Strike claimed cell 5 (Center X).',
+        'Matrix_Node claimed cell 1 (Corner O).',
+        'Cyber_Strike claimed cell 9 (Corner X).',
       ]
     }
   ]);

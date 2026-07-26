@@ -22,7 +22,7 @@ import { UserProfile } from '../types';
 interface HeaderProps {
   activeTab: 'discover' | 'tournaments' | 'lobbies' | 'profile' | 'play-arena' | 'spectate' | 'chat' | 'admin';
   setActiveTab: (tab: 'discover' | 'tournaments' | 'lobbies' | 'profile' | 'play-arena' | 'spectate' | 'chat' | 'admin') => void;
-  setPreselectedGame: (game: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | null) => void;
+  setPreselectedGame: (game: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | null) => void;
   theme: 'dark' | 'light';
   toggleTheme: () => void;
   userProfile: UserProfile | null;
