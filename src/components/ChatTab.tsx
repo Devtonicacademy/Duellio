@@ -31,7 +31,8 @@ import {
   onSnapshot, 
   addDoc, 
   doc, 
-  setDoc 
+  setDoc,
+  serverTimestamp 
 } from 'firebase/firestore';
 import { ChatModerationService } from '../services/chatModeration';
 import { ReportService } from '../services/reportService';
@@ -69,6 +70,29 @@ const GAME_GROUPS = [
   { id: 'Group_Whot', name: 'Whot Card Lounge', avatar: '🃏', gameType: 'Whot', desc: 'Connect for Whot card matches and wagers.' },
   { id: 'Group_Draft', name: 'Drafts Diagonal Matrix', avatar: '🔴', gameType: 'Draft', desc: 'Discuss checkers and drafts gameplay tactics.' }
 ];
+
+const parseTimestamp = (rawTimestamp: any): string => {
+  if (!rawTimestamp) {
+    return new Date().toISOString();
+  }
+  if (typeof rawTimestamp.toDate === 'function') {
+    try {
+      return rawTimestamp.toDate().toISOString();
+    } catch {
+      return new Date().toISOString();
+    }
+  }
+  if (typeof rawTimestamp === 'object' && typeof rawTimestamp.seconds === 'number') {
+    return new Date(rawTimestamp.seconds * 1000).toISOString();
+  }
+  if (typeof rawTimestamp === 'string') {
+    return rawTimestamp;
+  }
+  if (typeof rawTimestamp === 'number') {
+    return new Date(rawTimestamp).toISOString();
+  }
+  return new Date().toISOString();
+};
 
 export const ChatTab: React.FC<ChatTabProps> = ({
   userProfile,
@@ -139,7 +163,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         const data = docSnap.data();
         chats.push({
           id: docSnap.id,
-          ...data
+          ...data,
+          timestamp: parseTimestamp(data.timestamp)
         });
       });
       // Sort by timestamp descending
@@ -161,7 +186,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             ...prev,
             [group.id]: {
               text: data.lastMessage || 'No messages yet',
-              timestamp: data.timestamp || new Date(0).toISOString()
+              timestamp: parseTimestamp(data.timestamp)
             }
           }));
         }
@@ -226,9 +251,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             senderName: data.senderName,
             senderAvatar: data.senderAvatar,
             text: data.text,
-            timestamp: data.timestamp
+            timestamp: parseTimestamp(data.timestamp)
           } as ChatMessage);
         });
+        msgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         setChatMessages(msgs);
       });
     } else {
@@ -250,7 +276,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             senderName: data.senderName,
             senderAvatar: data.senderAvatar,
             text: data.text,
-            timestamp: data.timestamp,
+            timestamp: parseTimestamp(data.timestamp),
             isChallenge: data.isChallenge,
             challengeId: data.challengeId,
             gameType: data.gameType,
@@ -258,6 +284,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             challengeStatus: data.challengeStatus
           } as ChatMessage);
         });
+        msgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         setChatMessages(msgs);
       });
     }
@@ -341,7 +368,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     if (!userProfile || !activeChat) return;
 
     const cleanText = ChatModerationService.filterMessage(textTrimmed);
-    const timestampStr = new Date().toISOString();
 
     if (activeChat.isGroup) {
       // 1. Group message send
@@ -351,7 +377,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           lastMessage: `${userProfile.username}: ${cleanText}`,
           lastSenderId: userProfile.uid,
           lastSenderName: userProfile.username,
-          timestamp: timestampStr
+          timestamp: serverTimestamp()
         }, { merge: true });
 
         const messagesRef = collection(db, 'group_chats', activeChat.id, 'messages');
@@ -360,7 +386,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           senderName: userProfile.username,
           senderAvatar: userProfile.avatar,
           text: cleanText,
-          timestamp: timestampStr
+          timestamp: serverTimestamp()
         });
         setInputMessage('');
       } catch (err) {
@@ -381,7 +407,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         await setDoc(chatRef, {
           lastMessage: isChallengeMsg ? `Challenge: ${challengeData.gameType}` : cleanText,
           lastSenderId: userProfile.uid,
-          timestamp: timestampStr,
+          timestamp: serverTimestamp(),
           users: [userProfile.uid, activeChat.id],
           unreadCount: {
             ...(existingChat?.unreadCount || {}),
@@ -396,7 +422,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           senderName: userProfile.username,
           senderAvatar: userProfile.avatar,
           text: isChallengeMsg ? `Staked Duel Challenge: ${challengeData.gameType}` : cleanText,
-          timestamp: timestampStr
+          timestamp: serverTimestamp()
         };
 
         if (isChallengeMsg && challengeData) {
@@ -437,7 +463,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       const chatRef = doc(db, 'chats', chatId);
       await setDoc(chatRef, {
         lastMessage: `Challenge Accepted: ${msg.gameType}`,
-        timestamp: new Date().toISOString()
+        timestamp: serverTimestamp()
       }, { merge: true });
 
       setFriendChallenge({
@@ -467,7 +493,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       const chatRef = doc(db, 'chats', chatId);
       await setDoc(chatRef, {
         lastMessage: `Challenge Declined: ${msg.gameType}`,
-        timestamp: new Date().toISOString()
+        timestamp: serverTimestamp()
       }, { merge: true });
     } catch (err) {
       console.error("Decline challenge error:", err);
@@ -487,7 +513,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         users: [userProfile.uid, selectedUser.uid],
         lastMessage: "Chat started",
         lastSenderId: "",
-        timestamp: new Date().toISOString(),
+        timestamp: serverTimestamp(),
         unreadCount: {
           [userProfile.uid]: 0,
           [selectedUser.uid]: 0
@@ -1242,7 +1268,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               ) : (
                 chatMessages.map((msg) => {
                   const isMe = msg.senderId === userProfile.uid;
-                  const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  const msgDate = new Date(msg.timestamp);
+                  const time = !isNaN(msgDate.getTime()) 
+                    ? msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : 'Just now';
 
                   // Handle challenge messages
                   if (msg.isChallenge && !activeChat.isGroup) {
