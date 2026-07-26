@@ -42,7 +42,7 @@ function LoadingFallback() {
 }
 
 export default function App() {
-  const { theme, toggleTheme, voiceEnabled, toggleVoice } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   
   const {
     allProfiles,
