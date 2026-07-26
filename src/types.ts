@@ -38,7 +38,7 @@ export interface ChatMessage {
   timestamp: string;
   isChallenge?: boolean;
   challengeId?: string;
-  gameType?: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
+  gameType?: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman';
   entryFee?: number;
   challengeStatus?: 'pending' | 'accepted' | 'declined';
 }
@@ -48,7 +48,7 @@ export interface MatchChallenge {
   senderId: string;
   senderName: string;
   receiverId: string;
-  gameType: 'Whot' | 'Ludo' | 'Chess' | 'Draft' | 'TicTacToe';
+  gameType: 'Whot' | 'Ludo' | 'Chess' | 'Draft' | 'TicTacToe' | 'Stickman';
   entryFee: number;
   status: 'pending' | 'accepted' | 'declined' | 'completed';
   timestamp: string;

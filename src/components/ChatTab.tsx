@@ -43,7 +43,7 @@ interface ChatTabProps {
   setActiveTab: (tab: 'discover' | 'tournaments' | 'lobbies' | 'profile' | 'play-arena' | 'spectate' | 'chat') => void;
   setFriendChallenge: (challenge: {
     senderName: string;
-    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
+    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman';
     entryFee: number;
     opponentType?: 'bot' | 'player';
     botDifficulty?: 'easy' | 'medium' | 'hard';
@@ -107,7 +107,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   
   // Challenge overlay state
   const [showChallengeForm, setShowChallengeForm] = useState(false);
-  const [challengeGame, setChallengeGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe'>('Chess');
+  const [challengeGame, setChallengeGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman'>('Stickman');
   const [challengeStake, setChallengeStake] = useState<number>(250);
 
   // Group latest messages tracker to show unread states locally
@@ -1158,7 +1158,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                       <div className="space-y-1.5">
                         <label className="text-[9px] font-mono text-neutral-500 uppercase tracking-widest block">Select Board Module</label>
                         <div className="grid grid-cols-5 gap-1 p-1 bg-black/40 border border-white/[0.04] rounded-xl">
-                          {(['Chess', 'Ludo', 'Whot', 'Draft', 'TicTacToe'] as const).map(game => (
+                          {(['Stickman', 'Chess', 'Ludo', 'Whot', 'Draft', 'TicTacToe'] as const).map(game => (
                             <button
                               key={game}
                               type="button"

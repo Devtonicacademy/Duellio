@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 interface DiscoverTabProps {
-  onSelectGame: (gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe', suggestedStake: number) => void;
+  onSelectGame: (gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman', suggestedStake: number) => void;
   userCoins: number;
 }
 
@@ -27,7 +27,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
   const [activeCategory, setActiveTab] = useState<'all' | 'strategy' | 'classic' | 'fast' | 'high'>('all');
   const [searchInput, setSearchInput] = useState('');
   const [quickStake, setQuickStake] = useState<number>(250);
-  const [selectedQuickGame, setSelectedQuickGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe'>('Chess');
+  const [selectedQuickGame, setSelectedQuickGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman'>('Stickman');
 
   const featuredGames = [
     {
@@ -40,8 +40,22 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
       totalStaked: 45000,
       playersLive: '5.4k Live',
       rating: 5.0,
-      tags: ['ELITE', 'CHESS'],
+      tags: ['#1 MOST PLAYED', 'CHESS'],
       image: '/assets/chess_bg.png',
+      isFeatured: true
+    },
+    {
+      id: 'whot-royale',
+      title: 'Neon Whot! Royale',
+      gameType: 'Whot' as const,
+      category: 'fast',
+      stakeMin: 1,
+      stakeMax: 100,
+      totalStaked: 3200,
+      playersLive: '1.2k Live',
+      rating: 4.9,
+      tags: ['TRENDING CARDS', 'WHOT'],
+      image: '/assets/whot_bg.png',
       isFeatured: false
     },
     {
@@ -54,86 +68,40 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
       totalStaked: 12450,
       playersLive: '4.8k Live',
       rating: 4.8,
-      tags: ['POPULAR NOW', 'LUDO'],
+      tags: ['POPULAR ARENA', 'LUDO'],
       image: '/assets/ludo_bg.png',
       isFeatured: false
-    },
-    {
-      id: 'whot-royale',
-      title: 'Neon Whot! Royale',
-      gameType: 'Whot' as const,
-      category: 'fast',
-      stakeMin: 1,
-      stakeMax: 100,
-      totalStaked: 3200,
-      playersLive: '1.2k Live',
-      rating: 4.9,
-      tags: ['CARDS', 'WHOT'],
-      image: '/assets/whot_bg.png',
-      isFeatured: false
-    },
-    {
-      id: 'quantum-checkers',
-      title: 'Quantum Drafts',
-      gameType: 'Draft' as const,
-      category: 'strategy',
-      stakeMin: 2,
-      stakeMax: 250,
-      totalStaked: 1800,
-      playersLive: '950 Live',
-      rating: 4.7,
-      tags: ['STRATEGY', 'DRAFT'],
-      image: '/assets/draft_bg.png',
-      isFeatured: false
-    },
-    {
-      id: 'cyber-tictactoe',
-      title: 'Cyber Tic-Tac-Toe',
-      gameType: 'TicTacToe' as const,
-      category: 'fast',
-      stakeMin: 5,
-      stakeMax: 300,
-      totalStaked: 5400,
-      playersLive: '2.1k Live',
-      rating: 4.9,
-      tags: ['RAPID DUEL', 'TIC-TAC-TOE'],
-      image: '/assets/tictactoe_bg.png',
-      isFeatured: true
     }
   ];
 
-  const trendingRealms = [
+  const comingSoonGames = [
     {
-      name: 'Neon Drifters',
-      desc: 'High-speed hovercraft racing through the vertical sprawl of Neo-Tokyo.',
-      rating: 4.8,
-      players: '12k',
-      tags: ['NEW CONTENT', 'RACING'],
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBon70yZ_tB-mb165-0BCRbM32AAa-9Lnrt9JWloViALC_6m9GrXcu42YRES_RqOF5p0BXWQn95MwKvIq2TsyTdMw7Mh4-uPILvxGOMkHdtg11eagTZZ3-heK-2kd0ojsWOfa9ElKGQ1_SagECr5UttnEnDonz5Xmw4kepWTmXNAqG_De_yVDV2oHfB0LEiOGbarcZ2mMOsSg1vHu29mrg3fo-A8xcJhr_KBakNttymcmVD1tn6qWeeqE5_3sZ4UiDXHpiB9-45Tg'
+      name: 'Cyber Backgammon (3D)',
+      desc: 'High-speed tactical 3D backgammon with automated dice seed generation and custom checkers.',
+      status: 'Q3 2026 RELEASE',
+      tags: ['IN DEVELOPMENT', 'STRATEGY'],
+      image: '/assets/cyber_backgammon.jpg'
     },
     {
-      name: 'Void Strider',
-      desc: 'Explore the fractured dimensions of the digital afterlife in this souls-like epic.',
-      rating: 4.9,
-      players: '8k',
-      tags: ['ADVENTURE'],
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBfH1WeqOfR1BW4Lfq-IW-Smuo5n-BOhHG1Uk8ZCToHUsd0WVaX2BnOnUqvoCt3-XNp4xBz5G1iWgMb7r2PzaxpZwoGxgMsVLgrvsDB8qwcrUOWVrIEpO7oVkO3tgP8WaxSk1UG8s-JiC5rLtaiD9BbVNiEk2J2Qkxxxq9OtzFLCTArIYRbRjrHMZsTR1_ssXD4rBJ9Oo86lSyM_Mi-WyoUwIiQn6thJwVqVvQHcUkl7FNf56wolV3tP675huMof4_I-DP1t7Su7Q'
+      name: 'Dominoes Overdrive',
+      desc: 'High-stakes 4-player chain domino duels with dynamic multiplier tiles and speed rounds.',
+      status: 'Q4 2026 RELEASE',
+      tags: ['CLOSED BETA', 'MULTIPLAYER'],
+      image: '/assets/dominoes_overdrive.jpg'
     },
     {
-      name: 'Synth Strike',
-      desc: 'Tactical team-based shooter with deep weapon customization and hacking mechanics.',
-      rating: 4.7,
-      players: '42k',
-      tags: ['FPS'],
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBoHYcbyHD67L6QbcDJytcn-3RZbEM-3JwTfo-TvZ7MkXKAHrTw0HHIwKyc_L-N66zf0n3HW05o5UMjSkGlb8OjuU4e3UtypO8H-R2HnHc-8DOdWqjVGhNOIBKA5KHwkXwg4YqEDBrN6uQddpw8p6rXC-i3uEJKB75xHvMCNRkerwlfzI1QzJC9GyWy9wpoDegmz6h8SnDD1k56ulnxjmuFMXbfnIyCtBAMmpDN1jrgNywy_ms_V3gfUqQdVM4U9nQ5BhHIu8OYSA'
+      name: 'Solitaire Clash',
+      desc: 'Head-to-head competitive 1v1 speed solitaire battle royale with real-time card clearing.',
+      status: 'Q4 2026 RELEASE',
+      tags: ['CONCEPT', 'CARDS'],
+      image: '/assets/solitaire_clash.jpg'
     },
     {
-      name: 'Core Manager',
-      desc: 'Manage resources and build your empire across colonized asteroid belts.',
-      rating: 4.5,
-      players: '5k',
-      tags: ['STRATEGY'],
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDHFPha7AYvAggKvPyNxTHKCRn9obaynZjJcJp90r3j2fXp4rk_J2khMrBsRWl3bjTlnkwW5OyA_pjLLcg6uV3DZZQndScbD9Bvy6TU56g_oGxI6_yNpbwCUF91_ii39P_onrLwZT-ObF45AlWh5tatmVGTWKUxFA3IP4YuHmm-qSqPDJ1zKvsOg1BtMLJgWdMCbGed3z6GCcb7JdSeEEg713b105znY-H4rCrJJgrnkMdLiqAEGTAZs6xngKkhiaGxz4qksm7wCQ'
+      name: 'Snakes & Ladders Cyber-Ascent',
+      desc: '3D multi-level vertical board race featuring holographic energy serpents and boost tiles.',
+      status: 'Q1 2027 RELEASE',
+      tags: ['IN DEVELOPMENT', 'CASUAL'],
+      image: '/assets/snakes_ladders.jpg'
     }
   ];
 
@@ -235,20 +203,17 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
         </div>
       </section>
 
-      {/* Game Cards Bento Grid Layout */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {/* 3-Card Bento Grid Layout */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {filteredBoards.length > 0 ? (
           filteredBoards.map((game) => {
-            const isWide = game.isFeatured;
             return (
               <div 
                 key={game.id}
-                className={`glass-bento glass-bento-hover rounded-3xl overflow-hidden group flex flex-col justify-between border border-white/10 ${
-                  isWide ? 'md:col-span-2' : 'col-span-1'
-                }`}
+                className="glass-bento glass-bento-hover rounded-3xl overflow-hidden group flex flex-col justify-between border border-white/10 col-span-1"
               >
                 {/* Product Cover image */}
-                <div className={`relative overflow-hidden w-full ${isWide ? 'aspect-video' : 'aspect-[4/3]'}`}>
+                <div className="relative overflow-hidden w-full aspect-[4/3]">
                   <img 
                     src={game.image} 
                     alt={game.title} 
@@ -314,12 +279,17 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
         )}
       </section>
 
-      {/* TRENDING IN THE REALM Section */}
+      {/* COMING SOON Section */}
       <section className="space-y-6 pt-5">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-display text-lg font-bold text-white uppercase tracking-tight">TRENDING IN THE REALM</h2>
-            <p className="text-xs text-neutral-400 font-mono">Live virtual worlds and platform simulation metrics</p>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-500/35 rounded-md font-mono text-[9px] font-bold uppercase tracking-wider">
+                ROADMAP EXPANSION
+              </span>
+            </div>
+            <h2 className="font-display text-xl font-extrabold text-white uppercase tracking-tight">COMING SOON</h2>
+            <p className="text-xs text-neutral-400 font-mono">Upcoming zero-trust board games and arena expansions currently in development</p>
           </div>
           <div className="flex gap-2">
             <button className="w-9 h-9 rounded-xl border border-white/10 glass-pill flex items-center justify-center hover:bg-white/10 transition-all text-neutral-300 hover:text-white cursor-pointer select-none">
@@ -332,27 +302,28 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {trendingRealms.map((realm) => (
-            <div key={realm.name} className="glass-bento glass-bento-hover rounded-3xl overflow-hidden group pb-4 border border-white/10 flex flex-col justify-between">
+          {comingSoonGames.map((game) => (
+            <div key={game.name} className="glass-bento glass-bento-hover rounded-3xl overflow-hidden group pb-4 border border-white/10 flex flex-col justify-between">
               <div className="h-44 relative overflow-hidden">
-                <img src={realm.image} alt={realm.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" referrerPolicy="no-referrer" />
+                <img 
+                  src={game.image} 
+                  alt={game.name} 
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                  referrerPolicy="no-referrer" 
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F13] via-transparent to-transparent"></div>
-                <div className="absolute top-3 right-3 bg-black/80 px-2.5 py-1 rounded-md text-[8px] font-bold text-purple-300 font-display tracking-wider border border-purple-500/30">
-                  ACTIVE
+                <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-md text-[8px] font-bold text-purple-300 font-display tracking-wider border border-purple-500/30 uppercase">
+                  {game.tags[0]}
                 </div>
               </div>
               <div className="p-4 space-y-3">
                 <div className="flex justify-between items-start">
-                  <h5 className="font-display font-semibold text-white text-sm truncate">{realm.name}</h5>
-                  <span className="text-neutral-400 text-[9px] font-mono font-bold whitespace-nowrap">{realm.players} Playing</span>
+                  <h5 className="font-display font-bold text-white text-sm truncate">{game.name}</h5>
                 </div>
-                <p className="text-neutral-400 text-xs line-clamp-2 leading-relaxed h-8 font-sans">{realm.desc}</p>
+                <p className="text-neutral-400 text-xs line-clamp-2 leading-relaxed h-8 font-sans">{game.desc}</p>
                 <div className="flex items-center justify-between pt-2 border-t border-white/10 text-[10px] font-mono text-neutral-400">
-                  <span>Category: {realm.tags[0]}</span>
-                  <div className="flex items-center gap-0.5 text-amber-400 font-bold">
-                    <Star className="w-3 h-3 fill-amber-400" />
-                    <span>{realm.rating}</span>
-                  </div>
+                  <span className="text-purple-300 font-bold">{game.status}</span>
+                  <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[8px] font-mono text-neutral-300 uppercase">COMING SOON</span>
                 </div>
               </div>
             </div>

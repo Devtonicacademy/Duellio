@@ -390,35 +390,37 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
     }
 
     // --- MATERIALS FOR 3D CHESS PIECES ---
-    // Player ('w') Pieces: Glossy Ivory Porcelain + Cyan base ring & highlights
+    // Player ('w') Pieces: Rich Vibrant Glossy Cyber Cyan (Original Theme Color)
     const whitePieceMat = new THREE.MeshStandardMaterial({
-      color: 0xf8fafc,
-      roughness: 0.15,
-      metalness: 0.1,
-      envMapIntensity: 1.2
+      color: 0x06b6d4,
+      roughness: 0.18,
+      metalness: 0.35,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.15
     });
 
     const cyanBaseMat = new THREE.MeshStandardMaterial({
-      color: 0x06b6d4,
-      roughness: 0.2,
-      metalness: 0.8,
-      emissive: 0x0891b2,
+      color: 0x22d3ee,
+      roughness: 0.15,
+      metalness: 0.85,
+      emissive: 0x06b6d4,
       emissiveIntensity: 0.4
     });
 
-    // Bot ('b') Pieces: Glossy Charcoal/Obsidian + Amber/Gold base ring & highlights
+    // Bot ('b') Pieces: Rich Vibrant Glossy Cyber Gold / Amber (Original Theme Color)
     const blackPieceMat = new THREE.MeshStandardMaterial({
-      color: 0x1c1917,
-      roughness: 0.2,
-      metalness: 0.4,
-      envMapIntensity: 1.5
+      color: 0xd97706,
+      roughness: 0.18,
+      metalness: 0.45,
+      emissive: 0x78350f,
+      emissiveIntensity: 0.15
     });
 
     const amberBaseMat = new THREE.MeshStandardMaterial({
-      color: 0xf59e0b,
-      roughness: 0.2,
-      metalness: 0.8,
-      emissive: 0xd97706,
+      color: 0xfbbf24,
+      roughness: 0.15,
+      metalness: 0.85,
+      emissive: 0xf59e0b,
       emissiveIntensity: 0.4
     });
 
