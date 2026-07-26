@@ -65,7 +65,6 @@ interface PhaseSandboxTabProps {
   } | null>>;
   allProfiles: UserProfile[];
   theme?: string;
-  voiceEnabled?: boolean;
   handleToggleDeactivate?: (uid: string, deactivated: boolean) => Promise<{ success: boolean; message?: string }>;
   handleDeleteProfile?: (uid: string) => Promise<void>;
   onGameActiveChange?: (isActive: boolean) => void;
@@ -149,7 +148,6 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   friendChallenge,
   setFriendChallenge,
   allProfiles,
-  voiceEnabled = false,
   handleToggleDeactivate,
   handleDeleteProfile,
   onGameActiveChange
@@ -522,50 +520,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   }, [friendChallenge, setFriendChallenge, userProfile.uid, setUserProfile, setTransactions]);
 
   // Simulated Log States
-  const [gamePlayLogs, _setGamePlayLogs] = useState<string[]>([]);
-
-  // Voice announcer helper
-  const speak = (text: string) => {
-    if (!voiceEnabled) return;
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-
-    let cleanText = text
-      .replace(/\[[^\]]+\]\s*/g, '') // Remove [USER ACTION], [TURN VALIDATION] etc.
-      .replace(/\bP\b/g, 'Pawn')
-      .replace(/\bR\b/g, 'Rook')
-      .replace(/\bN\b/g, 'Knight')
-      .replace(/\bB\b/g, 'Bishop')
-      .replace(/\bQ\b/g, 'Queen')
-      .replace(/\bK\b/g, 'King')
-      .replace(/\bcol\b/g, 'column');
-
-    try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.rate = 1.0;
-      window.speechSynthesis.speak(utterance);
-    } catch (e) {
-      console.error("Speech Synthesis error:", e);
-    }
-  };
-
-  const setGamePlayLogs = (val: string[] | ((prev: string[]) => string[])) => {
-    _setGamePlayLogs((prev) => {
-      const next = typeof val === 'function' ? val(prev) : val;
-      if (voiceEnabled && next.length > prev.length) {
-        let newLog = '';
-        if (next[0] !== prev[0]) {
-          newLog = next[0];
-        } else if (next[next.length - 1] !== prev[prev.length - 1]) {
-          newLog = next[next.length - 1];
-        }
-        if (newLog) {
-          speak(newLog);
-        }
-      }
-      return next;
-    });
-  };
+  const [gamePlayLogs, setGamePlayLogs] = useState<string[]>([]);
   const [gamePlayStatus, setGamePlayStatus] = useState<'none' | 'escrow_lock' | 'playing' | 'completed'>('none');
   const [isTyping, setIsTyping] = useState(false);
   const [typingBot, setTypingBot] = useState<string | null>(null);

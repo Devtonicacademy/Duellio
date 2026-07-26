@@ -85,19 +85,7 @@ export default function App() {
     isHost?: boolean;
   } | null>(null);
 
-  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(() => {
-    return localStorage.getItem('duellio-voice-enabled') !== 'false';
-  });
-
   const [isGameActive, setIsGameActive] = useState<boolean>(false);
-
-  const toggleVoice = () => {
-    setVoiceEnabled(prev => {
-      const next = !prev;
-      localStorage.setItem('duellio-voice-enabled', String(next));
-      return next;
-    });
-  };
 
   // Wrapper for profile registration to automatically log the onboarding transaction
   const handleAddProfileWrapper = (username: string, email: string, pass: string, avatar: string) => {
@@ -206,8 +194,6 @@ export default function App() {
           toggleTheme={toggleTheme}
           userProfile={userProfile}
           onHeaderFaucet={() => handleHeaderFaucet(userProfile, setUserProfile)}
-          voiceEnabled={voiceEnabled}
-          toggleVoice={toggleVoice}
           totalUnread={totalUnread}
         />
       )}
@@ -259,7 +245,6 @@ export default function App() {
                 setFriendChallenge={setFriendChallenge}
                 allProfiles={allProfiles}
                 theme={theme}
-                voiceEnabled={voiceEnabled}
                 handleToggleDeactivate={handleToggleDeactivate}
                 handleDeleteProfile={handleDeleteProfile}
                 onGameActiveChange={setIsGameActive}

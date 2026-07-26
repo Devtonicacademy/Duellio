@@ -146,200 +146,52 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
   return (
     <div className="space-y-10" id="discover-dashboard">
       
-      {/* Dynamic Asymmetric Bento Grid Header Hero Module */}
-      <section className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-        
-        {/* Bento Tile 1: Hero Featured Spotlight (Spans 2 cols, 2 rows on large screens) */}
-        <div className="md:col-span-2 lg:col-span-2 md:row-span-2 relative min-h-[26rem] rounded-3xl overflow-hidden glass-bento glass-bento-hover group flex flex-col justify-end p-6 md:p-8">
-          <div className="absolute inset-0 -z-10">
-            <img 
-              className="w-full h-full object-cover opacity-40 transition-transform duration-700 group-hover:scale-105" 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMWIrsVoSN1aRgOYQ8rmIpYeqm1gw3wVa2wJ-r8EDXSbXCrmgK231P7K_eGKPxnZsw60g9Ug5dW0LGWqWlo1vSjZNXRHvXOnwXWcgM1Mg00A1D4JLob6TX3X76HXYDZOpj8E9cB0kvGMTLi-D2HElYyHfzVtsuIfFulqRYlfdhpbNK5XPZI8T7LinabYA-I7K75rKeh5R-G_NH2T8ZgafxGP_qJ3qPQLC6XsPhihgQl_1gLGA5lNTuLRkW7JMqRstTxPs2CGum1A"
-              alt="Grandmaster Arena"
-              referrerPolicy="no-referrer"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-[#070709]/70 to-transparent"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-[#070709]/90 via-transparent to-transparent"></div>
-          </div>
-
-          <div className="relative z-10 space-y-3.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1 bg-purple-500/25 text-purple-300 border border-purple-500/40 rounded-full font-display font-bold text-[10px] uppercase tracking-wider animate-pulse flex items-center gap-1.5">
-                <Flame className="w-3 h-3 text-purple-400" /> FEATURED ARENA
-              </span>
-              <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase">
-                12.4k ACTIVE DUELS
-              </span>
-            </div>
-
-            <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight uppercase tracking-tight">
-              GRANDMASTER <span className="text-purple-300 text-glow-purple">CHESS & LUDO</span>
-            </h1>
-
-            <p className="text-neutral-300 font-sans text-xs md:text-sm leading-relaxed max-w-xl">
-              High-stakes zero-trust duels with real-time rule verification, automated payouts, and algorithmic match rating.
-            </p>
-
-            <div className="flex items-center gap-3 pt-2">
-              <button 
-                onClick={() => onSelectGame('Chess', 500)}
-                className="px-5 py-2.5 bg-purple-350 hover:bg-purple-300 text-neutral-950 text-xs font-bold rounded-xl transition-all cursor-pointer font-display uppercase tracking-wider neon-glow-primary hover:scale-[1.03] flex items-center gap-2"
-              >
-                <Swords className="w-4 h-4" />
-                <span>Launch Chess Lobby</span>
-              </button>
-              <button 
-                onClick={() => onSelectGame('Ludo', 100)}
-                className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/15 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer uppercase tracking-wider flex items-center gap-2"
-              >
-                <Gamepad2 className="w-4 h-4 text-cyan-400" />
-                <span>Ludo Match</span>
-              </button>
-            </div>
-          </div>
+      {/* Premium Hero Banner */}
+      <section className="relative w-full h-[22rem] md:h-[25rem] rounded-3xl overflow-hidden glass-card group flex items-center p-6 md:p-12 border border-white/10">
+        <div className="absolute inset-0 -z-10">
+          <img 
+            className="w-full h-full object-cover opacity-35 transition-transform duration-700 group-hover:scale-103" 
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMWIrsVoSN1aRgOYQ8rmIpYeqm1gw3wVa2wJ-r8EDXSbXCrmgK231P7K_eGKPxnZsw60g9Ug5dW0LGWqWlo1vSjZNXRHvXOnwXWcgM1Mg00A1D4JLob6TX3X76HXYDZOpj8E9cB0kvGMTLi-D2HElYyHfzVtsuIfFulqRYlfdhpbNK5XPZI8T7LinabYA-I7K75rKeh5R-G_NH2T8ZgafxGP_qJ3qPQLC6XsPhihgQl_1gLGA5lNTuLRkW7JMqRstTxPs2CGum1A"
+            alt="Grandmaster Arena"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#070709] via-[#070709]/70 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-transparent to-transparent"></div>
         </div>
 
-        {/* Bento Tile 2: Instant Stake Matchmaker (Col-span 1) */}
-        <div className="glass-bento glass-bento-hover rounded-3xl p-5 flex flex-col justify-between space-y-4 border border-white/10">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-purple-500/20 rounded-xl text-purple-400 border border-purple-500/30">
-                <Zap className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="text-white font-display text-xs font-bold uppercase">1-Tap Stake</h4>
-                <p className="text-[10px] font-mono text-neutral-400">Instant Matchmaker</p>
-              </div>
-            </div>
-            <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/25">
-              INSTANT
+        <div className="relative z-10 max-w-2xl space-y-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-3 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/35 rounded-md font-display font-bold text-[10px] uppercase tracking-wider animate-pulse flex items-center gap-1.5">
+              <Flame className="w-3.5 h-3.5 text-purple-400" /> PREMIUM ARENA
             </span>
+            <span className="text-neutral-400 font-mono text-xs">ELO MATCHMAKER</span>
           </div>
 
-          <div className="space-y-3">
-            <div className="grid grid-cols-5 gap-1 p-1 bg-white/5 rounded-xl border border-white/5 text-[10px] font-mono font-bold">
-              {(['Chess', 'Ludo', 'Whot', 'Draft', 'TicTacToe'] as const).map(g => (
-                <button
-                  key={g}
-                  onClick={() => setSelectedQuickGame(g)}
-                  className={`py-1.5 rounded-lg transition-all text-center cursor-pointer ${
-                    selectedQuickGame === g 
-                      ? 'bg-purple-350 text-neutral-950 font-black shadow-md' 
-                      : 'text-neutral-400 hover:text-white'
-                  }`}
-                >
-                  {g}
-                </button>
-              ))}
-            </div>
+          <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight uppercase tracking-tight">
+            GRANDMASTER <span className="text-purple-300 text-glow-purple">DUELS</span>
+          </h1>
 
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-[11px] font-mono text-neutral-300">
-                <span>Selected Stake:</span>
-                <span className="text-purple-300 font-bold">{quickStake} Coins</span>
-              </div>
-              <div className="flex gap-1.5">
-                {[100, 250, 500, 1000].map(s => (
-                  <button
-                    key={s}
-                    onClick={() => setQuickStake(s)}
-                    className={`flex-1 py-1 rounded-lg font-mono text-[10px] font-bold border transition-all cursor-pointer ${
-                      quickStake === s 
-                        ? 'bg-purple-500/30 border-purple-400 text-purple-200' 
-                        : 'bg-white/5 border-white/10 text-neutral-400 hover:border-white/20'
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          <p className="text-neutral-300 font-sans text-xs md:text-base leading-relaxed max-w-xl">
+            High-stakes strategic board games. Engage in real-time verified matches for pool payouts across Chess, Ludo, Whot, Draft, and Tic-Tac-Toe.
+          </p>
 
-          <button
-            onClick={() => onSelectGame(selectedQuickGame, quickStake)}
-            className="w-full py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-display text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2"
-          >
-            <span>Play {selectedQuickGame} ({quickStake} C)</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Bento Tile 3: Daily Quest & Streak Rewards (Col-span 1) */}
-        <div className="glass-bento glass-bento-hover rounded-3xl p-5 flex flex-col justify-between space-y-4 border border-white/10">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-amber-500/20 rounded-xl text-amber-400 border border-amber-500/30">
-                <Gift className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="text-white font-display text-xs font-bold uppercase">Daily Quest</h4>
-                <p className="text-[10px] font-mono text-neutral-400">Claim 500 Free Coins</p>
-              </div>
-            </div>
-            <span className="text-[10px] font-mono text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/25">
-              3 DAY STREAK
-            </span>
-          </div>
-
-          <div className="space-y-2.5">
-            <div className="flex justify-between text-[10px] font-mono text-neutral-400">
-              <span>Progress: 2/3 Matches</span>
-              <span className="text-amber-400 font-bold">66%</span>
-            </div>
-            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden p-0.5 border border-white/5">
-              <div className="h-full bg-gradient-to-r from-amber-500 to-yellow-300 rounded-full w-2/3 animate-pulse"></div>
-            </div>
-            <p className="text-[10px] text-neutral-300 leading-tight">
-              Complete 1 more match today to unlock the daily mystery vault.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-[11px] font-mono text-amber-300">
-            <Trophy className="w-4 h-4 shrink-0 text-amber-400" />
-            <span className="truncate">Reward: +500 Coins + XP Boost</span>
+          <div className="flex items-center gap-3 pt-3">
+            <button 
+              onClick={() => onSelectGame('Chess', 500)}
+              className="px-6 py-3 bg-purple-350 hover:bg-purple-300 text-neutral-950 text-xs font-bold rounded-xl transition-all cursor-pointer font-display uppercase tracking-wider neon-glow-primary hover:scale-[1.03] flex items-center gap-2"
+            >
+              <Swords className="w-4 h-4" />
+              <span>Join Chess Lobby</span>
+            </button>
+            <button 
+              onClick={() => onSelectGame('Ludo', 100)}
+              className="px-6 py-3 bg-transparent border border-neutral-700 hover:border-neutral-500 text-neutral-300 text-xs font-semibold rounded-xl hover:bg-white/5 transition-all cursor-pointer uppercase tracking-wider flex items-center gap-2"
+            >
+              <Gamepad2 className="w-4 h-4 text-cyan-400" />
+              <span>Explore Ludo</span>
+            </button>
           </div>
         </div>
-
-        {/* Bento Tile 4: Live Broadcast & Spectate Ticker (Col-span 1 or 2 depending on breakpoint) */}
-        <div className="md:col-span-1 lg:col-span-2 glass-bento glass-bento-hover rounded-3xl p-5 flex flex-col justify-between space-y-3 border border-white/10">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Radio className="w-4 h-4 text-rose-400 animate-pulse" />
-              <h4 className="text-white font-display text-xs font-bold uppercase tracking-wider">Live Broadcasts</h4>
-            </div>
-            <span className="text-[9px] font-mono text-rose-400 bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded-full font-bold uppercase animate-pulse">
-              ● LIVE NOW
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="p-3 bg-white/5 rounded-2xl border border-white/5 space-y-1.5">
-              <div className="flex justify-between items-center text-[10px] font-mono text-purple-300 font-bold">
-                <span>Cyber Chess Arena</span>
-                <span className="text-neutral-400">1,240 Spectators</span>
-              </div>
-              <p className="text-white text-xs font-display font-semibold truncate">Grandmaster Alpha vs Master Nova</p>
-              <div className="flex justify-between items-center text-[10px] font-mono text-neutral-400">
-                <span>Pot: 5,000 Coins</span>
-                <span className="text-emerald-400 font-bold">Turn 24</span>
-              </div>
-            </div>
-
-            <div className="p-3 bg-white/5 rounded-2xl border border-white/5 space-y-1.5">
-              <div className="flex justify-between items-center text-[10px] font-mono text-cyan-300 font-bold">
-                <span>Whot! Royale Blitz</span>
-                <span className="text-neutral-400">890 Spectators</span>
-              </div>
-              <p className="text-white text-xs font-display font-semibold truncate">Vortex King vs Shadow Blade</p>
-              <div className="flex justify-between items-center text-[10px] font-mono text-neutral-400">
-                <span>Pot: 2,500 Coins</span>
-                <span className="text-amber-400 font-bold">Final Card!</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </section>
 
       {/* Discovery Category Filters & Dynamic Search Bar */}
