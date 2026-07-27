@@ -88,6 +88,32 @@ export function useProfiles() {
         } catch (e) {
           console.error("Error fetching user profile from Firestore:", e);
         }
+      } else {
+        // Fallback for demo/local profiles on page refresh
+        const savedUid = localStorage.getItem('duellio-current-user-uid');
+        if (savedUid) {
+          try {
+            const userDocRef = doc(db, 'users', savedUid);
+            const snap = await getDoc(userDocRef);
+            if (snap.exists()) {
+              const activeProfile = snap.data() as UserProfile;
+              setUserProfile(activeProfile);
+              
+              unsubscribeUserDoc = onSnapshot(userDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                  const data = docSnap.data() as UserProfile;
+                  const newJson = JSON.stringify(data);
+                  if (newJson !== lastSyncedProfileJsonRef.current) {
+                    lastSyncedProfileJsonRef.current = newJson;
+                    setUserProfile(data);
+                  }
+                }
+              }, (err) => console.warn("Local user doc listener warning:", err));
+            }
+          } catch (e) {
+            console.error("Error restoring saved profile on refresh:", e);
+          }
+        }
       }
       setAuthLoading(false);
     });
