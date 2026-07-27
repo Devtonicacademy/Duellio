@@ -24,6 +24,7 @@ import {
 import { UserProfile, WalletTransaction } from '../types';
 import { db } from '../firebase';
 import { collection, addDoc, setDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { sanitizeFirestoreData } from '../utils/firestoreSanitizer';
 
 interface PlayArenaTabProps {
   userProfile: UserProfile;
@@ -200,12 +201,12 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
 
       // Dispatch Real-time Notification Document to target player in Firestore
       const notifRef = collection(db, 'notifications');
-      addDoc(notifRef, {
+      addDoc(notifRef, sanitizeFirestoreData({
         receiverId: selectedOpponent?.uid || 'all',
-        receiverName: opponentName,
-        senderId: userProfile.uid,
-        senderName: userProfile.username,
-        senderAvatar: userProfile.avatar,
+        receiverName: opponentName || 'Opponent',
+        senderId: userProfile.uid || 'host',
+        senderName: userProfile.username || 'Challenger',
+        senderAvatar: userProfile.avatar || '',
         type: 'challenge',
         title: '⚔️ Live Duel Challenge Received!',
         message: `${userProfile.username} has challenged you to a ${selectedGame} match for ${actualStake} Coins!`,
@@ -216,7 +217,7 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
         timeString: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         read: false,
         status: 'pending'
-      }).catch(console.warn);
+      })).catch(console.warn);
 
       alert(`🎉 Multiplayer Match Ready!\n\nInvitation sent to ${opponentName}!\n\nInvite link also copied to clipboard:\n${inviteLink}`);
     }

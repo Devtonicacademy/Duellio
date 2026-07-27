@@ -37,6 +37,7 @@ import { TicTacToeLogicService } from '../services/ticTacToeLogic';
 import { DraftLogicService } from '../services/draftLogic';
 import { db } from '../firebase';
 import { doc, setDoc, increment, updateDoc, onSnapshot, collection, query, where, getDoc, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { sanitizeFirestoreData } from '../utils/firestoreSanitizer';
 
 interface PhaseSandboxTabProps {
   userProfile: UserProfile;
@@ -340,21 +341,25 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           setActiveChallenge(inviteChallenge);
           setGamePlayStatus('playing');
 
-          setDoc(doc(db, 'gameSessions', sessionId), {
+          const rawHostData = {
             sessionId,
-            gameType: friendChallenge.gameType,
-            hostId: userProfile.uid,
-            hostName: userProfile.username,
+            gameType: friendChallenge.gameType || 'Chess',
+            hostId: userProfile.uid || 'host',
+            hostName: userProfile.username || 'Host',
             opponentId: '',
-            opponentName: '',
+            opponentName: friendChallenge.senderName || '',
             status: 'waiting',
-            entryFee: friendChallenge.entryFee,
-            gameState: initialSession,
-            deck: fullDeck,
+            entryFee: friendChallenge.entryFee || 0,
+            gameState: initialSession || {},
+            deck: fullDeck || [],
             pauseRequest: null,
             createdAt: Date.now(),
             updatedAt: Date.now()
-          }).catch(console.error);
+          };
+
+          setDoc(doc(db, 'gameSessions', sessionId), sanitizeFirestoreData(rawHostData)).catch((err) => {
+            console.error("Firestore setDoc Host error:", err);
+          });
 
           setGamePlayLogs([
             `[ESCROW LOCK] Atomic escrow write success. STAKE: ${friendChallenge.entryFee} coins escrowed.`,
@@ -396,13 +401,13 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 setLiveGameState(sessionData.gameState || updatedGameState);
                 whotDeckRef.current = sessionData.deck || [];
 
-                updateDoc(doc(db, 'gameSessions', sessionId), {
+                updateDoc(doc(db, 'gameSessions', sessionId), sanitizeFirestoreData({
                   opponentId: userProfile.uid,
                   opponentName: userProfile.username,
                   status: 'playing',
                   gameState: updatedGameState,
                   updatedAt: Date.now()
-                }).catch(console.error);
+                })).catch(console.error);
 
                 setGamePlayLogs([
                   `[ESCROW LOCK] Atomic escrow write success. STAKE: ${friendChallenge.entryFee} coins escrowed.`,
@@ -416,11 +421,45 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 setUserProfile(prev => ({ ...prev, status: 'online' }));
               }
             } else {
-              alert("Game session not found.");
-              setGamePlayStatus('none');
-              setActiveChallenge(null);
-              _setWhotGameState(null);
-              setUserProfile(prev => ({ ...prev, status: 'online' }));
+              // Self-healing fallback: If session doc was not found on Firestore, initialize & set it up now
+              const fallbackSessionData = sanitizeFirestoreData({
+                sessionId,
+                gameType: friendChallenge.gameType || 'Chess',
+                hostId: friendChallenge.senderName || 'Host',
+                hostName: friendChallenge.senderName || 'Host',
+                opponentId: userProfile.uid,
+                opponentName: userProfile.username,
+                status: 'playing',
+                entryFee: friendChallenge.entryFee || 0,
+                gameState: initialSession || {},
+                deck: [],
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+              });
+
+              setDoc(doc(db, 'gameSessions', sessionId), fallbackSessionData).catch(console.error);
+
+              const inviteChallenge: MatchChallenge = {
+                id: sessionId,
+                senderId: friendChallenge.senderName || 'Host',
+                senderName: friendChallenge.senderName || 'Host',
+                receiverId: userProfile.uid,
+                gameType: friendChallenge.gameType,
+                entryFee: friendChallenge.entryFee,
+                status: 'accepted',
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                opponentType: 'player'
+              };
+
+              setActiveChallenge(inviteChallenge);
+              setGamePlayStatus('playing');
+              _setWhotGameState(initialSession);
+              setLiveGameState(initialSession);
+
+              setGamePlayLogs([
+                `[ESCROW LOCK] Atomic escrow write success. STAKE: ${friendChallenge.entryFee} coins escrowed.`,
+                `[MULTIPLAYER] Joined live session successfully!`
+              ]);
             }
           }).catch(console.error);
         }
@@ -3496,7 +3535,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 liveGameState={liveGameState}
                 onUpdateLiveState={(newState) => {
                   if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
-                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), { gameState: newState, updatedAt: Date.now() }).catch(console.error);
+                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), sanitizeFirestoreData({ gameState: newState, updatedAt: Date.now() })).catch(console.error);
                   }
                 }}
               />
@@ -3514,7 +3553,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 liveGameState={liveGameState}
                 onUpdateLiveState={(newState) => {
                   if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
-                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), { gameState: newState, updatedAt: Date.now() }).catch(console.error);
+                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), sanitizeFirestoreData({ gameState: newState, updatedAt: Date.now() })).catch(console.error);
                   }
                 }}
               />
@@ -3532,7 +3571,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 liveGameState={liveGameState}
                 onUpdateLiveState={(newState) => {
                   if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
-                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), { gameState: newState, updatedAt: Date.now() }).catch(console.error);
+                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), sanitizeFirestoreData({ gameState: newState, updatedAt: Date.now() })).catch(console.error);
                   }
                 }}
               />
@@ -3550,7 +3589,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 liveGameState={liveGameState}
                 onUpdateLiveState={(newState) => {
                   if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
-                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), { gameState: newState, updatedAt: Date.now() }).catch(console.error);
+                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), sanitizeFirestoreData({ gameState: newState, updatedAt: Date.now() })).catch(console.error);
                   }
                 }}
               />
@@ -3568,7 +3607,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 liveGameState={liveGameState}
                 onUpdateLiveState={(newState) => {
                   if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
-                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), { gameState: newState, updatedAt: Date.now() }).catch(console.error);
+                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), sanitizeFirestoreData({ gameState: newState, updatedAt: Date.now() })).catch(console.error);
                   }
                 }}
               />

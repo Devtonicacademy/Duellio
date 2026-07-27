@@ -34,6 +34,7 @@ import {
   setDoc,
   serverTimestamp 
 } from 'firebase/firestore';
+import { sanitizeFirestoreData } from '../utils/firestoreSanitizer';
 import { ChatModerationService } from '../services/chatModeration';
 import { ReportService } from '../services/reportService';
 
@@ -453,12 +454,12 @@ export const ChatTab: React.FC<ChatTabProps> = ({
 
           // Also dispatch real-time Firestore notification document to opponent
           const notifRef = collection(db, 'notifications');
-          addDoc(notifRef, {
+          addDoc(notifRef, sanitizeFirestoreData({
             receiverId: activeChat.user?.uid || 'all',
             receiverName: activeChat.user?.username || 'Challenger',
-            senderId: userProfile.uid,
-            senderName: userProfile.username,
-            senderAvatar: userProfile.avatar,
+            senderId: userProfile.uid || 'sender',
+            senderName: userProfile.username || 'Sender',
+            senderAvatar: userProfile.avatar || '',
             type: 'challenge',
             title: '⚔️ Live Duel Challenge Received!',
             message: `${userProfile.username} has challenged you to a ${challengeData.gameType} match for ${challengeData.entryFee} Coins!`,
@@ -469,10 +470,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             timeString: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             read: false,
             status: 'pending'
-          }).catch(console.warn);
+          })).catch(console.warn);
         }
 
-        await addDoc(messagesRef, msgObj);
+        await addDoc(messagesRef, sanitizeFirestoreData(msgObj));
         if (!isChallengeMsg) {
           setInputMessage('');
         }
