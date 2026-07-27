@@ -29,6 +29,7 @@ interface InteractiveStickmanBoardProps {
   entryFee: number;
   opponentName: string;
   opponentAvatar: string;
+  userName?: string;
   onGameOver: (winnerIsMe: boolean) => void;
   onAddLog: (log: string) => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
@@ -43,6 +44,7 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
   entryFee,
   opponentName,
   opponentAvatar,
+  userName,
   onGameOver,
   onAddLog,
   botDifficulty = 'medium',
@@ -96,25 +98,37 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
 
   const reportedOutcomeRef = useRef<boolean>(false);
 
+  const player1Name = useMemo(() => {
+    if (isBot) return userName || 'Player 1';
+    return isHost ? (userName || 'Player 1') : (opponentName || 'Player 1');
+  }, [isBot, isHost, userName, opponentName]);
+
+  const player2Name = useMemo(() => {
+    if (isBot) return opponentName;
+    return isHost ? (opponentName || 'Player 2') : (userName || 'Player 2');
+  }, [isBot, isHost, userName, opponentName]);
+
   const gameConfig = useMemo(() => ({
     mode,
     difficulty: botDifficulty,
     p1Color: '#06b6d4', // Cyan
     p2Color: '#ec4899', // Pink
-    p1Name: 'Player 1',
-    p2Name: opponentName,
+    p1Name: player1Name,
+    p2Name: player2Name,
     map: selectedMap,
     weaponSpawnEnabled: true
-  }), [mode, botDifficulty, opponentName, selectedMap]);
+  }), [mode, botDifficulty, player1Name, player2Name, selectedMap]);
 
-  // Sync live state from Firestore snapshot
+  // Sync live state from Firestore snapshot for non-host subscriber
   useEffect(() => {
-    if (!isBot && liveGameState) {
+    if (!isBot && !isHost && liveGameState) {
       setUiState(liveGameState);
       if (liveGameState.gameState === 'gameover' && !reportedOutcomeRef.current) {
         reportedOutcomeRef.current = true;
-        const winnerIsMe = isHost ? liveGameState.winner === 1 : liveGameState.winner === 2;
-        onGameOver(winnerIsMe);
+        const winnerIsMe = liveGameState.winner === 2;
+        setTimeout(() => {
+          onGameOver(winnerIsMe);
+        }, 3500);
       }
     }
   }, [liveGameState, isBot, isHost, onGameOver]);
@@ -122,23 +136,25 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
   const handleUIUpdate = useCallback((state: any) => {
     setUiState(state);
 
-    if (!isBot && onUpdateLiveState) {
+    // ONLY the host writes authoritative live game state to Firestore to prevent clashing writes
+    if (!isBot && isHost && onUpdateLiveState) {
       onUpdateLiveState(state);
     }
 
     if (state.gameState === 'gameover' && !reportedOutcomeRef.current) {
       reportedOutcomeRef.current = true;
       const winnerIsMe = isHost ? state.winner === 1 : state.winner === 2;
+      const winnerName = state.winner === 1 ? player1Name : player2Name;
       if (winnerIsMe) {
-        onAddLog(`[STICKMAN DUEL] Victory achieved! Player 1 defeated ${opponentName}.`);
+        onAddLog(`[STICKMAN DUEL] Victory achieved! ${userName || 'You'} defeated ${opponentName}.`);
       } else {
-        onAddLog(`[STICKMAN DUEL] Defeat in match vs ${opponentName}.`);
+        onAddLog(`[STICKMAN DUEL] Defeat in match vs ${opponentName}. ${winnerName} won.`);
       }
       setTimeout(() => {
         onGameOver(winnerIsMe);
       }, 3500);
     }
-  }, [opponentName, onGameOver, onAddLog, isBot, isHost, onUpdateLiveState]);
+  }, [opponentName, userName, player1Name, player2Name, onGameOver, onAddLog, isBot, isHost, onUpdateLiveState]);
 
   const toggleSound = () => {
     const next = !isSoundOn;
@@ -238,7 +254,7 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
         <OrientationPrompt />
 
         {/* Mobile Virtual Joystick & Touch Controls */}
-        <MobileControls inputHandler={(window as any).gameEngine?.input} p1Chi={uiState.p1Chi} playerIndex={isHost ? 1 : 2} />
+        <MobileControls inputHandler={(window as any).gameEngine?.input} p1Chi={uiState.p1Chi} playerNumber={isHost ? 1 : 2} />
 
         {/* Controls Guide Overlay Modal */}
         {showControlsGuide && (

@@ -354,7 +354,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
             hostId: userProfile.uid || 'host',
             hostName: userProfile.username || 'Host',
             opponentId: '',
-            opponentName: (friendChallenge.isHost === false ? friendChallenge.senderName : '') || '',
+            opponentName: friendChallenge.senderName || '',
             status: 'waiting',
             entryFee: friendChallenge.entryFee || 0,
             gameState: initialSession || {},
@@ -644,57 +644,32 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
             : activeChallenge.senderId)
         : (activeChallenge.senderId === userProfile.uid ? selectedBot?.uid || 'bot' : activeChallenge.senderId))
     : '';
-  const resolvedOpponentUsername = useMemo(() => {
-    if (!activeChallenge) return selectedBot?.username || 'Bot';
-    if (activeChallenge.opponentType === 'bot') {
-      return activeChallenge.senderName || selectedBot?.username || 'Nebula_AI';
-    }
-    const isHostUser = activeChallenge.senderId === userProfile.uid;
-    if (isHostUser) {
-      if (activeChallenge.receiverName && activeChallenge.receiverName !== 'pending' && activeChallenge.receiverName !== userProfile.username) {
-        return activeChallenge.receiverName;
-      }
-      if (liveGameState?.opponentName && liveGameState.opponentName !== userProfile.username) {
-        return liveGameState.opponentName;
-      }
-      return 'Waiting...';
-    } else {
-      if (activeChallenge.senderName && activeChallenge.senderName !== userProfile.username) {
-        return activeChallenge.senderName;
-      }
-      if (liveGameState?.hostName && liveGameState.hostName !== userProfile.username) {
-        return liveGameState.hostName;
-      }
-      return 'Challenger';
-    }
-  }, [activeChallenge, userProfile.uid, userProfile.username, selectedBot, liveGameState]);
 
-  const opponentProfile = useMemo(() => {
-    if (!activeChallenge) return selectedBot;
-    if (activeChallenge.opponentType === 'bot') {
-      return {
-        uid: 'bot',
-        username: resolvedOpponentUsername,
-        avatar: selectedBot?.avatar || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=120&q=80',
-        wins: 15,
-        losses: 15,
-        draws: 0,
-        coins: 1000,
-        status: 'online' as const
-      };
-    }
-    const foundProfile = allProfiles.find(p => p.username === resolvedOpponentUsername || (opponentId && p.uid === opponentId));
-    return {
-      uid: opponentId || foundProfile?.uid || 'player-2',
-      username: resolvedOpponentUsername,
-      avatar: foundProfile?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
-      wins: foundProfile?.wins || 0,
-      losses: foundProfile?.losses || 0,
-      draws: foundProfile?.draws || 0,
-      coins: foundProfile?.coins || 0,
-      status: 'online' as const
-    };
-  }, [activeChallenge, selectedBot, resolvedOpponentUsername, allProfiles, opponentId]);
+  const opponentProfile = activeChallenge
+    ? (activeChallenge.opponentType === 'bot' && activeChallenge.senderId === 'friend_user'
+        ? {
+            uid: 'bot',
+            username: activeChallenge.senderName || 'Nebula_AI',
+            avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=120&q=80',
+            wins: 15,
+            losses: 15,
+            draws: 0,
+            coins: 1000,
+            status: 'online' as const
+          }
+        : (activeChallenge.opponentType === 'bot'
+            ? selectedBot
+            : (allProfiles.find(p => (opponentId && p.uid === opponentId) || (p.username && p.username !== userProfile.username && (p.username === activeChallenge.senderName || p.username === activeChallenge.receiverId))) || {
+                uid: opponentId || 'player-2',
+                username: (activeChallenge.senderName !== userProfile.username ? (activeChallenge.senderName || 'Opponent') : (activeChallenge.receiverName || 'Opponent')),
+                avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+                wins: 0,
+                losses: 0,
+                draws: 0,
+                coins: 0,
+                status: 'online'
+              })))
+    : selectedBot;
 
   const handleTurnTimeout = () => {
     if (!whotGameState || whotGameState.status !== 'playing') return;
@@ -3613,6 +3588,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 entryFee={activeChallenge.entryFee}
                 opponentName={opponentProfile?.username || 'Bot'}
                 opponentAvatar={opponentProfile?.avatar || ''}
+                userName={userProfile.username}
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}

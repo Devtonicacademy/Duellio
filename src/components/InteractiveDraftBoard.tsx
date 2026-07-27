@@ -37,9 +37,9 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   liveGameState,
   onUpdateLiveState
 }) => {
-  const player1Id = isBot ? 'player-user' : 'host';
-  const player2Id = isBot ? 'bot-user' : 'guest';
-  const myId = isBot ? 'player-user' : (isHost ? 'host' : 'guest');
+  const player1Id = isBot ? 'player-user' : (isHost ? 'host' : 'guest');
+  const player2Id = isBot ? 'bot-user' : (isHost ? 'guest' : 'host');
+  const myId = isBot ? player1Id : (isHost ? 'host' : 'guest');
 
   const [gameState, setGameState] = useState<DraftGameState>(() => 
     liveGameState || DraftLogicService.initializeBoard(sessionId || 'draft-session', player1Id, player2Id)
@@ -58,7 +58,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   // Active player turn checking
   const isPlayerTurn = isBot
     ? gameState.activePlayerId === player1Id
-    : gameState.activePlayerId === myId;
+    : (gameState.activePlayerId === myId || gameState.activePlayerId === player1Id);
 
   // Sync live state from Firestore snapshot
   useEffect(() => {
