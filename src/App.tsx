@@ -23,16 +23,40 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 // Types
 import { WalletTransaction, NotificationItem } from './types';
 
-// Lazy-loaded Tabs for code-splitting and improved bundle/load performance
-const DiscoverTab = lazy(() => import('./components/DiscoverTab').then(m => ({ default: m.DiscoverTab })));
-const PlayArenaTab = lazy(() => import('./components/PlayArenaTab').then(m => ({ default: m.PlayArenaTab })));
-const TournamentsTab = lazy(() => import('./components/TournamentsTab').then(m => ({ default: m.TournamentsTab })));
-const PhaseSandboxTab = lazy(() => import('./components/PhaseSandboxTab').then(m => ({ default: m.PhaseSandboxTab })));
-const ProfileTab = lazy(() => import('./components/ProfileTab').then(m => ({ default: m.ProfileTab })));
-const AuthEntrancePortal = lazy(() => import('./components/AuthEntrancePortal').then(m => ({ default: m.AuthEntrancePortal })));
-const SpectateTab = lazy(() => import('./components/SpectateTab').then(m => ({ default: m.SpectateTab })));
-const ChatTab = lazy(() => import('./components/ChatTab').then(m => ({ default: m.ChatTab })));
-const AdminTab = lazy(() => import('./components/AdminTab').then(m => ({ default: m.AdminTab })));
+// Helper for resilient lazy loading that auto-reloads if a post-deploy chunk hash changes
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  componentImport: () => Promise<{ default: T }>
+) {
+  return lazy(async () => {
+    const pageHasBeenRefreshed = JSON.parse(
+      window.sessionStorage.getItem('duellio_module_refreshed') || 'false'
+    );
+
+    try {
+      const component = await componentImport();
+      window.sessionStorage.setItem('duellio_module_refreshed', 'false');
+      return component;
+    } catch (error: any) {
+      if (!pageHasBeenRefreshed) {
+        window.sessionStorage.setItem('duellio_module_refreshed', 'true');
+        window.location.reload();
+        return new Promise(() => {});
+      }
+      throw error;
+    }
+  });
+}
+
+// Lazy-loaded Tabs with auto-retry on redeployment
+const DiscoverTab = lazyWithRetry(() => import('./components/DiscoverTab').then(m => ({ default: m.DiscoverTab })));
+const PlayArenaTab = lazyWithRetry(() => import('./components/PlayArenaTab').then(m => ({ default: m.PlayArenaTab })));
+const TournamentsTab = lazyWithRetry(() => import('./components/TournamentsTab').then(m => ({ default: m.TournamentsTab })));
+const PhaseSandboxTab = lazyWithRetry(() => import('./components/PhaseSandboxTab').then(m => ({ default: m.PhaseSandboxTab })));
+const ProfileTab = lazyWithRetry(() => import('./components/ProfileTab').then(m => ({ default: m.ProfileTab })));
+const AuthEntrancePortal = lazyWithRetry(() => import('./components/AuthEntrancePortal').then(m => ({ default: m.AuthEntrancePortal })));
+const SpectateTab = lazyWithRetry(() => import('./components/SpectateTab').then(m => ({ default: m.SpectateTab })));
+const ChatTab = lazyWithRetry(() => import('./components/ChatTab').then(m => ({ default: m.ChatTab })));
+const AdminTab = lazyWithRetry(() => import('./components/AdminTab').then(m => ({ default: m.AdminTab })));
 
 function LoadingFallback() {
   return (
