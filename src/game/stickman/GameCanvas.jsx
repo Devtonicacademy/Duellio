@@ -6,14 +6,18 @@ export default function GameCanvas({ config, onUIUpdate, isPaused, isRestartTrig
   const engineRef = useRef(null);
   const requestRef = useRef(null);
 
-  // Critical fix: track isPaused via ref so the game loop reads the latest value
-  // WITHOUT causing a full engine teardown/rebuild on every pause toggle
   const isPausedRef = useRef(isPaused);
+  const onUIUpdateRef = useRef(onUIUpdate);
+
+  // Keep onUIUpdateRef fresh without tearing down the GameEngine instance
+  useEffect(() => {
+    onUIUpdateRef.current = onUIUpdate;
+  }, [onUIUpdate]);
 
   const LOGICAL_WIDTH = 960;
   const LOGICAL_HEIGHT = 540;
 
-  // Sync pause ref and control ambient music ΓÇö no engine rebuild
+  // Sync pause ref and control ambient music — no engine rebuild
   useEffect(() => {
     isPausedRef.current = isPaused;
     const sound = engineRef.current?.sound;
@@ -26,14 +30,21 @@ export default function GameCanvas({ config, onUIUpdate, isPaused, isRestartTrig
     }
   }, [isPaused]);
 
-  // Build engine only when config changes (not on pause!)
+  // Dynamic map updates on existing engine instance without rebuilding
+  useEffect(() => {
+    if (engineRef.current && config?.map) {
+      engineRef.current.setMap(config.map);
+    }
+  }, [config?.map]);
+
+  // Build engine ONLY ONCE per match session configuration (mode, difficulty, names, colors)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const resizeCanvas = () => {
       const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 2;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       let targetWidth = Math.round(rect.width * dpr);
       let targetHeight = Math.round(rect.height * dpr);
 
@@ -42,7 +53,7 @@ export default function GameCanvas({ config, onUIUpdate, isPaused, isRestartTrig
         targetHeight = LOGICAL_HEIGHT * dpr;
       }
 
-      // Cap backing store resolution to 1920px width to prevent performance lag on 4K/high-res screens
+      // Cap backing store resolution to 1920px width to prevent performance lag on 4K screens
       const maxBackingWidth = 1920;
       if (targetWidth > maxBackingWidth) {
         const scaleFactor = maxBackingWidth / targetWidth;
@@ -70,12 +81,15 @@ export default function GameCanvas({ config, onUIUpdate, isPaused, isRestartTrig
       p2Name: config.p2Name,
       weaponSpawnEnabled: config.weaponSpawnEnabled,
       onUIEvent: (state) => {
-        onUIUpdate(state);
+        if (onUIUpdateRef.current) {
+          onUIUpdateRef.current(state);
+        }
       }
     });
 
-    // Use the new setMap method before initializing
-    engine.setMap(config.map);
+    if (config.map) {
+      engine.setMap(config.map);
+    }
 
     engineRef.current = engine;
     window.gameEngine = engine;
@@ -123,9 +137,12 @@ export default function GameCanvas({ config, onUIUpdate, isPaused, isRestartTrig
       if (engineRef.current) {
         engineRef.current.sound?.stopAmbient();
         engineRef.current.cleanUp();
+        engineRef.current = null;
+        window.gameEngine = null;
       }
     };
-  }, [config, onUIUpdate]); // Only config — NOT isPaused
+    // Only re-build engine when match session configuration primitives change!
+  }, [config?.mode, config?.difficulty, config?.p1Color, config?.p2Color, config?.p1Name, config?.p2Name, config?.weaponSpawnEnabled]);
 
   // Handle restart triggers
   useEffect(() => {
@@ -134,14 +151,6 @@ export default function GameCanvas({ config, onUIUpdate, isPaused, isRestartTrig
       onRestartCompleted();
     }
   }, [isRestartTriggered, onRestartCompleted]);
-
-  // Expose engine globally for MobileControls / other access
-  useEffect(() => {
-    window.gameEngine = engineRef.current;
-    return () => {
-      window.gameEngine = null;
-    };
-  }, [config]);
 
   const handlePointerDown = () => {
     if (engineRef.current && engineRef.current.sound) {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import GameCanvas from '../game/stickman/GameCanvas';
 import HUD from '../game/stickman/HUD';
 import MobileControls from '../game/stickman/MobileControls';
@@ -86,7 +86,7 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
 
   const reportedOutcomeRef = useRef<boolean>(false);
 
-  const gameConfig = {
+  const gameConfig = useMemo(() => ({
     mode,
     difficulty: botDifficulty,
     p1Color: '#06b6d4', // Cyan
@@ -95,7 +95,7 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
     p2Name: opponentName,
     map: selectedMap,
     weaponSpawnEnabled: true
-  };
+  }), [mode, botDifficulty, opponentName, selectedMap]);
 
   const handleUIUpdate = useCallback((state: any) => {
     setUiState(state);
