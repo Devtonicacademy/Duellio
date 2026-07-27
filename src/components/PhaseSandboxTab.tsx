@@ -797,7 +797,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         setTransactions(prev => [payoutTx, ...prev]);
 
         // Save transaction to Firestore
-        setDoc(doc(db, 'transactions', payoutTx.id), payoutTx).catch(console.error);
+        setDoc(doc(db, 'transactions', payoutTx.id), sanitizeFirestoreData(payoutTx)).catch(console.error);
 
         // Record developer rake transaction
         if (rakeAmount > 0) {
@@ -810,7 +810,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             status: 'completed'
           };
-          setDoc(doc(db, 'transactions', devTx.id), devTx).catch(console.error);
+          setDoc(doc(db, 'transactions', devTx.id), sanitizeFirestoreData(devTx)).catch(console.error);
           setDoc(doc(db, 'developer_stats', 'revenue'), { totalRake: increment(rakeAmount) }, { merge: true }).catch(console.error);
         }
       }
@@ -834,7 +834,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           status: 'completed'
         };
-        setDoc(doc(db, 'transactions', devTx.id), devTx).catch(console.error);
+        setDoc(doc(db, 'transactions', devTx.id), sanitizeFirestoreData(devTx)).catch(console.error);
         setDoc(doc(db, 'developer_stats', 'revenue'), { totalRake: increment(houseEarning) }, { merge: true }).catch(console.error);
       }
     }
@@ -1952,7 +1952,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         setTransactions(prev => [payoutTx, ...prev]);
 
         // Save transaction to Firestore
-        setDoc(doc(db, 'transactions', payoutTx.id), payoutTx).catch(console.error);
+        setDoc(doc(db, 'transactions', payoutTx.id), sanitizeFirestoreData(payoutTx)).catch(console.error);
 
         // Record developer rake transaction
         if (rakeAmount > 0) {
@@ -1965,7 +1965,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             status: 'completed'
           };
-          setDoc(doc(db, 'transactions', devTx.id), devTx).catch(console.error);
+          setDoc(doc(db, 'transactions', devTx.id), sanitizeFirestoreData(devTx)).catch(console.error);
           setDoc(doc(db, 'developer_stats', 'revenue'), { totalRake: increment(rakeAmount) }, { merge: true }).catch(console.error);
         }
       }
@@ -2003,7 +2003,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           status: 'completed'
         };
-        setDoc(doc(db, 'transactions', devTx.id), devTx).catch(console.error);
+        setDoc(doc(db, 'transactions', devTx.id), sanitizeFirestoreData(devTx)).catch(console.error);
         setDoc(doc(db, 'developer_stats', 'revenue'), { totalRake: increment(houseEarning) }, { merge: true }).catch(console.error);
       }
 

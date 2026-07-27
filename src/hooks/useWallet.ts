@@ -11,6 +11,7 @@ import {
   updateDoc, 
   increment 
 } from 'firebase/firestore';
+import { sanitizeFirestoreData } from '../utils/firestoreSanitizer';
 
 export function useWallet(userProfile: UserProfile | null) {
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
@@ -58,7 +59,7 @@ export function useWallet(userProfile: UserProfile | null) {
         coins: increment(claimAmount)
       });
       // Save transaction in Firestore
-      await setDoc(doc(db, 'transactions', newTx.id), newTx);
+      await setDoc(doc(db, 'transactions', newTx.id), sanitizeFirestoreData(newTx));
     } catch (e) {
       console.error("Faucet error:", e);
     }
@@ -66,7 +67,7 @@ export function useWallet(userProfile: UserProfile | null) {
 
   const addTransaction = async (tx: WalletTransaction) => {
     try {
-      await setDoc(doc(db, 'transactions', tx.id), tx);
+      await setDoc(doc(db, 'transactions', tx.id), sanitizeFirestoreData(tx));
     } catch (e) {
       console.error("Error adding transaction to Firestore:", e);
     }

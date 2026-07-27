@@ -10,6 +10,10 @@ export function sanitizeFirestoreData<T>(obj: T): T {
   if (typeof obj !== 'object') {
     return obj;
   }
+  // Preserve Firestore FieldValues (serverTimestamp, increment, etc.) and Date objects
+  if (obj.constructor && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
+    return obj;
+  }
   if (Array.isArray(obj)) {
     return obj.map(item => sanitizeFirestoreData(item)) as any;
   }

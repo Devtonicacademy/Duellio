@@ -10,6 +10,7 @@ import {
   deleteDoc,
   updateDoc
 } from 'firebase/firestore';
+import { sanitizeFirestoreData } from '../utils/firestoreSanitizer';
 
 export function useProfiles() {
   const [allProfiles, setAllProfiles] = useState<UserProfile[]>([]);
@@ -109,7 +110,7 @@ export function useProfiles() {
       if (currentJson !== lastSyncedProfileJsonRef.current) {
         lastSyncedProfileJsonRef.current = currentJson;
         const updateRef = doc(db, 'users', userProfile.uid);
-        updateDoc(updateRef, { ...userProfile }).catch(err => console.error("Firestore user sync error:", err));
+        updateDoc(updateRef, sanitizeFirestoreData({ ...userProfile })).catch(err => console.error("Firestore user sync error:", err));
       }
     }
   }, [userProfile]);
