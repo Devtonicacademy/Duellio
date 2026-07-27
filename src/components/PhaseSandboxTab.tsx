@@ -348,11 +348,12 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
               const sessionData = docSnap.data();
               if (sessionData.status === 'waiting') {
                 const updatedGameState = {
-                  ...sessionData.gameState,
+                  ...(sessionData.gameState || {}),
                   playerIds: [sessionData.hostId, userProfile.uid],
                   playerHands: {
-                    [sessionData.hostId]: sessionData.gameState.playerHands[sessionData.hostId],
-                    [userProfile.uid]: sessionData.gameState.playerHands[''] || []
+                    ...(sessionData.gameState?.playerHands || {}),
+                    [sessionData.hostId]: sessionData.gameState?.playerHands?.[sessionData.hostId] || [],
+                    [userProfile.uid]: sessionData.gameState?.playerHands?.[''] || []
                   },
                   lastActionMessage: `${userProfile.username} has joined! Match starts now.`
                 };
@@ -570,7 +571,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   } | null>(null);
 
   const opponentId = activeChallenge
-    ? (activeChallenge.senderId === userProfile.uid ? selectedBot?.uid || 'bot' : activeChallenge.senderId)
+    ? (activeChallenge.opponentType === 'player'
+        ? (activeChallenge.senderId === userProfile.uid 
+            ? (activeChallenge.receiverId === 'pending' ? '' : activeChallenge.receiverId) 
+            : activeChallenge.senderId)
+        : (activeChallenge.senderId === userProfile.uid ? selectedBot?.uid || 'bot' : activeChallenge.senderId))
     : '';
 
   const opponentProfile = activeChallenge
@@ -585,11 +590,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
             coins: 1000,
             status: 'online' as const
           }
-        : (activeChallenge.opponentType === 'bot' || activeChallenge.receiverId === selectedBot?.uid
+        : (activeChallenge.opponentType === 'bot'
             ? selectedBot
-            : (allProfiles.find(p => p.uid === opponentId || p.username === activeChallenge.senderName) || {
-                uid: opponentId,
-                username: activeChallenge.senderName || 'Opponent',
+            : (allProfiles.find(p => (opponentId && p.uid === opponentId) || (p.username && p.username !== userProfile.username && (p.username === activeChallenge.senderName || p.username === activeChallenge.receiverId))) || {
+                uid: opponentId || 'player-2',
+                username: (activeChallenge.senderName !== userProfile.username ? activeChallenge.senderName : 'Challenger'),
                 avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
                 wins: 0,
                 losses: 0,
@@ -2634,11 +2639,12 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                                 
                                 // Join session
                                 const updatedGameState = {
-                                  ...s.gameState,
+                                  ...(s.gameState || {}),
                                   playerIds: [s.hostId, userProfile.uid],
                                   playerHands: {
-                                    [s.hostId]: s.gameState.playerHands[s.hostId],
-                                    [userProfile.uid]: s.gameState.playerHands[''] || []
+                                    ...(s.gameState?.playerHands || {}),
+                                    [s.hostId]: s.gameState?.playerHands?.[s.hostId] || [],
+                                    [userProfile.uid]: s.gameState?.playerHands?.[''] || []
                                   },
                                   lastActionMessage: `${userProfile.username} has joined! Match starts now.`
                                 };
@@ -3280,6 +3286,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
+                isBot={activeChallenge?.opponentType === 'bot'}
               />
             ) : activeChallenge?.gameType === 'Draft' ? (
               <InteractiveDraftBoard
@@ -3289,6 +3296,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
+                isBot={activeChallenge?.opponentType === 'bot'}
               />
             ) : activeChallenge?.gameType === 'TicTacToe' ? (
               <InteractiveTicTacToeBoard
@@ -3298,6 +3306,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
+                isBot={activeChallenge?.opponentType === 'bot'}
               />
             ) : activeChallenge?.gameType === 'Stickman' ? (
               <InteractiveStickmanBoard
@@ -3307,6 +3316,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
+                isBot={activeChallenge?.opponentType === 'bot'}
               />
             ) : (
               <InteractiveChessBoard
@@ -3316,6 +3326,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
+                isBot={activeChallenge?.opponentType === 'bot'}
               />
             )}
           </div>

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function HUD({ uiState }) {
   const {
@@ -50,9 +50,9 @@ export default function HUD({ uiState }) {
   }, [p2Health, p2HealthLag]);
 
   return (
-    <div className="hud-container select-none pointer-events-none">
+    <div className="hud-container absolute inset-x-0 top-0 p-3 sm:p-4 z-20 select-none pointer-events-none">
       {/* Top HUD Row */}
-      <div className="hud-top-row">
+      <div className="hud-top-row flex justify-between items-start w-full">
         
         {/* PLAYER 1 HUD (Left) */}
         <div className="player-hud p1-hud flex flex-col items-start w-5/12">

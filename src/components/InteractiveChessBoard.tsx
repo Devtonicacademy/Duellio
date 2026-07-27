@@ -16,6 +16,7 @@ interface InteractiveChessBoardProps {
   onGameOver: (winnerIsMe: boolean) => void;
   onAddLog: (log: string) => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
+  isBot?: boolean;
 }
 
 type PieceType = 'p' | 'r' | 'n' | 'b' | 'q' | 'k';
@@ -91,7 +92,8 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
   opponentAvatar,
   onGameOver,
   onAddLog,
-  botDifficulty
+  botDifficulty,
+  isBot = true
 }) => {
   const [board, setBoard] = useState<BoardGrid>(JSON.parse(JSON.stringify(INITIAL_BOARD)));
   const [activeColor, setActiveColor] = useState<Color>('w'); // 'w' = Player, 'b' = Bot
@@ -348,7 +350,7 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
 
   // Bot Turn Engine
   useEffect(() => {
-    if (activeColor !== 'b' || gameResult !== 'playing' || botIsThinking) return;
+    if (!isBot || activeColor !== 'b' || gameResult !== 'playing' || botIsThinking) return;
 
     setBotIsThinking(true);
     onAddLog(`[TURN KICK] Bot player ${opponentName} evaluating legal moves with FEN engine.`);

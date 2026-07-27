@@ -32,6 +32,7 @@ interface InteractiveStickmanBoardProps {
   onGameOver: (winnerIsMe: boolean) => void;
   onAddLog: (log: string) => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
+  isBot?: boolean;
 }
 
 export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> = ({
@@ -40,13 +41,14 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
   opponentAvatar,
   onGameOver,
   onAddLog,
-  botDifficulty = 'medium'
+  botDifficulty = 'medium',
+  isBot = true
 }) => {
   const isPractice = opponentName.toUpperCase().includes('PRACTICE') || entryFee === 0;
 
   // Game configuration
   const [mode, setMode] = useState<'p1_vs_cpu' | 'p1_vs_p2' | 'practice' | 'survival'>(
-    isPractice ? 'practice' : 'p1_vs_cpu'
+    isPractice ? 'practice' : (isBot ? 'p1_vs_cpu' : 'p1_vs_p2')
   );
   const [selectedMap, setSelectedMap] = useState<'arena' | 'dojo' | 'temple' | 'volcano' | 'snow'>('dojo');
   const [isPaused, setIsPaused] = useState<boolean>(false);

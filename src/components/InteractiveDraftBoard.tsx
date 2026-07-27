@@ -17,6 +17,7 @@ interface InteractiveDraftBoardProps {
   onGameOver: (winnerIsMe: boolean) => void;
   onAddLog: (log: string) => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
+  isBot?: boolean;
 }
 
 export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
@@ -25,7 +26,8 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   opponentAvatar,
   onGameOver,
   onAddLog,
-  botDifficulty
+  botDifficulty,
+  isBot = true
 }) => {
   const player1Id = 'player-user';
   const player2Id = 'bot-user';
@@ -82,7 +84,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
 
   // Bot move selector AI
   useEffect(() => {
-    if (gameResult !== 'playing' || isPlayerTurn || botIsThinking) return;
+    if (!isBot || gameResult !== 'playing' || isPlayerTurn || botIsThinking) return;
 
     setBotIsThinking(true);
 

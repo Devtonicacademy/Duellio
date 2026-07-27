@@ -17,6 +17,7 @@ import { useFriendInvite } from './hooks/useFriendInvite';
 // UI Components
 import { Header } from './components/Header';
 import { FriendInviteModal } from './components/FriendInviteModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Types
 import { WalletTransaction, NotificationItem } from './types';
@@ -350,99 +351,101 @@ export default function App() {
 
       {/* Main viewport with Suspense boundary for lazy components */}
       <main className={`max-w-7xl mx-auto px-4 md:px-8 ${isGameActive ? 'mt-4 md:mt-6' : 'mt-10'}`}>
-        <Suspense fallback={<LoadingFallback />}>
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.18 }}
-          >
-            {/* Discover View */}
-            {activeTab === 'discover' && (
-              <DiscoverTab 
-                onSelectGame={handleSelectGameFromDiscover} 
-                userCoins={userProfile.coins} 
-              />
-            )}
+        <ErrorBoundary onReset={() => setActiveTab('lobbies')}>
+          <Suspense fallback={<LoadingFallback />}>
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.18 }}
+            >
+              {/* Discover View */}
+              {activeTab === 'discover' && (
+                <DiscoverTab 
+                  onSelectGame={handleSelectGameFromDiscover} 
+                  userCoins={userProfile.coins} 
+                />
+              )}
 
-            {/* Play Arena View */}
-            {activeTab === 'play-arena' && (
-              <PlayArenaTab 
-                userProfile={userProfile}
-                setUserProfile={setUserProfile}
-                onLaunchMatch={handleLaunchArenaMatch}
-                allProfiles={allProfiles}
-              />
-            )}
+              {/* Play Arena View */}
+              {activeTab === 'play-arena' && (
+                <PlayArenaTab 
+                  userProfile={userProfile}
+                  setUserProfile={setUserProfile}
+                  onLaunchMatch={handleLaunchArenaMatch}
+                  allProfiles={allProfiles}
+                />
+              )}
 
-            {/* Tournaments View */}
-            {activeTab === 'tournaments' && (
-              <TournamentsTab />
-            )}
+              {/* Tournaments View */}
+              {activeTab === 'tournaments' && (
+                <TournamentsTab />
+              )}
 
-            {/* Matchmaking Lobbies and actual Games simulation View */}
-            {activeTab === 'lobbies' && (
-              <PhaseSandboxTab 
-                userProfile={userProfile} 
-                setUserProfile={setUserProfile}
-                transactions={transactions}
-                setTransactions={setTransactions}
-                preselectedGame={preselectedGame}
-                setPreselectedGame={setPreselectedGame}
-                suggestedStake={suggestedStake}
-                friendChallenge={friendChallenge}
-                setFriendChallenge={setFriendChallenge}
-                allProfiles={allProfiles}
-                theme={theme}
-                handleToggleDeactivate={handleToggleDeactivate}
-                handleDeleteProfile={handleDeleteProfile}
-                onGameActiveChange={setIsGameActive}
-              />
-            )}
+              {/* Matchmaking Lobbies and actual Games simulation View */}
+              {activeTab === 'lobbies' && (
+                <PhaseSandboxTab 
+                  userProfile={userProfile} 
+                  setUserProfile={setUserProfile}
+                  transactions={transactions}
+                  setTransactions={setTransactions}
+                  preselectedGame={preselectedGame}
+                  setPreselectedGame={setPreselectedGame}
+                  suggestedStake={suggestedStake}
+                  friendChallenge={friendChallenge}
+                  setFriendChallenge={setFriendChallenge}
+                  allProfiles={allProfiles}
+                  theme={theme}
+                  handleToggleDeactivate={handleToggleDeactivate}
+                  handleDeleteProfile={handleDeleteProfile}
+                  onGameActiveChange={setIsGameActive}
+                />
+              )}
 
-            {/* Player Achievements / Profiles View */}
-            {activeTab === 'profile' && (
-              <ProfileTab 
-                userProfile={userProfile} 
-                transactions={transactions} 
-                onLogout={handleLogout}
-                onChangePassword={handleChangePassword}
-                onDeleteProfile={handleDeleteProfile}
-                onAddProfile={handleAddProfileWrapper}
-                onSwitchProfile={handleSwitchProfile}
-                onUpdateProfile={handleUpdateProfile}
-                allProfiles={allProfiles}
-              />
-            )}
+              {/* Player Achievements / Profiles View */}
+              {activeTab === 'profile' && (
+                <ProfileTab 
+                  userProfile={userProfile} 
+                  transactions={transactions} 
+                  onLogout={handleLogout}
+                  onChangePassword={handleChangePassword}
+                  onDeleteProfile={handleDeleteProfile}
+                  onAddProfile={handleAddProfileWrapper}
+                  onSwitchProfile={handleSwitchProfile}
+                  onUpdateProfile={handleUpdateProfile}
+                  allProfiles={allProfiles}
+                />
+              )}
 
-            {/* Spectate & Live Betting View */}
-            {activeTab === 'spectate' && (
-              <SpectateTab 
-                userProfile={userProfile}
-                setUserProfile={setUserProfile}
-                onAddTransaction={addTransaction}
-              />
-            )}
+              {/* Spectate & Live Betting View */}
+              {activeTab === 'spectate' && (
+                <SpectateTab 
+                  userProfile={userProfile}
+                  setUserProfile={setUserProfile}
+                  onAddTransaction={addTransaction}
+                />
+              )}
 
-            {/* Chat View */}
-            {activeTab === 'chat' && (
-              <ChatTab 
-                userProfile={userProfile}
-                setUserProfile={setUserProfile}
-                allProfiles={allProfiles}
-                setActiveTab={setActiveTab}
-                setFriendChallenge={setFriendChallenge}
-                addTransaction={addTransaction}
-              />
-            )}
+              {/* Chat View */}
+              {activeTab === 'chat' && (
+                <ChatTab 
+                  userProfile={userProfile}
+                  setUserProfile={setUserProfile}
+                  allProfiles={allProfiles}
+                  setActiveTab={setActiveTab}
+                  setFriendChallenge={setFriendChallenge}
+                  addTransaction={addTransaction}
+                />
+              )}
 
-            {/* Admin Dashboard Tab */}
-            {activeTab === 'admin' && userProfile?.email === 'devtonicllc@gmail.com' && (
-              <AdminTab />
-            )}
-          </motion.div>
-        </Suspense>
+              {/* Admin Dashboard Tab */}
+              {activeTab === 'admin' && userProfile?.email === 'devtonicllc@gmail.com' && (
+                <AdminTab />
+              )}
+            </motion.div>
+          </Suspense>
+        </ErrorBoundary>
       </main>
 
       {/* Extract Friend Invitation Challenge Modal */}

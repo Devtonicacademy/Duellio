@@ -11,6 +11,7 @@ interface InteractiveTicTacToeBoardProps {
   onGameOver: (winnerIsMe: boolean) => void;
   onAddLog: (log: string) => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
+  isBot?: boolean;
 }
 
 export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps> = ({
@@ -19,7 +20,8 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
   opponentAvatar,
   onGameOver,
   onAddLog,
-  botDifficulty = 'medium'
+  botDifficulty = 'medium',
+  isBot = true
 }) => {
   const player1Id = 'player-user';
   const player2Id = 'bot-user';
@@ -73,7 +75,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
 
   // Bot AI Turn execution
   useEffect(() => {
-    if (gameResult !== 'playing' || isPlayerTurn || botIsThinking) return;
+    if (!isBot || gameResult !== 'playing' || isPlayerTurn || botIsThinking) return;
 
     setBotIsThinking(true);
 

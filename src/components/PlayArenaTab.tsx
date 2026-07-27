@@ -160,8 +160,12 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
     if (opponentStyle === 'player') {
       sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const inviteLink = `${origin}${pathname}?friendInvite=true&game=${selectedGame}&stake=${actualStake}&sender=${encodeURIComponent(userProfile.username)}&sessionId=${sessionId}`;
-      navigator.clipboard.writeText(inviteLink);
-      alert(`🎉 Multiplayer Match Ready!\n\nWe copied the invitation link to your clipboard:\n\n${inviteLink}\n\nShare this link with your challenger to start instantly!`);
+      try {
+        navigator.clipboard.writeText(inviteLink);
+      } catch (err) {
+        console.warn("Clipboard access error:", err);
+      }
+      alert(`🎉 Multiplayer Match Ready!\n\nInvitation link:\n\n${inviteLink}\n\nShare this link with your challenger to start instantly!`);
     }
 
     const effectiveBotDifficulty = opponentStyle === 'bot'
@@ -559,7 +563,11 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
                       type="button"
                       onClick={() => {
                         const link = `${window.location.origin}${window.location.pathname}?friendInvite=true&game=${selectedGame}&stake=${stake}&sender=${encodeURIComponent(userProfile.username)}`;
-                        navigator.clipboard.writeText(link);
+                        try {
+                          navigator.clipboard.writeText(link);
+                        } catch (e) {
+                          console.warn("Clipboard copy failed:", e);
+                        }
                         alert("📋 Invite link copied!");
                       }}
                       className="px-2.5 bg-cyan-400 hover:bg-cyan-300 active:scale-95 text-neutral-950 rounded-lg text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all shrink-0"

@@ -1,4 +1,4 @@
-﻿import { Stickman, STATES, triggerHaptics } from './Stickman';
+import { Stickman, STATES, triggerHaptics } from './Stickman';
 import { EffectSystem, Particle } from './Effects';
 import { InputHandler } from './InputHandler';
 import { Weapon } from './Weapon';
@@ -264,8 +264,8 @@ export class GameEngine {
 
   notifyUI() {
     const nextState = {
-      p1Health: this.p1 ? Math.round(this.p1.health) : 100,
-      p2Health: this.p2 ? Math.round(this.p2.health) : 100,
+      p1Health: this.p1 ? Math.min(100, Math.max(0, Math.round((this.p1.health / (this.p1.maxHealth || 150)) * 100))) : 100,
+      p2Health: this.p2 ? Math.min(100, Math.max(0, Math.round((this.p2.health / (this.p2.maxHealth || 150)) * 100))) : 100,
       p1Chi: this.p1 ? Math.round(this.p1.chi) : 0,
       p2Chi: this.p2 ? Math.round(this.p2.chi) : 0,
       p1Combo: this.p1 ? this.p1.comboCount : 0,

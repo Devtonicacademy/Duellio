@@ -14,6 +14,7 @@ interface InteractiveLudoBoardProps {
   onGameOver: (winnerIsMe: boolean) => void;
   onAddLog: (log: string) => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
+  isBot?: boolean;
 }
 
 interface LudoToken {
@@ -60,7 +61,8 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   opponentAvatar,
   onGameOver,
   onAddLog,
-  botDifficulty
+  botDifficulty,
+  isBot = true
 }) => {
   // Game mode configuration
   const [view3D, setView3D] = useState<boolean>(true);
@@ -85,10 +87,10 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 
   // Auto Bot trigger on startup if it's Bot's turn
   useEffect(() => {
-    if (activePlayer === 'green' && gameResult === 'playing' && !botIsThinking) {
+    if (isBot && activePlayer === 'green' && gameResult === 'playing' && !botIsThinking) {
       triggerBotTurn();
     }
-  }, [activePlayer]);
+  }, [activePlayer, isBot]);
 
   const rollDice = () => {
     if (isRolling || hasRolled || gameResult !== 'playing' || activePlayer !== 'red' || botIsThinking) return;
