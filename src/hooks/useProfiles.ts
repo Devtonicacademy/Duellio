@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, WalletTransaction } from '../types';
-import { db, auth, signOut } from '../firebase';
+import { db, auth, signOut, sanitizeForFirestore } from '../firebase';
 import { 
   doc, 
   setDoc, 
@@ -29,6 +29,8 @@ export function useProfiles() {
       });
 
       setAllProfiles(profilesList);
+    }, (error) => {
+      console.warn("Firestore users listener warning:", error);
     });
 
     return () => unsubscribe();
@@ -109,7 +111,7 @@ export function useProfiles() {
       if (currentJson !== lastSyncedProfileJsonRef.current) {
         lastSyncedProfileJsonRef.current = currentJson;
         const updateRef = doc(db, 'users', userProfile.uid);
-        updateDoc(updateRef, { ...userProfile }).catch(err => console.error("Firestore user sync error:", err));
+        updateDoc(updateRef, sanitizeForFirestore({ ...userProfile })).catch(err => console.error("Firestore user sync error:", err));
       }
     }
   }, [userProfile]);

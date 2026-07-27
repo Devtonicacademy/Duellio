@@ -33,7 +33,7 @@ import { InteractiveChessBoard } from './InteractiveChessBoard';
 import { InteractiveDraftBoard } from './InteractiveDraftBoard';
 import { InteractiveTicTacToeBoard } from './InteractiveTicTacToeBoard';
 import { InteractiveStickmanBoard } from './InteractiveStickmanBoard';
-import { db } from '../firebase';
+import { db, sanitizeForFirestore } from '../firebase';
 import { doc, setDoc, increment, updateDoc, onSnapshot, collection, query, where, getDoc } from 'firebase/firestore';
 
 interface PhaseSandboxTabProps {
@@ -321,7 +321,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           setActiveChallenge(inviteChallenge);
           setGamePlayStatus('playing');
 
-          setDoc(doc(db, 'gameSessions', sessionId), {
+          setDoc(doc(db, 'gameSessions', sessionId), sanitizeForFirestore({
             sessionId,
             gameType: friendChallenge.gameType,
             hostId: userProfile.uid,
@@ -335,7 +335,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
             pauseRequest: null,
             createdAt: Date.now(),
             updatedAt: Date.now()
-          }).catch(console.error);
+          })).catch(console.error);
 
           setGamePlayLogs([
             `[ESCROW LOCK] Atomic escrow write success. STAKE: ${friendChallenge.entryFee} coins escrowed.`,
@@ -375,13 +375,13 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 _setWhotGameState(updatedGameState);
                 whotDeckRef.current = sessionData.deck || [];
 
-                updateDoc(doc(db, 'gameSessions', sessionId), {
+                updateDoc(doc(db, 'gameSessions', sessionId), sanitizeForFirestore({
                   opponentId: userProfile.uid,
                   opponentName: userProfile.username,
                   status: 'playing',
                   gameState: updatedGameState,
                   updatedAt: Date.now()
-                }).catch(console.error);
+                })).catch(console.error);
 
                 setGamePlayLogs([
                   `[ESCROW LOCK] Atomic escrow write success. STAKE: ${friendChallenge.entryFee} coins escrowed.`,
@@ -537,11 +537,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       const nextState = typeof value === 'function' ? (value as Function)(prev) : value;
       if (nextState && activeChallenge?.opponentType === 'player' && activeChallenge?.id) {
         const sessionRef = doc(db, 'gameSessions', activeChallenge.id);
-        updateDoc(sessionRef, {
+        updateDoc(sessionRef, sanitizeForFirestore({
           gameState: nextState,
           deck: whotDeckRef.current,
           updatedAt: Date.now()
-        }).catch(console.error);
+        })).catch(console.error);
       }
       return nextState;
     });
@@ -1018,6 +1018,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           setGamePlayStatus('completed');
         }
       }
+    }, (error) => {
+      console.warn("gameSessions Firestore listener error:", error);
     });
 
     return () => unsubscribe();
@@ -1408,8 +1410,9 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     if (whotGameState.activePlayerId !== userProfile.uid) return;
 
     const penaltyActive = whotGameState.penaltyCount > 0;
-    const botId = activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid : activeChallenge?.senderId;
-    if (!botId) return;
+    const targetOpponentId = opponentId || (activeChallenge?.opponentType === 'player' 
+      ? (activeChallenge.senderId === userProfile.uid ? (activeChallenge.receiverId === 'pending' ? '' : activeChallenge.receiverId) : activeChallenge.senderId)
+      : (activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid || 'bot' : activeChallenge?.senderId));
 
     if (penaltyActive) {
       const pCount = whotGameState.penaltyCount;
@@ -1420,7 +1423,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         if (!prev) return null;
         return {
           ...prev,
-          activePlayerId: botId,
+          activePlayerId: targetOpponentId,
           penaltyCount: 0,
           lastActionMessage: message
         };
@@ -1438,7 +1441,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         if (!prev) return null;
         return {
           ...prev,
-          activePlayerId: botId,
+          activePlayerId: targetOpponentId,
           lastActionMessage: message
         };
       });
@@ -1496,14 +1499,15 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const executePlayCardMove = (card: WhotCard, claimedSuit?: 'Circles' | 'Triangles' | 'Crosses' | 'Stars' | 'Squares') => {
     if (!whotGameState) return;
 
-    const botId = activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid : activeChallenge?.senderId;
-    if (!botId) return;
+    const targetOpponentId = opponentId || (activeChallenge?.opponentType === 'player' 
+      ? (activeChallenge.senderId === userProfile.uid ? (activeChallenge.receiverId === 'pending' ? '' : activeChallenge.receiverId) : activeChallenge.senderId)
+      : (activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid || 'bot' : activeChallenge?.senderId));
 
     const playerHand = whotGameState.playerHands[userProfile.uid] || [];
     const nextPlayerHand = playerHand.filter(c => c.id !== card.id);
     const isWinner = nextPlayerHand.length === 0;
 
-    let nextPlayer = botId;
+    let nextPlayer = targetOpponentId;
     let nextPenalty = whotGameState.penaltyCount;
     let message = `You played ${card.suit} ${card.value}.`;
 
@@ -1521,7 +1525,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         nextPlayer = userProfile.uid; 
         message = `You played Hold On (1)! Gained an extra turn.`;
       } else {
-        nextPlayer = botId;
+        nextPlayer = targetOpponentId;
         message = `You played Hold On (1). Extra turn setting is disabled.`;
       }
     } else if (card.value === 2) { // Pick Two
@@ -1529,11 +1533,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         if (whotGameState.penaltyCount > 0) {
           nextPenalty = 0; // cleared
           message = `You countered the Pick Two (2) with another 2! Obligation cleared. Next user plays on.`;
-          nextPlayer = botId;
+          nextPlayer = targetOpponentId;
         } else {
           nextPenalty = 2;
           message = `You played Pick Two (2)! Opponent must draw 2 cards or counter with another 2.`;
-          nextPlayer = botId;
+          nextPlayer = targetOpponentId;
         }
       } else {
         nextPenalty += 2;
@@ -1543,18 +1547,18 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       if (whotGameState.penaltyCount > 0) {
         nextPenalty = 0; // cleared
         message = `You countered the Pick Three (5) with another 5! Obligation cleared. Next user plays on.`;
-        nextPlayer = botId;
+        nextPlayer = targetOpponentId;
       } else {
         nextPenalty = 3;
         message = `You played Pick Three (5)! Opponent must draw 3 cards or counter with another 5.`;
-        nextPlayer = botId;
+        nextPlayer = targetOpponentId;
       }
     } else if (card.value === 8) { // Suspension
       if (whotSettings.playAgainOn1or8) {
         nextPlayer = userProfile.uid; // opponent is suspended, turn matches developer again!
         message = `You played Suspension (8)! Opponent's turn skipped.`;
       } else {
-        nextPlayer = botId;
+        nextPlayer = targetOpponentId;
         message = `You played Suspension (8). Extra turn setting is disabled.`;
       }
     } else if (card.value === 14) { // General market
@@ -2684,13 +2688,13 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                                 _setWhotGameState(updatedGameState);
                                 whotDeckRef.current = s.deck || [];
 
-                                updateDoc(doc(db, 'gameSessions', s.sessionId), {
+                                updateDoc(doc(db, 'gameSessions', s.sessionId), sanitizeForFirestore({
                                   opponentId: userProfile.uid,
                                   opponentName: userProfile.username,
                                   status: 'playing',
                                   gameState: updatedGameState,
                                   updatedAt: Date.now()
-                                }).catch(console.error);
+                                })).catch(console.error);
 
                                 setGamePlayLogs([
                                   `[ESCROW LOCK] Atomic escrow write success. STAKE: ${s.entryFee} coins escrowed.`,
