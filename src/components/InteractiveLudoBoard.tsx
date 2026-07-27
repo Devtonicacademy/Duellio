@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, HelpCircle, Eye, EyeOff } from 'lucide-react';
+import { ShieldCheck, HelpCircle, Eye, EyeOff, Sparkles } from 'lucide-react';
 
 interface InteractiveLudoBoardProps {
   entryFee: number;
@@ -424,18 +424,19 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   };
 
   return (
-    <div className="relative min-h-[500px] sm:min-h-[620px] bg-[#070b16] rounded-2xl sm:rounded-3xl overflow-hidden border border-cyan-500/30 p-1 sm:p-2.5 font-sans flex flex-col justify-between shadow-[0_25px_60px_rgba(0,0,0,0.8)] select-none">
+    <div className="relative min-h-[520px] sm:min-h-[640px] bg-[#050811] rounded-2xl sm:rounded-3xl overflow-hidden border border-cyan-500/30 p-1 sm:p-2.5 font-sans flex flex-col justify-between shadow-[0_25px_60px_rgba(0,0,0,0.8)] select-none">
       
-      {/* Ambient background decors */}
-      <div className="absolute top-2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent pointer-events-none" />
-      <div className="absolute bottom-2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-500/20 to-transparent pointer-events-none" />
+      {/* Ambient background glows */}
+      <div className="absolute top-2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent pointer-events-none" />
+      <div className="absolute bottom-2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-500/30 to-transparent pointer-events-none" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[350px] h-[350px] bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none" />
 
       {/* VIEWPORT HEADER CONTROLS */}
       <div className="flex justify-between items-center px-4 pt-3 pb-2 z-10">
         <div className="flex items-center gap-2">
           <div className="p-1 px-2.5 bg-[#091522] rounded-lg border border-cyan-500/25 flex items-center gap-1.5 text-[9px] font-mono text-cyan-400 tracking-wider">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>3D PHYSICAL LUDO ARENA</span>
+            <span>3D PHYSICAL LUDO ARENA v2.0</span>
           </div>
         </div>
 
@@ -465,9 +466,12 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-16 left-6 right-6 bg-[#070D18]/95 backdrop-blur-md border border-cyan-500/40 p-4 rounded-2xl text-xs text-slate-350 space-y-2 z-40"
+            className="absolute top-16 left-6 right-6 bg-[#070D18]/95 backdrop-blur-md border border-cyan-500/40 p-4 rounded-2xl text-xs text-slate-350 space-y-2 z-40 shadow-2xl"
           >
-            <h4 className="font-display font-black text-white uppercase text-sm tracking-wider">Duellio Standard Ludo Contract Rules</h4>
+            <h4 className="font-display font-black text-white uppercase text-sm tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-cyan-400" />
+              <span>Duellio Standard Ludo Contract Rules</span>
+            </h4>
             <ul className="list-disc pl-4 space-y-1 text-slate-400 font-mono text-[11px]">
               <li>You command the <span className="text-rose-400 font-bold">RED Pawns</span> in the Top-Left Base. Bot commands <span className="text-emerald-400 font-bold">GREEN Pawns</span> in Top-Right Base.</li>
               <li>A dice roll of <span className="text-yellow-300 font-bold">5 or 6</span> releases your pawn onto the Red starting square on the left arm.</li>
@@ -487,25 +491,28 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           className="relative transition-all duration-1000 ease-out flex items-center justify-center"
           style={{
             transform: view3D 
-              ? 'perspective(1200px) rotateX(42deg) rotateZ(-20deg) translateY(-2%) scale(0.92)' 
+              ? 'perspective(1200px) rotateX(44deg) rotateZ(-20deg) translateY(-2%) scale(0.93)' 
               : 'perspective(1200px) rotateX(0deg) rotateZ(0deg) translateY(0) scale(1)',
             transformStyle: 'preserve-3d'
           }}
         >
           {/* Holographic floor matrix underneath board */}
           {view3D && (
-            <div className="absolute inset-[-60px] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:28px_28px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)] pointer-events-none" />
+            <div className="absolute inset-[-70px] bg-[linear-gradient(rgba(6,182,212,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.03)_1px,transparent_1px)] bg-[size:28px_28px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)] pointer-events-none" />
           )}
 
           {/* ========================================================== */}
-          {/* THE PHYSICAL 3D LUDO BOARD SLAB (MATCHING ATTACHED PHOTO) */}
+          {/* THE PHYSICAL 3D LUDO BOARD SLAB (ELEVATED AESTHETICS) */}
           {/* ========================================================== */}
           <div 
-            className="relative w-[340px] h-[340px] sm:w-[420px] sm:h-[420px] bg-[#0A0A0A] rounded-3xl border-[3px] border-black p-[2px] shadow-[0_30px_70px_rgba(0,0,0,0.9),0_12px_0px_#111111] ludo-board-container"
-            style={{ transform: view3D ? 'translateZ(10px)' : 'none', transformStyle: 'preserve-3d' }}
+            className="relative w-[340px] h-[340px] sm:w-[430px] sm:h-[430px] bg-[#0c0f17] rounded-[32px] border-[3.5px] border-[#1e293b] p-[3px] shadow-[0_35px_80px_rgba(0,0,0,0.95),0_14px_0px_#070a12,0_16px_25px_rgba(0,0,0,0.8)] ludo-board-container"
+            style={{ transform: view3D ? 'translateZ(12px)' : 'none', transformStyle: 'preserve-3d' }}
           >
+            {/* Ambient specular light sheen */}
+            <div className="absolute inset-0 rounded-[28px] bg-gradient-to-br from-white/10 via-transparent to-black/20 pointer-events-none z-10" />
+
             {/* 15x15 Grid Layout */}
-            <div className="grid grid-cols-15 grid-rows-15 w-full h-full bg-black gap-[1px] rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-15 grid-rows-15 w-full h-full bg-black gap-[1px] rounded-2xl overflow-hidden shadow-inner">
               {Array.from({ length: 15 }).map((_, r) =>
                 Array.from({ length: 15 }).map((_, c) => {
                   // Center 3x3 Home Box (rows 6..8, cols 6..8)
@@ -528,9 +535,8 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                             <polygon points="0,100 50,50 100,100" fill="#1B4EAB" stroke="#000000" strokeWidth="1.5" />
                           </svg>
 
-                          {/* Center text tag */}
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <span className="text-[7px] sm:text-[9px] font-black text-black tracking-tighter uppercase opacity-40 font-mono">HOME</span>
+                            <span className="text-[7.5px] sm:text-[9.5px] font-black text-black tracking-tighter uppercase opacity-35 font-mono">HOME</span>
                           </div>
                         </div>
                       );
@@ -602,8 +608,8 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                         className={`border border-black relative flex items-center justify-center ${isGreenPath ? 'bg-[#009A44]' : 'bg-white'}`} 
                         style={{ gridRow: r + 1, gridColumn: c + 1 }}
                       >
-                        {isGreenStart && <span className="text-[8px] sm:text-[10px] font-black text-white leading-none">⬇</span>}
-                        {isGreenEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#009A44] leading-none">⬇</span>}
+                        {isGreenStart && <span className="text-[8px] sm:text-[10px] font-black text-white leading-none drop-shadow-sm">⬇</span>}
+                        {isGreenEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#009A44] leading-none drop-shadow-sm">⬇</span>}
                       </div>
                     );
                   }
@@ -620,8 +626,8 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                         className={`border border-black relative flex items-center justify-center ${isRedPath ? 'bg-[#E52521]' : 'bg-white'}`} 
                         style={{ gridRow: r + 1, gridColumn: c + 1 }}
                       >
-                        {isRedStart && <span className="text-[8px] sm:text-[10px] font-black text-white leading-none">➔</span>}
-                        {isRedEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#E52521] leading-none">➔</span>}
+                        {isRedStart && <span className="text-[8px] sm:text-[10px] font-black text-white leading-none drop-shadow-sm">➔</span>}
+                        {isRedEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#E52521] leading-none drop-shadow-sm">➔</span>}
                       </div>
                     );
                   }
@@ -638,8 +644,8 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                         className={`border border-black relative flex items-center justify-center ${isYellowPath ? 'bg-[#FFCC00]' : 'bg-white'}`} 
                         style={{ gridRow: r + 1, gridColumn: c + 1 }}
                       >
-                        {isYellowStart && <span className="text-[8px] sm:text-[10px] font-black text-black leading-none">⬅</span>}
-                        {isYellowEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#D9A300] leading-none">⬅</span>}
+                        {isYellowStart && <span className="text-[8px] sm:text-[10px] font-black text-black leading-none drop-shadow-sm">⬅</span>}
+                        {isYellowEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#D9A300] leading-none drop-shadow-sm">⬅</span>}
                       </div>
                     );
                   }
@@ -656,8 +662,8 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                         className={`border border-black relative flex items-center justify-center ${isBluePath ? 'bg-[#1B4EAB]' : 'bg-white'}`} 
                         style={{ gridRow: r + 1, gridColumn: c + 1 }}
                       >
-                        {isBlueStart && <span className="text-[8px] sm:text-[10px] font-black text-white leading-none">⬆</span>}
-                        {isBlueEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#1B4EAB] leading-none">⬆</span>}
+                        {isBlueStart && <span className="text-[8px] sm:text-[10px] font-black text-white leading-none drop-shadow-sm">⬆</span>}
+                        {isBlueEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#1B4EAB] leading-none drop-shadow-sm">⬆</span>}
                       </div>
                     );
                   }
@@ -692,7 +698,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           </div>
 
           {/* ========================================================== */}
-          {/* 3D WHITE PHYSICAL DICE (RESTING IN CENTER AS SHOWN IN PHOTO) */}
+          {/* 3D WHITE PHYSICAL DICE */}
           {/* ========================================================== */}
           <div 
             className="absolute bottom-[-15px] right-[80px] z-30"
@@ -777,31 +783,35 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 };
 
 // ==========================================================
-// 3D STANDING PAWN COMPONENT (MATCHING PHOTO ATTACHED)
+// HIGH-DETAIL 3D STANDING PAWN COMPONENT
 // ==========================================================
 const LudoPawn3D: React.FC<{ color: 'red' | 'green' | 'blue' | 'gold', isPlayable?: boolean, view3D?: boolean }> = ({ color, isPlayable, view3D }) => {
   const pawnColors = {
     red: {
       head: '#E52521',
       headLight: '#FF7370',
+      collar: '#FFE5E5',
       bodyGrad: 'from-[#FF3B30] via-[#E52521] to-[#990D0D]',
       border: '#990D0D'
     },
     green: {
       head: '#009A44',
       headLight: '#4DEB8A',
+      collar: '#E5FFE9',
       bodyGrad: 'from-[#34C759] via-[#009A44] to-[#005425]',
       border: '#005425'
     },
     blue: {
       head: '#1B4EAB',
       headLight: '#619BFF',
+      collar: '#E5EEFF',
       bodyGrad: 'from-[#007AFF] via-[#1B4EAB] to-[#092B70]',
       border: '#092B70'
     },
     gold: {
       head: '#FFCC00',
       headLight: '#FFF08A',
+      collar: '#FFFCE5',
       bodyGrad: 'from-[#FFD60A] via-[#FFCC00] to-[#997A00]',
       border: '#997A00'
     }
@@ -814,56 +824,56 @@ const LudoPawn3D: React.FC<{ color: 'red' | 'green' | 'blue' | 'gold', isPlayabl
       {/* 1. Oval drop shadow cast on board cell surface */}
       <div 
         className="absolute bottom-0 w-5 h-1.5 rounded-full blur-[0.8px] pointer-events-none"
-        style={{ backgroundColor: 'rgba(0,0,0,0.45)', transform: view3D ? 'scaleY(0.5) translateY(3px)' : 'none' }}
+        style={{ backgroundColor: 'rgba(0,0,0,0.5)', transform: view3D ? 'scaleY(0.5) translateY(3px)' : 'none' }}
       />
 
       {/* 2. Upright Standing 3D Halma Pawn Structure */}
       <motion.div 
-        whileHover={isPlayable ? { scale: 1.25, y: -4 } : { scale: 1.1 }}
+        whileHover={isPlayable ? { scale: 1.3, y: -5 } : { scale: 1.12 }}
         className="relative flex flex-col items-center transition-all duration-300 z-20"
         style={{
-          transform: view3D ? 'translateZ(20px) rotateX(-38deg) rotateY(18deg)' : 'none',
+          transform: view3D ? 'translateZ(22px) rotateX(-38deg) rotateY(18deg)' : 'none',
           transformStyle: 'preserve-3d'
         }}
       >
         {/* Pawn Sphere Head */}
         <div 
-          className="relative w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border shadow-sm z-20"
+          className="relative w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border shadow-md z-20"
           style={{ 
-            background: `radial-gradient(circle at 35% 35%, ${style.headLight}, ${style.head})`,
+            background: `radial-gradient(circle at 32% 32%, ${style.headLight}, ${style.head})`,
             borderColor: style.border
           }}
         >
           {/* Glossy specular reflection highlight */}
-          <div className="absolute top-[2px] left-[3px] w-1.5 h-1.5 rounded-full bg-white/80 blur-[0.3px]" />
+          <div className="absolute top-[2px] left-[2.5px] w-1.5 h-1.5 rounded-full bg-white/85 blur-[0.2px]" />
         </div>
 
-        {/* Pawn Tapered Neck Collar */}
+        {/* Pawn Tapered Neck Ring Collar */}
         <div 
           className="w-2.5 h-1 -mt-0.5 rounded-full border-t border-b z-15 shadow-inner"
-          style={{ backgroundColor: style.head, borderColor: style.border }}
+          style={{ backgroundColor: style.collar, borderColor: style.border }}
         />
 
         {/* Pawn Wide Conical Base / Skirt */}
         <div 
-          className={`w-4.5 h-4.5 sm:w-5 sm:h-5 -mt-0.5 rounded-b-xl rounded-t-sm bg-gradient-to-b ${style.bodyGrad} border flex items-center justify-center shadow-md relative overflow-hidden`}
+          className={`w-4.5 h-4.5 sm:w-5 sm:h-5 -mt-0.5 rounded-b-xl rounded-t-sm bg-gradient-to-b ${style.bodyGrad} border flex items-center justify-center shadow-lg relative overflow-hidden`}
           style={{ borderColor: style.border }}
         >
           {/* Vertical sheen highlight strip */}
-          <div className="absolute top-0 left-1 w-1 h-full bg-white/35 skew-x-[-15deg] blur-[0.4px]" />
+          <div className="absolute top-0 left-1 w-1 h-full bg-white/40 skew-x-[-15deg] blur-[0.4px]" />
         </div>
       </motion.div>
 
       {/* Highlight ring for active playable token */}
       {isPlayable && (
-        <span className="absolute bottom-0 w-6 h-6 rounded-full border-2 border-yellow-300 animate-ping pointer-events-none" />
+        <span className="absolute bottom-0 w-6 h-6 rounded-full border-2 border-yellow-300 animate-ping pointer-events-none z-10" />
       )}
     </div>
   );
 };
 
 // ==========================================================
-// 3D WHITE PHYSICAL CUBE DICE (MATCHING PHOTO)
+// 3D WHITE PHYSICAL CUBE DICE
 // ==========================================================
 const WhitePhysicalDice: React.FC<{ value: number, isRolling: boolean }> = ({ value, isRolling }) => {
   const faceTransforms = [
