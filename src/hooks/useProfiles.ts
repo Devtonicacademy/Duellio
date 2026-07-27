@@ -11,9 +11,22 @@ import {
   updateDoc
 } from 'firebase/firestore';
 
+const DEFAULT_USER_PROFILE: UserProfile = {
+  uid: 'user_lead_dev',
+  username: 'Lead Developer',
+  email: 'lead.dev@duellio.io',
+  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+  wins: 12,
+  losses: 4,
+  draws: 2,
+  coins: 5000,
+  status: 'online',
+  favorites: []
+};
+
 export function useProfiles() {
   const [allProfiles, setAllProfiles] = useState<UserProfile[]>([]);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_USER_PROFILE);
   const [authLoading, setAuthLoading] = useState(true);
   const lastSyncedProfileJsonRef = useRef<string | null>(null);
 
