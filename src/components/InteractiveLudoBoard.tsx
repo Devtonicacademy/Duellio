@@ -24,7 +24,7 @@ interface InteractiveLudoBoardProps {
 interface LudoToken {
   id: string;
   color: 'red' | 'green' | 'blue' | 'gold';
-  position: number; // -1 means home base, 0 to 51 is common path, 52-57 is home runway
+  position: number; // -1 means home base yard, 0 to 51 is common path, 52-57 is home runway
   status: 'home' | 'board' | 'finished';
 }
 
@@ -56,8 +56,16 @@ const PATH_COORDINATES: Array<[number, number]> = [
   [7, 0]
 ];
 
+// Standard Ludo Safe Spaces: 4 Start Squares + 4 Star Squares
 const SAFE_COORDS: Array<[number, number]> = [
-  [6, 0], [0, 8], [8, 14], [14, 6]
+  [6, 0],  // Red Start
+  [0, 8],  // Blue Start
+  [8, 14], // Green Start
+  [14, 6], // Yellow Start
+  [8, 1],  // Red Star
+  [1, 6],  // Blue Star
+  [6, 13], // Green Star
+  [13, 8]  // Yellow Star
 ];
 
 // Decorative static tokens for Blue (Top-Right) & Yellow (Bottom-Left)
@@ -85,7 +93,6 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   liveGameState,
   onUpdateLiveState
 }) => {
-  // 3D camera mode configuration (default true for 3D isometric view matching the photo)
   const [view3D, setView3D] = useState<boolean>(true);
 
   // Playable tokens: 4 Red (Host/User in Top-Left) vs 4 Green (Guest/Bot in Bottom-Right)
@@ -101,7 +108,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   ]);
 
   const [activePlayer, setActivePlayer] = useState<'red' | 'green'>(() => liveGameState?.activePlayer || 'red');
-  const [diceRollValue, setDiceRollValue] = useState<number>(5);
+  const [diceRollValue, setDiceRollValue] = useState<number>(6);
   const [secondDiceValue, setSecondDiceValue] = useState<number>(3);
   const [isRolling, setIsRolling] = useState<boolean>(false);
   const [hasRolled, setHasRolled] = useState<boolean>(false);
@@ -149,20 +156,19 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       setHasRolled(true);
       
       const totalSteps = outcome1;
-      onAddLog(`[DICE SEED] Generated outcomes: ${outcome1} & ${outcome2}`);
+      onAddLog(`[DICE ROLL] ${myColor.toUpperCase()} rolled: ${outcome1}`);
 
       const nextPlayer = myColor === 'red' ? 'green' : 'red';
 
-      // Check consecutive sixes rule
+      // Standard Rule: Check 3 consecutive sixes rule
       if (totalSteps === 6) {
         const nextSixes = consecutiveSixes + 1;
-        onAddLog(`[ROLL-SIX METER] Existing consecutive sixes count: ${consecutiveSixes}`);
         
         if (nextSixes >= 3) {
           setConsecutiveSixes(0);
           setHasRolled(false);
           setActivePlayer(nextPlayer);
-          onAddLog(`[ROLL-SIX METER] Max sixes limit reached (3 consecutive sixes). Pass turn.`);
+          onAddLog(`[SIXES PENALTY] 3 consecutive sixes rolled! Turn passed to ${nextPlayer.toUpperCase()}.`);
           if (!isBot && onUpdateLiveState) {
             onUpdateLiveState({ tokens, activePlayer: nextPlayer, diceRollValue: outcome1, secondDiceValue: outcome2, gameResult });
           }
@@ -177,14 +183,14 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       // Check if player has moves available
       const playable = tokens.filter(t => t.color === myColor && canMoveToken(t, totalSteps));
       if (playable.length === 0) {
-        onAddLog(`[TURN GUARD] No valid moves available for ${myColor.toUpperCase()} with dice roll ${totalSteps}. Passing turn.`);
+        onAddLog(`[NO MOVES] No valid moves available for ${myColor.toUpperCase()} with roll ${totalSteps}. Passing turn.`);
         setTimeout(() => {
           setActivePlayer(nextPlayer);
           setHasRolled(false);
           if (!isBot && onUpdateLiveState) {
             onUpdateLiveState({ tokens, activePlayer: nextPlayer, diceRollValue: outcome1, secondDiceValue: outcome2, gameResult });
           }
-        }, 300);
+        }, 400);
       } else if (!isBot && onUpdateLiveState) {
         onUpdateLiveState({ tokens, activePlayer: myColor, diceRollValue: outcome1, secondDiceValue: outcome2, gameResult });
       }
@@ -193,24 +199,24 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 
   const triggerBotTurn = () => {
     setBotIsThinking(true);
-    onAddLog(`[TURN KICK] Bot player ${opponentName} initiates dice throw process.`);
+    onAddLog(`[BOT TURN] Bot player ${opponentName} rolling dice.`);
     
     setTimeout(() => {
       const outcome1 = Math.floor(Math.random() * 6) + 1;
       const outcome2 = Math.floor(Math.random() * 6) + 1;
       setDiceRollValue(outcome1);
       setSecondDiceValue(outcome2);
-      onAddLog(`[DICE ROLL] Bot generates outcomes: ${outcome1} and ${outcome2}`);
+      onAddLog(`[BOT ROLL] Bot rolled: ${outcome1}`);
 
       const botTokens = tokens.filter(t => t.color === 'green');
       const playable = botTokens.filter(t => canMoveToken(t, outcome1));
 
       if (playable.length === 0) {
-        onAddLog(`[TURN LOCK] No valid board steps for Bot. Passing turn to you.`);
+        onAddLog(`[BOT TURN] No valid moves for Bot. Turn passed to you.`);
         setTimeout(() => {
           setActivePlayer('red');
           setBotIsThinking(false);
-        }, 300);
+        }, 400);
         return;
       }
 
@@ -234,20 +240,22 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       }
 
       setTimeout(() => {
-        onAddLog(`[BOT PIECE MOVE] Bot moves token ${selection.id.toUpperCase()}`);
+        onAddLog(`[BOT MOVE] Bot moving token ${selection.id.toUpperCase()}`);
         executeTokenMovement(selection.id, outcome1, 'green');
         setBotIsThinking(false);
-      }, 200);
+      }, 300);
 
     }, 300);
   };
 
+  // Standard Rule: Must roll 6 (or 5) to release pawn from Home Base Yard
   const canMoveToken = (token: LudoToken, roll: number): boolean => {
     if (token.status === 'finished') return false;
     if (token.status === 'home') {
       return roll === 6 || roll === 5;
     }
     const currentPos = token.position;
+    // Standard Rule: Exact roll required to finish into Home center (position 57)
     if (currentPos + roll > 57) {
       return false;
     }
@@ -256,13 +264,14 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 
   const handleSelectToken = (token: LudoToken) => {
     if (activePlayer !== myColor || !hasRolled || !canMoveToken(token, diceRollValue) || gameResult !== 'playing') return;
-    onAddLog(`[USER TOKEN SELECT] Moving token ${token.id.toUpperCase()} by ${diceRollValue} tiles.`);
     executeTokenMovement(token.id, diceRollValue, myColor);
   };
 
   const executeTokenMovement = (tokenId: string, steps: number, playerColor: 'red' | 'green') => {
     let nextResult = gameResult;
     let nextTokens: LudoToken[] = [];
+    let isCaptured = false;
+    let isFinished = false;
     
     setTokens(prev => {
       const updated = prev.map(t => {
@@ -278,14 +287,15 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           nextPos += steps;
           if (nextPos === 57) {
             nextStatus = 'finished' as const;
-            onAddLog(`[SUCCESS] Token ${t.id} successfully finished its run!`);
+            isFinished = true;
+            onAddLog(`[HOME REACHED] Pawn ${t.id.toUpperCase()} successfully finished its run!`);
           }
         }
 
         return { ...t, position: nextPos, status: nextStatus };
       });
 
-      // Collision Engine
+      // Standard Rule Collision Engine
       const movingToken = updated.find(t => t.id === tokenId)!;
       if (movingToken.status === 'board' && movingToken.position < 52) {
         const targetCell = getTokenCell(movingToken);
@@ -299,28 +309,29 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 
         if (collided) {
           if (isSafeSpace) {
-            onAddLog(`[GRID COLLISION] Safe zone immunity. No capture.`);
+            onAddLog(`[SAFE SPACE] Safe zone immunity at tile (${targetCell[0]}, ${targetCell[1]}). No capture.`);
           } else {
-            onAddLog(`[GRID COLLISION] Capture! Opponent piece ${collided.id.toUpperCase()} returned to home base.`);
+            onAddLog(`[CAPTURE] ${movingToken.color.toUpperCase()} captured ${collided.id.toUpperCase()}! Returned to home base.`);
             collided.position = -1;
             collided.status = 'home';
+            isCaptured = true;
           }
         }
       }
 
-      // Win Checks
+      // Standard Win Check: First to get 4 pawns home wins
       const redFinished = updated.filter(t => t.color === 'red' && t.status === 'finished').length;
       const greenFinished = updated.filter(t => t.color === 'green' && t.status === 'finished').length;
 
       if (redFinished === 4) {
         nextResult = 'red_won';
         setGameResult('red_won');
-        onAddLog(`[LUDO VICTORY] Red wins the match!`);
+        onAddLog(`[VICTORY] Red claims complete Ludo victory!`);
         setTimeout(() => onGameOver(myColor === 'red'), 3000);
       } else if (greenFinished === 4) {
         nextResult = 'green_won';
         setGameResult('green_won');
-        onAddLog(`[LUDO VICTORY] Green wins the match!`);
+        onAddLog(`[VICTORY] Green claims complete Ludo victory!`);
         setTimeout(() => onGameOver(myColor === 'green'), 3000);
       }
 
@@ -329,12 +340,15 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     });
 
     setHasRolled(false);
-    const nextPlayer = (steps === 6 && nextResult === 'playing')
-      ? playerColor
-      : (playerColor === 'red' ? 'green' : 'red');
 
-    if (steps === 6 && nextResult === 'playing') {
-      onAddLog(`[ROLL-SIX BONUS] Roll of 6 grants extra turn. Roll again!`);
+    // Standard Rule: Rolling 6, capturing a piece, or finishing a piece grants a BONUS ROLL!
+    const getsBonusRoll = (steps === 6 || isCaptured || isFinished) && nextResult === 'playing';
+    const nextPlayer = getsBonusRoll ? playerColor : (playerColor === 'red' ? 'green' : 'red');
+
+    if (getsBonusRoll) {
+      if (steps === 6) onAddLog(`[BONUS ROLL] Rolled a 6! Roll again.`);
+      else if (isCaptured) onAddLog(`[BONUS ROLL] Captured opponent piece! Roll again.`);
+      else if (isFinished) onAddLog(`[BONUS ROLL] Reached Home center! Roll again.`);
     } else {
       setActivePlayer(nextPlayer);
     }
@@ -350,11 +364,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     }
   };
 
-  // Maps token to 15x15 board cell [row, col] matching reference photo layout:
-  // Top-Left: Red Yard
-  // Top-Right: Blue Yard
-  // Bottom-Right: Green Yard
-  // Bottom-Left: Yellow Yard
+  // Maps token to 15x15 board cell [row, col]
   const getTokenCell = (token: LudoToken | typeof DECORATIVE_TOKENS[0]): [number, number] => {
     if (token.status === 'home') {
       const idNum = token.id.split('_')[1];
@@ -437,7 +447,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         <div className="flex items-center gap-2">
           <div className="p-1 px-2.5 bg-[#1b1009]/90 rounded-lg border border-amber-500/30 flex items-center gap-1.5 text-[9px] font-mono text-amber-300 tracking-wider shadow-[0_0_12px_rgba(245,158,11,0.2)]">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>REALISTIC 3D WOODEN TABLE LUDO ARENA</span>
+            <span>STANDARD LUDO RULES ENGINE v2.5</span>
           </div>
         </div>
 
@@ -471,13 +481,14 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           >
             <h4 className="font-display font-black text-white uppercase text-sm tracking-wider flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>3D Realistic Ludo Contract Rules</span>
+              <span>Official Standard Ludo Game Rules</span>
             </h4>
             <ul className="list-disc pl-4 space-y-1 text-amber-200/80 font-mono text-[11px]">
-              <li>You command <span className="text-rose-400 font-bold">RED Pawns</span> in Top-Left Base. Bot commands <span className="text-emerald-400 font-bold">GREEN Pawns</span> in Bottom-Right Base.</li>
-              <li>A dice roll of <span className="text-yellow-300 font-bold">5 or 6</span> releases your pawn onto the Red starting square on the left arm.</li>
-              <li>Land on opponent pawns to capture them back to base (except on colored start/safe star squares).</li>
-              <li>First player to navigate all 4 pawns into the central home triangle wins the match stake pool!</li>
+              <li><span className="text-yellow-300 font-bold">Release Pawn</span>: Must roll a 6 (or 5) to release a pawn from Home Yard base onto the start tile.</li>
+              <li><span className="text-amber-300 font-bold">Bonus Rolls</span>: Rolling a 6, capturing an opponent pawn, or reaching Home center grants a bonus roll!</li>
+              <li><span className="text-rose-400 font-bold">Three Sixes Penalty</span>: Rolling 3 consecutive sixes forfeits the 3rd roll and passes turn.</li>
+              <li><span className="text-emerald-300 font-bold">Safe Zones</span>: Start squares and Star squares (★) protect pawns from capture.</li>
+              <li><span className="text-cyan-300 font-bold">Exact Finish</span>: Must roll the exact number of steps required to land inside the central Home triangle. First to get all 4 pawns home wins!</li>
             </ul>
           </motion.div>
         )}
@@ -541,7 +552,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     return null;
                   }
 
-                  // Top-Left Yard (Red) - With raised rounded plastic tray matching photo
+                  // Top-Left Yard (Red)
                   if (r <= 5 && c <= 5) {
                     if (r >= 1 && r <= 4 && c >= 1 && c <= 4) {
                       const isCircle = (r === 1 && c === 1) || (r === 1 && c === 3) || (r === 3 && c === 1) || (r === 3 && c === 3);
@@ -554,7 +565,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     return <div key={`${r}-${c}`} className="bg-[#E52521] border border-[#A01010]" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
                   }
 
-                  // Top-Right Yard (Blue) - With raised rounded plastic tray matching photo
+                  // Top-Right Yard (Blue)
                   if (r <= 5 && c >= 9) {
                     if (r >= 1 && r <= 4 && c >= 10 && c <= 13) {
                       const isCircle = (r === 1 && c === 10) || (r === 1 && c === 12) || (r === 3 && c === 10) || (r === 3 && c === 12);
@@ -567,7 +578,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     return <div key={`${r}-${c}`} className="bg-[#1B4EAB] border border-[#0F357A]" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
                   }
 
-                  // Bottom-Right Yard (Green) - With raised rounded plastic tray matching photo
+                  // Bottom-Right Yard (Green)
                   if (r >= 9 && c >= 9) {
                     if (r >= 10 && r <= 13 && c >= 10 && c <= 13) {
                       const isCircle = (r === 10 && c === 10) || (r === 10 && c === 12) || (r === 12 && c === 10) || (r === 12 && c === 12);
@@ -580,7 +591,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     return <div key={`${r}-${c}`} className="bg-[#009A44] border border-[#00612B]" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
                   }
 
-                  // Bottom-Left Yard (Yellow) - With raised rounded plastic tray matching photo
+                  // Bottom-Left Yard (Yellow)
                   if (r >= 9 && c <= 5) {
                     if (r >= 10 && r <= 13 && c >= 1 && c <= 4) {
                       const isCircle = (r === 10 && c === 1) || (r === 10 && c === 3) || (r === 12 && c === 1) || (r === 12 && c === 3);
@@ -598,7 +609,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     const isBluePath = (c === 7 && r >= 1) || (r === 0 && (c === 7 || c === 8));
                     const isBlueStart = r === 0 && c === 8;
                     const isBlueEntry = r === 0 && c === 7;
-                    const isBlueStar = r === 1 && c === 6; // Blue Star matching reference image
+                    const isBlueStar = r === 1 && c === 6;
 
                     return (
                       <div 
@@ -618,7 +629,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     const isGreenPath = (r === 7) || (r === 8 && c === 14);
                     const isGreenStart = r === 8 && c === 14;
                     const isGreenEntry = r === 7 && c === 14;
-                    const isGreenStar = r === 6 && c === 13; // Green Star matching reference image
+                    const isGreenStar = r === 6 && c === 13;
 
                     return (
                       <div 
@@ -638,7 +649,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     const isYellowPath = (c === 7 && r >= 9) || (r === 14 && c === 6);
                     const isYellowStart = r === 14 && c === 6;
                     const isYellowEntry = r === 14 && c === 7;
-                    const isYellowStar = r === 13 && c === 8; // Yellow Star matching reference image
+                    const isYellowStar = r === 13 && c === 8;
 
                     return (
                       <div 
@@ -658,7 +669,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     const isRedPath = (r === 7) || (r === 6 && c === 0);
                     const isRedStart = r === 6 && c === 0;
                     const isRedEntry = r === 7 && c === 0;
-                    const isRedStar = r === 8 && c === 1; // Red Star matching reference image
+                    const isRedStar = r === 8 && c === 1;
 
                     return (
                       <div 
@@ -677,7 +688,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                 })
               )}
 
-              {/* Render Standing 3D Molded Plastic Pawns placed precisely inside cell coordinates */}
+              {/* Render Standing 3D Pawns placed precisely inside cell coordinates */}
               {[...tokens, ...DECORATIVE_TOKENS].map((token) => {
                 const isDec = 'isDecoration' in token || token.id.startsWith('blue') || token.id.startsWith('gold');
                 const [r, c] = getTokenCell(token as any);
@@ -703,7 +714,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           </div>
 
           {/* ========================================================== */}
-          {/* TWO TRANSLUCENT ACRYLIC GLASS DICE RESTING NEAR CENTER */}
+          {/* TWO TRANSLUCENT ACRYLIC GLASS DICE */}
           {/* ========================================================== */}
           <div 
             className="absolute bottom-[-15px] right-[80px] z-30"
@@ -788,7 +799,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 };
 
 // ==========================================================
-// GLOSSY 3D PLASTIC PAWN (EXACTLY MATCHING ATTACHED PHOTO)
+// GLOSSY 3D PLASTIC PAWN
 // ==========================================================
 const LudoPawn3D: React.FC<{ color: 'red' | 'green' | 'blue' | 'gold', isPlayable?: boolean, view3D?: boolean }> = ({ color, isPlayable, view3D }) => {
   const pawnColors = {
@@ -926,7 +937,6 @@ const SemiTranslucentWhiteDice: React.FC<{ value: number, isRolling: boolean }> 
         className="relative w-full h-full transition-transform duration-700" 
         style={{ ...style, transformStyle: 'preserve-3d' }}
       >
-        {/* Semi-translucent frosted white acrylic dice faces with rounded corners */}
         <div className="absolute inset-0 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.4),0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-center backface-hidden" style={{ transform: 'translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(5)}
         </div>
