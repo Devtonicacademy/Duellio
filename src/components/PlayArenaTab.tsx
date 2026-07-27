@@ -176,18 +176,18 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
           : `${selectedOpponent.uid}_${userProfile.uid}`;
 
         const chatRef = doc(db, 'chats', chatId);
-        setDoc(chatRef, {
+        setDoc(chatRef, sanitizeFirestoreData({
           id: chatId,
           users: [userProfile.uid, selectedOpponent.uid],
           lastMessage: `Staked Duel Challenge: ${selectedGame}`,
           timestamp: serverTimestamp()
-        }, { merge: true }).catch(console.error);
+        }), { merge: true }).catch(console.error);
 
         const messagesRef = collection(db, 'chats', chatId, 'messages');
-        addDoc(messagesRef, {
+        addDoc(messagesRef, sanitizeFirestoreData({
           senderId: userProfile.uid,
           senderName: userProfile.username,
-          senderAvatar: userProfile.avatar,
+          senderAvatar: userProfile.avatar || '',
           text: `Staked Duel Challenge: ${selectedGame}`,
           timestamp: serverTimestamp(),
           isChallenge: true,
@@ -196,7 +196,7 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
           gameType: selectedGame,
           entryFee: actualStake,
           challengeStatus: 'pending'
-        }).catch(console.error);
+        })).catch(console.error);
       }
 
       // Dispatch Real-time Notification Document to target player in Firestore

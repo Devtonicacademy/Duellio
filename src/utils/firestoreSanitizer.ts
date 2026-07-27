@@ -15,11 +15,13 @@ export function sanitizeFirestoreData<T>(obj: T): T {
     return obj;
   }
   if (Array.isArray(obj)) {
-    return obj.map(item => sanitizeFirestoreData(item)) as any;
+    return obj
+      .filter(item => item !== undefined)
+      .map(item => sanitizeFirestoreData(item)) as any;
   }
   const sanitized: any = {};
   for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
+    if (key !== '' && value !== undefined) {
       sanitized[key] = sanitizeFirestoreData(value);
     }
   }

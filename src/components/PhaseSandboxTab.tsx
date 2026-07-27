@@ -318,10 +318,10 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           } else if (friendChallenge.gameType === 'Whot') {
             initialSession = {
               sessionId: sessionId,
-              playerIds: [userProfile.uid, ''],
+              playerIds: [userProfile.uid, 'guest'],
               playerHands: {
                 [userProfile.uid]: hostHand,
-                '': guestHand
+                'guest': guestHand
               },
               deckCount: fullDeck.length,
               discardPile: [starterCard],
@@ -379,14 +379,18 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
               const sessionData = docSnap.data();
               const isParticipant = sessionData.hostId === userProfile.uid || sessionData.opponentId === userProfile.uid;
               if (sessionData.status === 'waiting' || (sessionData.status === 'playing' && isParticipant)) {
+                const newPlayerHands = {
+                  ...(sessionData.gameState?.playerHands || {}),
+                  [sessionData.hostId]: sessionData.gameState?.playerHands?.[sessionData.hostId] || [],
+                  [userProfile.uid]: sessionData.gameState?.playerHands?.[userProfile.uid] || sessionData.gameState?.playerHands?.['guest'] || sessionData.gameState?.playerHands?.[''] || []
+                };
+                delete newPlayerHands['guest'];
+                delete newPlayerHands[''];
+
                 const updatedGameState = {
                   ...(sessionData.gameState || {}),
                   playerIds: [sessionData.hostId, userProfile.uid],
-                  playerHands: {
-                    ...(sessionData.gameState?.playerHands || {}),
-                    [sessionData.hostId]: sessionData.gameState?.playerHands?.[sessionData.hostId] || [],
-                    [userProfile.uid]: sessionData.gameState?.playerHands?.[''] || []
-                  },
+                  playerHands: newPlayerHands,
                   lastActionMessage: `${userProfile.username} has joined! Match starts now.`
                 };
 
@@ -604,11 +608,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       const nextState = typeof value === 'function' ? (value as Function)(prev) : value;
       if (nextState && activeChallenge?.opponentType === 'player' && activeChallenge?.id) {
         const sessionRef = doc(db, 'gameSessions', activeChallenge.id);
-        updateDoc(sessionRef, {
+        updateDoc(sessionRef, sanitizeFirestoreData({
           gameState: nextState,
           deck: whotDeckRef.current,
           updatedAt: Date.now()
-        }).catch(console.error);
+        })).catch(console.error);
       }
       return nextState;
     });
@@ -2764,14 +2768,18 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                                 }
                                 
                                 // Join session
+                                const newPlayerHands: any = {
+                                  ...(s.gameState?.playerHands || {}),
+                                  [s.hostId]: s.gameState?.playerHands?.[s.hostId] || [],
+                                  [userProfile.uid]: s.gameState?.playerHands?.[userProfile.uid] || s.gameState?.playerHands?.['guest'] || s.gameState?.playerHands?.[''] || []
+                                };
+                                delete newPlayerHands['guest'];
+                                delete newPlayerHands[''];
+
                                 const updatedGameState = {
                                   ...(s.gameState || {}),
                                   playerIds: [s.hostId, userProfile.uid],
-                                  playerHands: {
-                                    ...(s.gameState?.playerHands || {}),
-                                    [s.hostId]: s.gameState?.playerHands?.[s.hostId] || [],
-                                    [userProfile.uid]: s.gameState?.playerHands?.[''] || []
-                                  },
+                                  playerHands: newPlayerHands,
                                   lastActionMessage: `${userProfile.username} has joined! Match starts now.`
                                 };
 
