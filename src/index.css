@@ -101,25 +101,28 @@ html {
   color: #0f172a !important;
 }
 
-#applet-viewport.light header {
-  background-color: rgba(255, 255, 255, 0.9) !important;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.04) !important;
+#applet-viewport.light header,
+#applet-viewport.light .glass-floating-header {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+  border: 1px solid rgba(15, 23, 42, 0.12) !important;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08) !important;
 }
 
 #applet-viewport.light header span, 
 #applet-viewport.light header p,
-#applet-viewport.light header strong {
+#applet-viewport.light header strong,
+#applet-viewport.light .glass-floating-header span {
   color: #0f172a !important;
 }
 
-#applet-viewport.light header .text-purple-300 {
+#applet-viewport.light header .text-purple-300,
+#applet-viewport.light .glass-floating-header .text-purple-300 {
   color: #6d28d9 !important;
 }
 
 #applet-viewport.light nav {
   background-color: #f1f5f9 !important;
-  border-color: rgba(15, 23, 42, 0.08) !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
 }
 
 #applet-viewport.light nav button {
@@ -127,17 +130,36 @@ html {
 }
 
 #applet-viewport.light nav button:hover {
-  background-color: rgba(15, 23, 42, 0.04) !important;
+  background-color: rgba(15, 23, 42, 0.06) !important;
   color: #0f172a !important;
 }
 
-/* Active navigation state: retains its custom light purple color and turns text dark intentionally */
-#applet-viewport.light nav button.bg-purple-350 {
+/* Active navigation state */
+#applet-viewport.light nav button.bg-purple-350,
+#applet-viewport.light .glass-floating-header button.bg-purple-350 {
   background-color: #ebd3ff !important;
-  color: #581c87 !important;
+  color: #4c1d95 !important;
+  font-weight: 800 !important;
 }
 
-/* Slate card swaps for dark containers */
+/* Glass card & Bento tile swaps for light containers */
+#applet-viewport.light .glass-card,
+#applet-viewport.light .glass-panel,
+#applet-viewport.light .glass-bento {
+  background-color: #ffffff !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
+  color: #0f172a !important;
+}
+
+#applet-viewport.light .glass-pill {
+  background-color: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+/* Dark background container swaps */
 #applet-viewport.light .bg-[#0B0B0E],
 #applet-viewport.light .bg-[#070709],
 #applet-viewport.light .bg-[#050C16],
@@ -147,6 +169,7 @@ html {
 #applet-viewport.light .bg-[#0f172a],
 #applet-viewport.light .bg-[#0F0F13],
 #applet-viewport.light .bg-neutral-900,
+#applet-viewport.light .bg-neutral-950,
 #applet-viewport.light .bg-[#0B0B0F],
 #applet-viewport.light .bg-[#02050B],
 #applet-viewport.light .bg-[#02050b],
@@ -163,33 +186,64 @@ html {
 #applet-viewport.light .bg-neutral-955,
 #applet-viewport.light .bg-neutral-930,
 #applet-viewport.light .bg-[#0c0d12],
-#applet-viewport.light .bg-[#111827]\/80 {
+#applet-viewport.light .bg-[#111827]\/80,
+#applet-viewport.light .bg-black/60,
+#applet-viewport.light .bg-black/70,
+#applet-viewport.light .bg-black/75,
+#applet-viewport.light .bg-black/80,
+#applet-viewport.light .bg-black/85 {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
 }
 
-/* Deeper, highly-legible text contrast overrides for colored/neon labels in light mode */
+/* Modals & Dropdowns in Light Mode */
+#applet-viewport.light .bg-\[\#0B0B0E\]\/95 {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.15) !important;
+  color: #0f172a !important;
+}
+
+/* Form inputs in Light Mode */
+#applet-viewport.light input,
+#applet-viewport.light textarea,
+#applet-viewport.light select {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+#applet-viewport.light input::placeholder {
+  color: #64748b !important;
+}
+
+/* High contrast text color overrides in light mode */
 #applet-viewport.light .text-white,
 #applet-viewport.light .text-neutral-100,
+#applet-viewport.light .text-neutral-200,
 #applet-viewport.light .text-slate-100,
 #applet-viewport.light .text-slate-200,
 #applet-viewport.light .text-slate-300,
 #applet-viewport.light h1,
 #applet-viewport.light h2,
 #applet-viewport.light h3,
-#applet-viewport.light h4 {
+#applet-viewport.light h4,
+#applet-viewport.light h5,
+#applet-viewport.light h6 {
   color: #0f172a !important;
 }
 
+#applet-viewport.light .text-neutral-300,
 #applet-viewport.light .text-neutral-400,
 #applet-viewport.light .text-neutral-500,
 #applet-viewport.light .text-slate-400,
 #applet-viewport.light .text-slate-500,
 #applet-viewport.light .text-slate-350 {
-  color: #334155 !important; /* slate-700 for solid readability */
+  color: #334155 !important; /* Deep slate-700 for solid readability */
 }
 
+/* Colored accent label contrast in Light Mode */
 #applet-viewport.light .text-cyan-400,
 #applet-viewport.light .text-cyan-300,
 #applet-viewport.light .text-cyan-200 {
@@ -219,12 +273,14 @@ html {
   color: #be123c !important; /* Deep rose-700 */
 }
 
-/* Translucent badge overrides */
+/* Translucent badge overrides in light mode */
 #applet-viewport.light .bg-purple-500\/10,
 #applet-viewport.light .bg-purple-500\/15,
-#applet-viewport.light .bg-purple-500\/20 {
+#applet-viewport.light .bg-purple-500\/20,
+#applet-viewport.light .bg-purple-500\/25 {
   background-color: #f5f3ff !important;
   border-color: #ddd6fe !important;
+  color: #6d28d9 !important;
 }
 
 #applet-viewport.light .bg-emerald-500\/10,
@@ -232,6 +288,7 @@ html {
 #applet-viewport.light .bg-emerald-500\/20 {
   background-color: #f0fdf4 !important;
   border-color: #bbf7d0 !important;
+  color: #047857 !important;
 }
 
 #applet-viewport.light .bg-cyan-500\/10,
@@ -239,21 +296,25 @@ html {
 #applet-viewport.light .bg-[#091522] {
   background-color: #ecfeff !important;
   border-color: #cffafe !important;
+  color: #0369a1 !important;
+}
+
+#applet-viewport.light .bg-amber-500\/10,
+#applet-viewport.light .bg-amber-500\/15,
+#applet-viewport.light .bg-amber-500\/20 {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
 }
 
 #applet-viewport.light .bg-white\/5,
 #applet-viewport.light .bg-white\/10,
+#applet-viewport.light .bg-white\/15,
 #applet-viewport.light .bg-white\/\[0\.03\],
-#applet-viewport.light .bg-white\/\[0\.02\],
-#applet-viewport.light .bg-slate-950\/80,
-#applet-viewport.light .bg-slate-900\/80,
-#applet-viewport.light .bg-slate-900\/60,
-#applet-viewport.light .bg-neutral-900\/60,
-#applet-viewport.light .bg-neutral-950\/60,
-#applet-viewport.light .bg-neutral-950\/80,
-#applet-viewport.light .bg-[#050B14]\/90 {
-  background-color: #f8fafc !important;
+#applet-viewport.light .bg-white\/\[0\.02\] {
+  background-color: #f1f5f9 !important;
   border-color: #cbd5e1 !important;
+  color: #0f172a !important;
 }
 
 /* Button & interactive sub-panel overrides */
