@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Swords, Zap } from 'lucide-react';
 import './MobileControls.css';
 
-export default function MobileControls({ inputHandler, p1Chi = 0 }) {
+export default function MobileControls({ inputHandler, p1Chi = 0, playerIndex = 1 }) {
   const [isTouchDevice, setIsTouchDevice] = useState(false);
 
   useEffect(() => {
@@ -23,14 +23,14 @@ export default function MobileControls({ inputHandler, p1Chi = 0 }) {
   const handleTouchStart = (action, e) => {
     e.preventDefault();
     if (inputHandler) {
-      inputHandler.setMobileInput(1, action, true);
+      inputHandler.setMobileInput(playerIndex, action, true);
     }
   };
 
   const handleTouchEnd = (action, e) => {
     e.preventDefault();
     if (inputHandler) {
-      inputHandler.setMobileInput(1, action, false);
+      inputHandler.setMobileInput(playerIndex, action, false);
     }
   };
 

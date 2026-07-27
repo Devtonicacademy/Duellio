@@ -238,7 +238,7 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
         <OrientationPrompt />
 
         {/* Mobile Virtual Joystick & Touch Controls */}
-        <MobileControls inputHandler={(window as any).gameEngine?.input} p1Chi={uiState.p1Chi} />
+        <MobileControls inputHandler={(window as any).gameEngine?.input} p1Chi={uiState.p1Chi} playerIndex={isHost ? 1 : 2} />
 
         {/* Controls Guide Overlay Modal */}
         {showControlsGuide && (

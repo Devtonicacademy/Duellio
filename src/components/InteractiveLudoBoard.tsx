@@ -135,12 +135,18 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 
   // Determine whether current turn color belongs to the Human User
   const isUserTurn = (color: 'red' | 'blue' | 'green' | 'gold'): boolean => {
-    if (playerMode === '2-player') {
-      // User controls Red (Top-Left) and Yellow (Bottom-Left)
-      return color === 'red' || color === 'gold';
+    if (isBot) {
+      if (playerMode === '2-player') {
+        return color === 'red' || color === 'gold';
+      }
+      return color === 'red';
     }
-    // 4-Player mode: User controls Red
-    return color === 'red';
+    // Online Multiplayer (Host vs Guest):
+    if (isHost) {
+      return color === 'red' || color === 'green';
+    } else {
+      return color === 'gold' || color === 'blue';
+    }
   };
 
   // Sync live state from Firestore snapshot

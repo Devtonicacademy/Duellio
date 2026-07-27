@@ -31,11 +31,12 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
   liveGameState,
   onUpdateLiveState
 }) => {
-  const player1Id = isBot ? 'player-user' : (isHost ? 'host' : 'guest');
-  const player2Id = isBot ? 'bot-user' : (isHost ? 'guest' : 'host');
+  const player1Id = isBot ? 'player-user' : 'host';
+  const player2Id = isBot ? 'bot-user' : 'guest';
+  const myId = isBot ? 'player-user' : (isHost ? 'host' : 'guest');
 
   const [gameState, setGameState] = useState<TicTacToeGameState>(() =>
-    liveGameState || TicTacToeLogicService.initializeBoard(sessionId || 'tictactoe-session', player1Id, isBot ? 'bot-user' : player2Id)
+    liveGameState || TicTacToeLogicService.initializeBoard(sessionId || 'tictactoe-session', player1Id, player2Id)
   );
 
   const [playerTimer, setPlayerTimer] = useState<number>(180); // 3 minutes standard
@@ -48,7 +49,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
 
   const isPlayerTurn = isBot
     ? gameState.activePlayerId === player1Id
-    : (isHost ? gameState.activePlayerId === 'host' || gameState.activePlayerId === player1Id : gameState.activePlayerId === 'guest' || gameState.activePlayerId === player2Id);
+    : gameState.activePlayerId === myId;
 
   // Sync live state from Firestore snapshot
   useEffect(() => {
