@@ -123,6 +123,9 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
   useEffect(() => {
     if (!isBot && !isHost && liveGameState) {
       setUiState(liveGameState);
+      if ((window as any).gameEngine && typeof (window as any).gameEngine.syncLiveState === 'function') {
+        (window as any).gameEngine.syncLiveState(liveGameState);
+      }
       if (liveGameState.gameState === 'gameover' && !reportedOutcomeRef.current) {
         reportedOutcomeRef.current = true;
         const winnerIsMe = liveGameState.winner === 2;

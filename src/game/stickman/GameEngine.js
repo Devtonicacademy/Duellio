@@ -287,7 +287,13 @@ export class GameEngine {
       fightText: this.fightText,
       survivalWave: this.survivalWave,
       survivalHighScore: this.survivalHighScore,
-      mode: this.mode
+      mode: this.mode,
+      p1Pos: this.p1 ? { x: Math.round(this.p1.pos.x), y: Math.round(this.p1.pos.y) } : null,
+      p2Pos: this.p2 ? { x: Math.round(this.p2.pos.x), y: Math.round(this.p2.pos.y) } : null,
+      p1State: this.p1 ? this.p1.state : 'IDLE',
+      p2State: this.p2 ? this.p2.state : 'IDLE',
+      p1FacingRight: this.p1 ? this.p1.facingRight : true,
+      p2FacingRight: this.p2 ? this.p2.facingRight : false
     };
 
     if (!this._lastUIState) {
@@ -312,6 +318,40 @@ export class GameEngine {
       this._lastUIState = nextState;
       this.onUIEvent({ ...nextState, inputLog: [...this.inputLog] });
     }
+  }
+
+  syncLiveState(state) {
+    if (!state) return;
+
+    if (this.p1 && state.p1Pos) {
+      this.p1.pos.x = state.p1Pos.x;
+      this.p1.pos.y = state.p1Pos.y;
+      if (state.p1State) this.p1.state = state.p1State;
+      if (typeof state.p1FacingRight === 'boolean') this.p1.facingRight = state.p1FacingRight;
+      if (typeof state.p1Health === 'number') {
+        const maxH = this.p1.maxHealth || 150;
+        this.p1.health = Math.round((state.p1Health / 100) * maxH);
+      }
+      if (typeof state.p1Chi === 'number') this.p1.chi = state.p1Chi;
+    }
+
+    if (this.p2 && state.p2Pos) {
+      this.p2.pos.x = state.p2Pos.x;
+      this.p2.pos.y = state.p2Pos.y;
+      if (state.p2State) this.p2.state = state.p2State;
+      if (typeof state.p2FacingRight === 'boolean') this.p2.facingRight = state.p2FacingRight;
+      if (typeof state.p2Health === 'number') {
+        const maxH = this.p2.maxHealth || 150;
+        this.p2.health = Math.round((state.p2Health / 100) * maxH);
+      }
+      if (typeof state.p2Chi === 'number') this.p2.chi = state.p2Chi;
+    }
+
+    if (typeof state.timer === 'number') this.roundTimer = state.timer;
+    if (typeof state.round === 'number') this.round = state.round;
+    if (state.gameState) this.gameState = state.gameState;
+    if (typeof state.winner === 'number') this.winner = state.winner;
+    if (state.fightText !== undefined) this.fightText = state.fightText;
   }
 
   logInput(label) {
