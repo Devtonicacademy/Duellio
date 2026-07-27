@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { DraftPiece } from '../types';
 import { RotateCcw, Eye, Compass } from 'lucide-react';
@@ -64,43 +64,54 @@ function mergeGeometries(geos: THREE.BufferGeometry[]): THREE.BufferGeometry {
   return merged;
 }
 
-// Create piece main body geometry (lathe profile matching draft_icon.png)
+// Create deep 3D piece main body geometry with substantial depth, heavy bevels & multi-tiered rims
 function getPieceBodyGeometry(isKing: boolean): THREE.BufferGeometry {
-  const cacheKey = isKing ? 'piece_body_king' : 'piece_body_normal';
+  const cacheKey = isKing ? 'piece_body_king_deep' : 'piece_body_normal_deep';
   if (geometryCache[cacheKey]) return geometryCache[cacheKey];
 
   const layers = isKing ? 2 : 1;
   const geos: THREE.BufferGeometry[] = [];
+  const layerHeight = 0.26; // Substantial depth per disk
 
   for (let l = 0; l < layers; l++) {
-    const yOffset = l * 0.18;
+    const yOffset = l * layerHeight;
     const points: THREE.Vector2[] = [
       new THREE.Vector2(0, 0),
       new THREE.Vector2(0.36, 0.0),
-      new THREE.Vector2(0.39, 0.02),
-      new THREE.Vector2(0.39, 0.06),
-      new THREE.Vector2(0.40, 0.08),
-      new THREE.Vector2(0.40, 0.13),
-      new THREE.Vector2(0.39, 0.15),
-      new THREE.Vector2(0.35, 0.18),
-      new THREE.Vector2(0.30, 0.17),
-      new THREE.Vector2(0.24, 0.18),
-      new THREE.Vector2(0.16, 0.17),
-      new THREE.Vector2(0, 0.17)
+      new THREE.Vector2(0.40, 0.03),  // Heavy bevelled base
+      new THREE.Vector2(0.41, 0.08),  // Lower rim step
+      new THREE.Vector2(0.39, 0.10),  // Inset side groove bottom
+      new THREE.Vector2(0.39, 0.17),  // Inset side groove top
+      new THREE.Vector2(0.41, 0.19),  // Upper rim step
+      new THREE.Vector2(0.40, 0.23),  // Upper shoulder
+      new THREE.Vector2(0.36, 0.26),  // Top bevelled cap
+      new THREE.Vector2(0.30, 0.24),  // Top recessed outer ring
+      new THREE.Vector2(0.24, 0.25),  // Middle concentric ridge
+      new THREE.Vector2(0.18, 0.24),  // Inner recessed dish
+      new THREE.Vector2(0, 0.24)
     ];
-    const lathe = new THREE.LatheGeometry(points, 36);
+    const lathe = new THREE.LatheGeometry(points, 40);
     lathe.translate(0, yOffset, 0);
     geos.push(lathe);
 
-    // Inner concentric ring ridge on top face
-    const innerRingPoints: THREE.Vector2[] = [
-      new THREE.Vector2(0.20, 0.17),
-      new THREE.Vector2(0.22, 0.19),
-      new THREE.Vector2(0.24, 0.17)
+    // Inner concentric ridged rings on top face
+    const innerRing1: THREE.Vector2[] = [
+      new THREE.Vector2(0.28, 0.24),
+      new THREE.Vector2(0.30, 0.26),
+      new THREE.Vector2(0.32, 0.24)
     ];
-    const ringGeo = new THREE.LatheGeometry(innerRingPoints, 36);
-    ringGeo.translate(0, yOffset, 0);
-    geos.push(ringGeo);
+    const ringGeo1 = new THREE.LatheGeometry(innerRing1, 40);
+    ringGeo1.translate(0, yOffset, 0);
+    geos.push(ringGeo1);
+
+    const innerRing2: THREE.Vector2[] = [
+      new THREE.Vector2(0.18, 0.24),
+      new THREE.Vector2(0.20, 0.26),
+      new THREE.Vector2(0.22, 0.24)
+    ];
+    const ringGeo2 = new THREE.LatheGeometry(innerRing2, 40);
+    ringGeo2.translate(0, yOffset, 0);
+    geos.push(ringGeo2);
   }
 
   const merged = mergeGeometries(geos);
@@ -108,19 +119,20 @@ function getPieceBodyGeometry(isKing: boolean): THREE.BufferGeometry {
   return merged;
 }
 
-// Create side glowing ring geometry with grid segments
+// Create side glowing ring band geometry with prominent thickness
 function getPieceSideRingGeometry(isKing: boolean): THREE.BufferGeometry {
-  const cacheKey = isKing ? 'piece_ring_king' : 'piece_ring_normal';
+  const cacheKey = isKing ? 'piece_ring_king_deep' : 'piece_ring_normal_deep';
   if (geometryCache[cacheKey]) return geometryCache[cacheKey];
 
   const layers = isKing ? 2 : 1;
   const geos: THREE.BufferGeometry[] = [];
+  const layerHeight = 0.26;
 
   for (let l = 0; l < layers; l++) {
-    const yOffset = l * 0.18;
-    // Glowing ring band around side perimeter
-    const ring = new THREE.CylinderGeometry(0.398, 0.398, 0.05, 32, 1, true);
-    ring.translate(0, 0.095 + yOffset, 0);
+    const yOffset = l * layerHeight;
+    // Outer side glowing band
+    const ring = new THREE.CylinderGeometry(0.395, 0.395, 0.08, 40, 1, true);
+    ring.translate(0, 0.135 + yOffset, 0);
     geos.push(ring);
   }
 
@@ -129,32 +141,33 @@ function getPieceSideRingGeometry(isKing: boolean): THREE.BufferGeometry {
   return merged;
 }
 
-// Create top emblem geometry (Starburst insignia matching draft_icon.png)
+// Create top emblem geometry (3D Starburst insignia & King Crown)
 function getPieceEmblemGeometry(isKing: boolean): THREE.BufferGeometry {
-  const cacheKey = isKing ? 'piece_emblem_king' : 'piece_emblem_normal';
+  const cacheKey = isKing ? 'piece_emblem_king_deep' : 'piece_emblem_normal_deep';
   if (geometryCache[cacheKey]) return geometryCache[cacheKey];
 
-  const yTop = isKing ? 0.35 : 0.17;
+  const yTop = isKing ? 0.52 : 0.24;
   const geos: THREE.BufferGeometry[] = [];
 
   if (isKing) {
-    // 3D Crown Insignia for King
-    const crownPoints = 5;
+    // Ornate 3D Crown Insignia for King
+    const crownPoints = 6;
     for (let i = 0; i < crownPoints; i++) {
       const angle = (i * Math.PI * 2) / crownPoints;
-      const point = new THREE.ConeGeometry(0.035, 0.10, 8);
-      point.translate(0.12 * Math.cos(angle), yTop + 0.05, 0.12 * Math.sin(angle));
+      const point = new THREE.ConeGeometry(0.04, 0.14, 8);
+      point.translate(0.13 * Math.cos(angle), yTop + 0.07, 0.13 * Math.sin(angle));
       geos.push(point);
     }
-    const crownBase = new THREE.CylinderGeometry(0.14, 0.15, 0.04, 24);
-    crownBase.translate(0, yTop + 0.02, 0);
+    const crownBase = new THREE.CylinderGeometry(0.15, 0.16, 0.05, 24);
+    crownBase.translate(0, yTop + 0.025, 0);
     geos.push(crownBase);
 
-    const centerGem = new THREE.OctahedronGeometry(0.05);
-    centerGem.translate(0, yTop + 0.07, 0);
+    // Center Gem / Cross
+    const centerGem = new THREE.OctahedronGeometry(0.065);
+    centerGem.translate(0, yTop + 0.09, 0);
     geos.push(centerGem);
   } else {
-    // 8-Pointed Starburst Insignia (like draft_icon.png)
+    // 8-Pointed Starburst Insignia with 3D extrude depth
     const starShape = new THREE.Shape();
     const pointsCount = 8;
     const outerRadius = 0.15;
@@ -171,28 +184,54 @@ function getPieceEmblemGeometry(isKing: boolean): THREE.BufferGeometry {
     starShape.closePath();
 
     const extrudeSettings = {
-      depth: 0.015,
+      depth: 0.025,
       bevelEnabled: true,
-      bevelSegments: 2,
+      bevelSegments: 3,
       steps: 1,
-      bevelSize: 0.005,
-      bevelThickness: 0.005
+      bevelSize: 0.008,
+      bevelThickness: 0.008
     };
 
     const starGeo = new THREE.ExtrudeGeometry(starShape, extrudeSettings);
     starGeo.rotateX(Math.PI / 2);
-    starGeo.translate(0, yTop + 0.01, 0);
+    starGeo.translate(0, yTop + 0.015, 0);
     geos.push(starGeo);
 
     // Center dot emblem
-    const centerDot = new THREE.CylinderGeometry(0.04, 0.04, 0.02, 16);
-    centerDot.translate(0, yTop + 0.015, 0);
+    const centerDot = new THREE.CylinderGeometry(0.045, 0.045, 0.03, 16);
+    centerDot.translate(0, yTop + 0.02, 0);
     geos.push(centerDot);
   }
 
   const merged = mergeGeometries(geos);
   geometryCache[cacheKey] = merged;
   return merged;
+}
+
+// Create bevelled individual tile geometry for authentic checkers board look
+function createBevelledTileGeometry(width: number, height: number, depth: number, bevel: number): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  const w2 = width / 2 - bevel;
+  const d2 = depth / 2 - bevel;
+
+  shape.moveTo(-w2, -d2);
+  shape.lineTo(w2, -d2);
+  shape.lineTo(w2, d2);
+  shape.lineTo(-w2, d2);
+  shape.closePath();
+
+  const extrudeSettings = {
+    depth: height,
+    bevelEnabled: true,
+    bevelSegments: 3,
+    steps: 1,
+    bevelSize: bevel,
+    bevelThickness: bevel
+  };
+
+  const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+  geo.rotateX(Math.PI / 2);
+  return geo;
 }
 
 export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
@@ -214,8 +253,8 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
   // Camera Orbit state
   const isDraggingRef = useRef(false);
   const previousMousePositionRef = useRef({ x: 0, y: 0 });
-  const cameraAngleRef = useRef({ theta: 0, phi: Math.PI / 3.5, radius: 10.5 });
-  const targetLookAtRef = useRef(new THREE.Vector3(0, 0.3, 0));
+  const cameraAngleRef = useRef({ theta: 0, phi: Math.PI / 3.4, radius: 10.8 });
+  const targetLookAtRef = useRef(new THREE.Vector3(0, 0.25, 0));
 
   // Refs for current props in animation/event handlers
   const piecesRef = useRef(pieces);
@@ -235,18 +274,17 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
 
   // View Controls
   const resetCamera = () => {
-    cameraAngleRef.current = { theta: 0, phi: Math.PI / 3.5, radius: 10.5 };
+    cameraAngleRef.current = { theta: 0, phi: Math.PI / 3.4, radius: 10.8 };
   };
 
   const topDownCamera = () => {
-    cameraAngleRef.current = { theta: 0, phi: Math.PI / 2.05, radius: 9.0 };
+    cameraAngleRef.current = { theta: 0, phi: Math.PI / 2.05, radius: 9.2 };
   };
 
   const updateCameraPosition = () => {
     if (!cameraRef.current) return;
     const { theta, phi, radius } = cameraAngleRef.current;
     
-    // Clamp vertical tilt angle
     const clampedPhi = Math.max(0.15, Math.min(Math.PI / 2 - 0.05, phi));
     cameraAngleRef.current.phi = clampedPhi;
 
@@ -259,14 +297,14 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
     cameraRef.current.lookAt(targetLookAtRef.current);
   };
 
-  // Build materials
+  // Materials
   const cyanGlowMat = useRef(
     new THREE.MeshStandardMaterial({
       color: 0x06b6d4,
       emissive: 0x06b6d4,
-      emissiveIntensity: 2.2,
-      roughness: 0.2,
-      metalness: 0.8
+      emissiveIntensity: 2.5,
+      roughness: 0.15,
+      metalness: 0.85
     })
   ).current;
 
@@ -274,25 +312,29 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
     new THREE.MeshStandardMaterial({
       color: 0xf59e0b,
       emissive: 0xf59e0b,
-      emissiveIntensity: 2.2,
-      roughness: 0.2,
-      metalness: 0.8
+      emissiveIntensity: 2.5,
+      roughness: 0.15,
+      metalness: 0.85
     })
   ).current;
 
+  // Deep metallic cyan piece body
   const bodyDarkMat = useRef(
     new THREE.MeshStandardMaterial({
-      color: 0x0d131d,
-      roughness: 0.25,
-      metalness: 0.85
+      color: 0x091c28,
+      roughness: 0.20,
+      metalness: 0.90,
+      envMapIntensity: 1.2
     })
   ).current;
 
+  // Deep metallic gold/bronze piece body
   const bodyGoldDarkMat = useRef(
     new THREE.MeshStandardMaterial({
-      color: 0x1c170d,
-      roughness: 0.25,
-      metalness: 0.85
+      color: 0x241a0b,
+      roughness: 0.20,
+      metalness: 0.90,
+      envMapIntensity: 1.2
     })
   ).current;
 
@@ -321,85 +363,190 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
     container.appendChild(renderer.domElement);
 
     // --- LIGHTING ---
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
     scene.add(ambientLight);
 
-    const sunLight = new THREE.DirectionalLight(0xffffff, 1.4);
-    sunLight.position.set(5, 12, 7);
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.6);
+    sunLight.position.set(6, 14, 8);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 1024;
     sunLight.shadow.mapSize.height = 1024;
-    sunLight.shadow.bias = -0.0005;
+    sunLight.shadow.bias = -0.0004;
     scene.add(sunLight);
 
-    // Cyan and Gold Accent Point Lights for dramatic specularity
-    const cyanLight = new THREE.PointLight(0x06b6d4, 3.5, 12);
-    cyanLight.position.set(-4, 3, 4);
+    const fillLight = new THREE.DirectionalLight(0x38bdf8, 0.6);
+    fillLight.position.set(-6, 8, -6);
+    scene.add(fillLight);
+
+    // Cyan and Gold Accent Point Lights
+    const cyanLight = new THREE.PointLight(0x06b6d4, 4.0, 14);
+    cyanLight.position.set(-4.5, 4, 4.5);
     scene.add(cyanLight);
 
-    const goldLight = new THREE.PointLight(0xf59e0b, 3.5, 12);
-    goldLight.position.set(4, 3, -4);
+    const goldLight = new THREE.PointLight(0xf59e0b, 4.0, 14);
+    goldLight.position.set(4.5, 4, -4.5);
     scene.add(goldLight);
 
-    // --- BOARD MATRIX (8x8) ---
+    // --- REALISTIC CHECKERS BOARD STRUCTURE ---
     const boardGroup = new THREE.Group();
     scene.add(boardGroup);
 
-    // Dark metallic outer frame with chamfered edge (matching draft_bg.png)
-    const frameGeo = new THREE.BoxGeometry(8.9, 0.35, 8.9);
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: 0x070e1a,
+    // 1. Solid Board Base / Pedestal (Heavy mahogany / dark obsidian base)
+    const basePedestalGeo = new THREE.BoxGeometry(9.8, 0.45, 9.8);
+    const basePedestalMat = new THREE.MeshStandardMaterial({
+      color: 0x050912,
       metalness: 0.9,
-      roughness: 0.2
+      roughness: 0.3
     });
-    const frameMesh = new THREE.Mesh(frameGeo, frameMat);
-    frameMesh.position.set(0, -0.18, 0);
-    frameMesh.receiveShadow = true;
-    boardGroup.add(frameMesh);
+    const basePedestalMesh = new THREE.Mesh(basePedestalGeo, basePedestalMat);
+    basePedestalMesh.position.set(0, -0.25, 0);
+    basePedestalMesh.receiveShadow = true;
+    boardGroup.add(basePedestalMesh);
 
-    // Glowing perimeter border light strip
-    const borderOutlineGeo = new THREE.BoxGeometry(8.42, 0.02, 8.42);
-    const borderOutlineMat = new THREE.MeshStandardMaterial({
+    // 2. Raised Wooden / Cyber Outer Border Frame Lip (giving realistic checkers board depth)
+    const frameBorderMat = new THREE.MeshStandardMaterial({
+      color: 0x091424,
+      metalness: 0.85,
+      roughness: 0.25
+    });
+
+    // 4 Border Raised Frame Rails
+    const frameRailWidth = 9.4;
+    const frameRailThickness = 0.55;
+    const frameRailHeight = 0.18;
+
+    // Top rail
+    const railTopGeo = new THREE.BoxGeometry(frameRailWidth, frameRailHeight, frameRailThickness);
+    const railTop = new THREE.Mesh(railTopGeo, frameBorderMat);
+    railTop.position.set(0, 0.04, -4.325);
+    railTop.castShadow = true;
+    railTop.receiveShadow = true;
+    boardGroup.add(railTop);
+
+    // Bottom rail
+    const railBottom = new THREE.Mesh(railTopGeo, frameBorderMat);
+    railBottom.position.set(0, 0.04, 4.325);
+    railBottom.castShadow = true;
+    railBottom.receiveShadow = true;
+    boardGroup.add(railBottom);
+
+    // Left rail
+    const railSideGeo = new THREE.BoxGeometry(frameRailThickness, frameRailHeight, frameRailWidth - frameRailThickness * 2);
+    const railLeft = new THREE.Mesh(railSideGeo, frameBorderMat);
+    railLeft.position.set(-4.325, 0.04, 0);
+    railLeft.castShadow = true;
+    railLeft.receiveShadow = true;
+    boardGroup.add(railLeft);
+
+    // Right rail
+    const railRight = new THREE.Mesh(railSideGeo, frameBorderMat);
+    railRight.position.set(4.325, 0.04, 0);
+    railRight.castShadow = true;
+    railRight.receiveShadow = true;
+    boardGroup.add(railRight);
+
+    // Brass/Cyan Metallic Corner Brackets (at 4 corners)
+    const cornerMat = new THREE.MeshStandardMaterial({
+      color: 0x06b6d4,
+      metalness: 0.95,
+      roughness: 0.15,
+      emissive: 0x06b6d4,
+      emissiveIntensity: 0.4
+    });
+
+    const cornersPos = [
+      [-4.325, -4.325],
+      [4.325, -4.325],
+      [-4.325, 4.325],
+      [4.325, 4.325]
+    ];
+
+    cornersPos.forEach(([cx, cz]) => {
+      const cornerGeo = new THREE.BoxGeometry(0.60, 0.22, 0.60);
+      const cornerMesh = new THREE.Mesh(cornerGeo, cornerMat);
+      cornerMesh.position.set(cx, 0.05, cz);
+      cornerMesh.castShadow = true;
+      boardGroup.add(cornerMesh);
+    });
+
+    // Glowing Inner Perimeter Line
+    const innerBorderLineGeo = new THREE.BoxGeometry(8.15, 0.02, 8.15);
+    const innerBorderLineMat = new THREE.MeshStandardMaterial({
       color: 0x06b6d4,
       emissive: 0x06b6d4,
-      emissiveIntensity: 1.8
+      emissiveIntensity: 2.0
     });
-    const borderOutlineMesh = new THREE.Mesh(borderOutlineGeo, borderOutlineMat);
-    borderOutlineMesh.position.set(0, 0.001, 0);
-    boardGroup.add(borderOutlineMesh);
+    const innerBorderLineMesh = new THREE.Mesh(innerBorderLineGeo, innerBorderLineMat);
+    innerBorderLineMesh.position.set(0, 0.01, 0);
+    boardGroup.add(innerBorderLineMesh);
 
-    // Tiles (8x8)
+    // --- AUTHENTIC 3D CHECKERS TILES (8x8) ---
     const squareSize = 1.0;
     const tileGrid: THREE.Mesh[][] = [];
 
+    // Light Squares: Frosted Cyber Slate Blue Tile with Bevelled Edge & Inset Rim
     const lightTileMat = new THREE.MeshStandardMaterial({
-      color: 0x0e1726,
-      metalness: 0.5,
-      roughness: 0.4
+      color: 0x162438,
+      metalness: 0.6,
+      roughness: 0.30,
+      envMapIntensity: 1.0
     });
 
+    // Dark Squares: Rich Obsidian / Carbon Checkers Tile with Deep Bevel
     const darkTileMat = new THREE.MeshStandardMaterial({
-      color: 0x050c18,
-      metalness: 0.7,
-      roughness: 0.25
+      color: 0x060c16,
+      metalness: 0.8,
+      roughness: 0.20,
+      envMapIntensity: 1.2
     });
+
+    // Tile Bevel Geometry
+    const tileBevelGeo = createBevelledTileGeometry(0.96, 0.08, 0.96, 0.025);
 
     for (let r = 0; r < 8; r++) {
       tileGrid[r] = [];
       for (let c = 0; c < 8; c++) {
         const isDark = (r + c) % 2 === 1;
-        const tileGeo = new THREE.BoxGeometry(squareSize * 0.97, 0.1, squareSize * 0.97);
-        const tileMesh = new THREE.Mesh(tileGeo, isDark ? darkTileMat.clone() : lightTileMat.clone());
+        const tileMesh = new THREE.Mesh(
+          tileBevelGeo,
+          isDark ? darkTileMat.clone() : lightTileMat.clone()
+        );
 
-        // Map r (0..7) to Z (-3.5..3.5), c (0..7) to X (-3.5..3.5)
         const x = (c - 3.5) * squareSize;
         const z = (r - 3.5) * squareSize;
-        tileMesh.position.set(x, -0.05, z);
+        tileMesh.position.set(x, 0, z);
         tileMesh.receiveShadow = true;
         tileMesh.userData = { row: r, col: c, isDark };
 
         boardGroup.add(tileMesh);
         tileGrid[r][c] = tileMesh;
+
+        // Add subtle inner border line for light tiles to match physical checkers board feel
+        if (!isDark) {
+          const innerInlayGeo = new THREE.BoxGeometry(0.86, 0.085, 0.86);
+          const innerInlayMat = new THREE.MeshStandardMaterial({
+            color: 0x1d304a,
+            metalness: 0.5,
+            roughness: 0.35
+          });
+          const innerInlay = new THREE.Mesh(innerInlayGeo, innerInlayMat);
+          innerInlay.position.set(x, 0.001, z);
+          innerInlay.receiveShadow = true;
+          boardGroup.add(innerInlay);
+        } else {
+          // Dark tile under-glow accent grid lines in grout gaps
+          const gapGlowGeo = new THREE.BoxGeometry(0.98, 0.005, 0.98);
+          const gapGlowMat = new THREE.MeshStandardMaterial({
+            color: 0x06b6d4,
+            emissive: 0x06b6d4,
+            emissiveIntensity: 0.4,
+            transparent: true,
+            opacity: 0.3
+          });
+          const gapGlow = new THREE.Mesh(gapGlowGeo, gapGlowMat);
+          gapGlow.position.set(x, -0.035, z);
+          boardGroup.add(gapGlow);
+        }
       }
     }
     tileMeshesRef.current = tileGrid;
@@ -414,7 +561,7 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
       opacity: 0.95
     });
     const selectionRingMesh = new THREE.Mesh(selectionRingGeo, selectionRingMat);
-    selectionRingMesh.position.set(0, 0.02, 0);
+    selectionRingMesh.position.set(0, 0.045, 0);
     selectionRingMesh.visible = false;
     scene.add(selectionRingMesh);
 
@@ -427,7 +574,7 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
     const mouse = new THREE.Vector2();
 
     const handlePointerDown = (e: MouseEvent) => {
-      if (e.button !== 0) return; // Only left click drag
+      if (e.button !== 0) return;
       isDraggingRef.current = false;
       previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
     };
@@ -437,7 +584,6 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
       mouse.x = ((e.clientX - rect.left) / container.clientWidth) * 2 - 1;
       mouse.y = -((e.clientY - rect.top) / container.clientHeight) * 2 + 1;
 
-      // Mouse drag rotation checking
       if (e.buttons === 1) {
         const deltaX = e.clientX - previousMousePositionRef.current.x;
         const deltaY = e.clientY - previousMousePositionRef.current.y;
@@ -454,7 +600,6 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
         return;
       }
 
-      // Tile hover raycasting
       raycaster.setFromCamera(mouse, camera);
       const allTiles: THREE.Mesh[] = [];
       tileMeshesRef.current.forEach(row => row.forEach(t => allTiles.push(t)));
@@ -483,7 +628,6 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
 
       raycaster.setFromCamera(mouse, camera);
 
-      // Check piece clicks first
       const activePieceGroupList: THREE.Object3D[] = [];
       pieceMeshesRef.current.forEach(group => activePieceGroupList.push(group));
       const pieceIntersects = raycaster.intersectObjects(activePieceGroupList, true);
@@ -499,7 +643,6 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
         }
       }
 
-      // Check tile clicks
       const allTiles: THREE.Mesh[] = [];
       tileMeshesRef.current.forEach(row => row.forEach(t => allTiles.push(t)));
       const tileIntersects = raycaster.intersectObjects(allTiles);
@@ -524,7 +667,6 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
     window.addEventListener('mouseup', handlePointerUp);
     domElement.addEventListener('wheel', handleWheel, { passive: false });
 
-    // Window Resize Observer
     const handleResize = () => {
       if (!containerRef.current || !rendererRef.current || !cameraRef.current) return;
       const w = containerRef.current.clientWidth;
@@ -543,9 +685,9 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
       animationFrameId = requestAnimationFrame(animate);
       const elapsedTime = clock.getElapsedTime();
 
-      // Pulsing glow effect on cyan & gold materials
-      cyanGlowMat.emissiveIntensity = 2.0 + Math.sin(elapsedTime * 3.5) * 0.5;
-      goldGlowMat.emissiveIntensity = 2.0 + Math.cos(elapsedTime * 3.5) * 0.5;
+      // Emissive pulse on side rings
+      cyanGlowMat.emissiveIntensity = 2.2 + Math.sin(elapsedTime * 3.5) * 0.6;
+      goldGlowMat.emissiveIntensity = 2.2 + Math.cos(elapsedTime * 3.5) * 0.6;
 
       // Update piece positions smoothly & render bobbing for selected piece
       piecesRef.current.forEach(piece => {
@@ -556,16 +698,14 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
         const targetZ = (piece.position.row - 3.5) * squareSize;
         const isSelected = piece.id === selectedPieceIdRef.current;
 
-        const targetY = isSelected ? 0.18 + Math.sin(elapsedTime * 6.0) * 0.05 : 0;
+        const targetY = isSelected ? 0.22 + Math.sin(elapsedTime * 6.0) * 0.06 : 0.04;
 
-        // Smooth position interpolation (lerp)
         meshGroup.position.x += (targetX - meshGroup.position.x) * 0.25;
         meshGroup.position.z += (targetZ - meshGroup.position.z) * 0.25;
         meshGroup.position.y += (targetY - meshGroup.position.y) * 0.25;
 
-        // Highlight selection ring underneath
         if (isSelected) {
-          selectionRingMesh.position.set(meshGroup.position.x, 0.015, meshGroup.position.z);
+          selectionRingMesh.position.set(meshGroup.position.x, 0.05, meshGroup.position.z);
           selectionRingMesh.visible = true;
           selectionRingMesh.rotation.z = elapsedTime * 1.5;
         }
@@ -576,7 +716,6 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
       }
 
       // Update valid target markers highlight pool
-      // Clear previous markers
       while (targetMarkerGroup.children.length > 0) {
         const child = targetMarkerGroup.children[0];
         targetMarkerGroup.remove(child);
@@ -594,7 +733,7 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
           opacity: 0.45 + Math.sin(elapsedTime * 6) * 0.25
         });
         const markerMesh = new THREE.Mesh(markerGeo, markerMat);
-        markerMesh.position.set(tx, 0.01, tz);
+        markerMesh.position.set(tx, 0.045, tz);
         targetMarkerGroup.add(markerMesh);
 
         // Target pulsing ring
@@ -607,7 +746,7 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
           opacity: 0.8
         });
         const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-        ringMesh.position.set(tx, 0.02, tz);
+        ringMesh.position.set(tx, 0.05, tz);
         targetMarkerGroup.add(ringMesh);
       });
 
@@ -616,7 +755,6 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
 
     animate();
 
-    // Cleanup lifecycle on unmount
     return () => {
       cancelAnimationFrame(animationFrameId);
       domElement.removeEventListener('mousedown', handlePointerDown);
@@ -640,7 +778,6 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
     const currentPieceMap = pieceMeshesRef.current;
     const activeIds = new Set(pieces.map(p => p.id));
 
-    // 1. Remove captured pieces
     currentPieceMap.forEach((group, id) => {
       if (!activeIds.has(id)) {
         scene.remove(group);
@@ -648,7 +785,6 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
       }
     });
 
-    // 2. Add or Update pieces
     pieces.forEach(piece => {
       const isPlayer1 = piece.playerId === player1Id;
       const bodyMat = isPlayer1 ? bodyDarkMat : bodyGoldDarkMat;
@@ -656,14 +792,13 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
 
       let group = currentPieceMap.get(piece.id);
 
-      // Re-create mesh if king status changed or if mesh doesn't exist yet
       if (!group || group.userData.isKing !== piece.isKing) {
         if (group) scene.remove(group);
 
         group = new THREE.Group();
         group.userData = { pieceId: piece.id, isKing: piece.isKing };
 
-        // Main cylindrical metallic piece body
+        // Main cylindrical metallic piece body with substantial depth
         const bodyGeo = getPieceBodyGeometry(piece.isKing);
         const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
         bodyMesh.castShadow = true;
@@ -680,10 +815,9 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
         const emblemMesh = new THREE.Mesh(emblemGeo, glowMat);
         group.add(emblemMesh);
 
-        // Initial position
         const x = (piece.position.col - 3.5) * 1.0;
         const z = (piece.position.row - 3.5) * 1.0;
-        group.position.set(x, 0, z);
+        group.position.set(x, 0.04, z);
 
         scene.add(group);
         currentPieceMap.set(piece.id, group);
