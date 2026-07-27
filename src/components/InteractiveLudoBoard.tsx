@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, HelpCircle, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { ShieldCheck, HelpCircle, Eye, EyeOff, Sparkles, Star } from 'lucide-react';
 
 interface InteractiveLudoBoardProps {
   entryFee: number;
@@ -36,19 +36,19 @@ const PATH_COORDINATES: Array<[number, number]> = [
   [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6],
   // Top arm top cross [0,7]
   [0, 7],
-  // Top arm going down from Green Start [0,8] to [5,8]
+  // Top arm going down from Blue Start [0,8] to [5,8]
   [0, 8], [1, 8], [2, 8], [3, 8], [4, 8], [5, 8],
   // Right arm going right from [6,9] to [6,14]
   [6, 9], [6, 10], [6, 11], [6, 12], [6, 13], [6, 14],
   // Right arm right cross [7,14]
   [7, 14],
-  // Right arm going left from Yellow Start [8,14] to [8,9]
+  // Right arm going left from Green Start [8,14] to [8,9]
   [8, 14], [8, 13], [8, 12], [8, 11], [8, 10], [8, 9],
   // Bottom arm going down from [9,8] to [14,8]
   [9, 8], [10, 8], [11, 8], [12, 8], [13, 8], [14, 8],
   // Bottom arm bottom cross [14,7]
   [14, 7],
-  // Bottom arm going up from Blue Start [14,6] to [9,6]
+  // Bottom arm going up from Yellow Start [14,6] to [9,6]
   [14, 6], [13, 6], [12, 6], [11, 6], [10, 6], [9, 6],
   // Left arm going left from [8,5] to [8,0]
   [8, 5], [8, 4], [8, 3], [8, 2], [8, 1], [8, 0],
@@ -56,14 +56,11 @@ const PATH_COORDINATES: Array<[number, number]> = [
   [7, 0]
 ];
 
-const RED_START_INDEX = 0;
-const GREEN_START_INDEX = 13;
-
 const SAFE_COORDS: Array<[number, number]> = [
   [6, 0], [0, 8], [8, 14], [14, 6]
 ];
 
-// Decorative static tokens for non-player colors (Blue & Yellow/Gold) so all 4 quadrants are populated
+// Decorative static tokens for Blue (Top-Right) & Yellow (Bottom-Left)
 const DECORATIVE_TOKENS = [
   { id: 'blue_1', color: 'blue' as const, position: -1, status: 'home' as const },
   { id: 'blue_2', color: 'blue' as const, position: -1, status: 'home' as const },
@@ -88,10 +85,10 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   liveGameState,
   onUpdateLiveState
 }) => {
-  // 3D camera mode configuration
+  // 3D camera mode configuration (default true for 3D isometric view matching the photo)
   const [view3D, setView3D] = useState<boolean>(true);
 
-  // Playable tokens: 4 Red (Host/User) vs 4 Green (Guest/Bot)
+  // Playable tokens: 4 Red (Host/User in Top-Left) vs 4 Green (Guest/Bot in Bottom-Right)
   const [tokens, setTokens] = useState<LudoToken[]>(() => liveGameState?.tokens || [
     { id: 'red_1', color: 'red', position: -1, status: 'home' },
     { id: 'red_2', color: 'red', position: -1, status: 'home' },
@@ -353,7 +350,11 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     }
   };
 
-  // Maps token to 15x15 board cell [row, col]
+  // Maps token to 15x15 board cell [row, col] matching reference photo layout:
+  // Top-Left: Red Yard
+  // Top-Right: Blue Yard
+  // Bottom-Right: Green Yard
+  // Bottom-Left: Yellow Yard
   const getTokenCell = (token: LudoToken | typeof DECORATIVE_TOKENS[0]): [number, number] => {
     if (token.status === 'home') {
       const idNum = token.id.split('_')[1];
@@ -363,30 +364,30 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         if (idNum === '3') return [3, 1];
         return [3, 3];
       }
-      if (token.color === 'green') {
+      if (token.color === 'blue') {
         if (idNum === '1') return [1, 10];
         if (idNum === '2') return [1, 12];
         if (idNum === '3') return [3, 10];
         return [3, 12];
       }
-      if (token.color === 'blue') {
-        if (idNum === '1') return [10, 1];
-        if (idNum === '2') return [10, 3];
-        if (idNum === '3') return [12, 1];
-        return [12, 3];
+      if (token.color === 'green') {
+        if (idNum === '1') return [10, 10];
+        if (idNum === '2') return [10, 12];
+        if (idNum === '3') return [12, 10];
+        return [12, 12];
       }
       // Gold / Yellow
-      if (idNum === '1') return [10, 10];
-      if (idNum === '2') return [10, 12];
-      if (idNum === '3') return [12, 10];
-      return [12, 12];
+      if (idNum === '1') return [10, 1];
+      if (idNum === '2') return [10, 3];
+      if (idNum === '3') return [12, 1];
+      return [12, 3];
     }
 
     if (token.status === 'finished') {
       if (token.color === 'red') return [7, 6];
-      if (token.color === 'green') return [6, 7];
-      if (token.color === 'blue') return [8, 7];
-      return [7, 8];
+      if (token.color === 'blue') return [6, 7];
+      if (token.color === 'green') return [7, 8];
+      return [8, 7];
     }
 
     const pos = token.position;
@@ -399,51 +400,51 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       return PATH_COORDINATES[pos % 52];
     }
 
-    if (token.color === 'green') {
-      if (pos >= 52) {
-        const greenRunway: Array<[number, number]> = [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [6, 7]];
-        return greenRunway[Math.min(pos - 52, 5)];
-      }
-      return PATH_COORDINATES[(GREEN_START_INDEX + pos) % 52];
-    }
-
     if (token.color === 'blue') {
       if (pos >= 52) {
-        const blueRunway: Array<[number, number]> = [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7], [8, 7]];
+        const blueRunway: Array<[number, number]> = [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [6, 7]];
         return blueRunway[Math.min(pos - 52, 5)];
       }
-      return PATH_COORDINATES[(39 + pos) % 52];
+      return PATH_COORDINATES[(13 + pos) % 52];
+    }
+
+    if (token.color === 'green') {
+      if (pos >= 52) {
+        const greenRunway: Array<[number, number]> = [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9], [7, 8]];
+        return greenRunway[Math.min(pos - 52, 5)];
+      }
+      return PATH_COORDINATES[(26 + pos) % 52];
     }
 
     // Gold / Yellow
     if (pos >= 52) {
-      const yellowRunway: Array<[number, number]> = [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9], [7, 8]];
+      const yellowRunway: Array<[number, number]> = [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7], [8, 7]];
       return yellowRunway[Math.min(pos - 52, 5)];
     }
-    return PATH_COORDINATES[(26 + pos) % 52];
+    return PATH_COORDINATES[(39 + pos) % 52];
   };
 
   return (
-    <div className="relative min-h-[520px] sm:min-h-[640px] bg-[#03060D] rounded-2xl sm:rounded-3xl overflow-hidden border border-cyan-500/30 p-1 sm:p-2.5 font-sans flex flex-col justify-between shadow-[0_25px_60px_rgba(0,0,0,0.9)] select-none">
+    <div className="relative min-h-[540px] sm:min-h-[660px] bg-[radial-gradient(ellipse_at_center,#3b2216_0%,#180d07_100%)] rounded-2xl sm:rounded-3xl overflow-hidden border border-[#543422] p-1 sm:p-3 font-sans flex flex-col justify-between shadow-[0_30px_90px_rgba(0,0,0,0.95)] select-none">
       
-      {/* Studio lighting environment glows */}
-      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent pointer-events-none" />
-      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-400/40 to-transparent pointer-events-none" />
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[420px] h-[420px] bg-gradient-to-br from-cyan-500/10 via-purple-500/5 to-transparent rounded-full blur-[110px] pointer-events-none" />
+      {/* Studio rim lighting environment */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/40 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-500/30 to-transparent pointer-events-none" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[450px] h-[450px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
 
       {/* VIEWPORT HEADER CONTROLS */}
       <div className="flex justify-between items-center px-4 pt-3 pb-2 z-10">
         <div className="flex items-center gap-2">
-          <div className="p-1 px-2.5 bg-[#091522] rounded-lg border border-cyan-500/30 flex items-center gap-1.5 text-[9px] font-mono text-cyan-400 tracking-wider shadow-[0_0_12px_rgba(6,182,212,0.15)]">
+          <div className="p-1 px-2.5 bg-[#1b1009]/90 rounded-lg border border-amber-500/30 flex items-center gap-1.5 text-[9px] font-mono text-amber-300 tracking-wider shadow-[0_0_12px_rgba(245,158,11,0.2)]">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>BLENDER 3D ISOMETRIC LUDO ARENA (8K)</span>
+            <span>REALISTIC 3D WOODEN TABLE LUDO ARENA</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowHelperRules(!showHelperRules)}
-            className="p-1.5 bg-[#090F1B]/90 hover:bg-neutral-900 border border-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors text-xs flex items-center gap-1 font-mono uppercase"
+            className="p-1.5 bg-[#180f08]/90 hover:bg-[#26170d] border border-amber-900/60 text-amber-200/80 hover:text-white rounded-lg transition-colors text-xs flex items-center gap-1 font-mono uppercase"
           >
             <HelpCircle className="w-3.5 h-3.5" />
             <span>Rules</span>
@@ -451,7 +452,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           
           <button
             onClick={() => setView3D(!view3D)}
-            className="p-1.5 bg-[#0e1627] hover:bg-cyan-950/40 border border-cyan-500/30 text-cyan-400 rounded-lg transition-all text-xs flex items-center gap-1.5 font-mono uppercase font-bold shadow-[0_0_10px_rgba(6,182,212,0.15)]"
+            className="p-1.5 bg-[#26170d] hover:bg-amber-950/60 border border-amber-500/40 text-amber-300 rounded-lg transition-all text-xs flex items-center gap-1.5 font-mono uppercase font-bold shadow-[0_0_10px_rgba(245,158,11,0.2)]"
           >
             {view3D ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
             <span>{view3D ? '2D View' : '3D Camera'}</span>
@@ -466,16 +467,16 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-16 left-6 right-6 bg-[#070D18]/95 backdrop-blur-md border border-cyan-500/40 p-4 rounded-2xl text-xs text-slate-350 space-y-2 z-40 shadow-2xl"
+            className="absolute top-16 left-6 right-6 bg-[#160d07]/95 backdrop-blur-md border border-amber-500/40 p-4 rounded-2xl text-xs text-amber-100/90 space-y-2 z-40 shadow-2xl"
           >
             <h4 className="font-display font-black text-white uppercase text-sm tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-cyan-400" />
-              <span>Blender 3D Ludo Contract Rules</span>
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>3D Realistic Ludo Contract Rules</span>
             </h4>
-            <ul className="list-disc pl-4 space-y-1 text-slate-400 font-mono text-[11px]">
-              <li>You command the <span className="text-rose-400 font-bold">RED Pawns</span> in the Top-Left Base. Bot commands <span className="text-emerald-400 font-bold">GREEN Pawns</span> in Top-Right Base.</li>
+            <ul className="list-disc pl-4 space-y-1 text-amber-200/80 font-mono text-[11px]">
+              <li>You command <span className="text-rose-400 font-bold">RED Pawns</span> in Top-Left Base. Bot commands <span className="text-emerald-400 font-bold">GREEN Pawns</span> in Bottom-Right Base.</li>
               <li>A dice roll of <span className="text-yellow-300 font-bold">5 or 6</span> releases your pawn onto the Red starting square on the left arm.</li>
-              <li>Land on opponent pawns to capture them back to base (except on colored start/safe squares).</li>
+              <li>Land on opponent pawns to capture them back to base (except on colored start/safe star squares).</li>
               <li>First player to navigate all 4 pawns into the central home triangle wins the match stake pool!</li>
             </ul>
           </motion.div>
@@ -496,20 +497,20 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
             transformStyle: 'preserve-3d'
           }}
         >
-          {/* Soft studio grid floor projection */}
+          {/* Wood table reflection floor matrix */}
           {view3D && (
-            <div className="absolute inset-[-80px] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)] pointer-events-none" />
+            <div className="absolute inset-[-80px] bg-[linear-gradient(rgba(245,158,11,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(245,158,11,0.03)_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)] pointer-events-none" />
           )}
 
           {/* ========================================================== */}
-          {/* MAHOGANY WOODEN BOARD SLAB & GLOSSY TRACK (BLENDER STYLE) */}
+          {/* MAHOGANY WOODEN BOARD SLAB & Glossy Plastic Trays */}
           {/* ========================================================== */}
           <div 
-            className="relative w-[340px] h-[340px] sm:w-[430px] sm:h-[430px] bg-[#0f0b08] rounded-[36px] border-[4px] border-[#2a1d13] p-[3px] shadow-[0_45px_100px_rgba(0,0,0,0.95),0_16px_0px_#160d07,0_20px_35px_rgba(0,0,0,0.85)] ludo-board-container"
+            className="relative w-[340px] h-[340px] sm:w-[435px] sm:h-[435px] bg-[#1a212d] rounded-[36px] border-[4px] border-[#0f141e] p-[3px] shadow-[0_45px_100px_rgba(0,0,0,0.95),0_16px_0px_#090d14,0_20px_35px_rgba(0,0,0,0.85)] ludo-board-container"
             style={{ transform: view3D ? 'translateZ(14px)' : 'none', transformStyle: 'preserve-3d' }}
           >
-            {/* Polished mahogany wood sheen layer */}
-            <div className="absolute inset-0 rounded-[32px] bg-gradient-to-br from-white/15 via-transparent to-black/30 pointer-events-none z-10" />
+            {/* Polished ambient surface reflection */}
+            <div className="absolute inset-0 rounded-[32px] bg-gradient-to-br from-white/15 via-transparent to-black/35 pointer-events-none z-10" />
 
             {/* 15x15 Grid Layout */}
             <div className="grid grid-cols-15 grid-rows-15 w-full h-full bg-black gap-[1px] rounded-2xl overflow-hidden shadow-2xl">
@@ -527,80 +528,97 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                           <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                             {/* Left triangle (Red) */}
                             <polygon points="0,0 50,50 0,100" fill="#E52521" stroke="#000000" strokeWidth="1.5" />
-                            {/* Top triangle (Green) */}
-                            <polygon points="0,0 50,50 100,0" fill="#009A44" stroke="#000000" strokeWidth="1.5" />
-                            {/* Right triangle (Yellow) */}
-                            <polygon points="100,0 50,50 100,100" fill="#FFCC00" stroke="#000000" strokeWidth="1.5" />
-                            {/* Bottom triangle (Blue) */}
-                            <polygon points="0,100 50,50 100,100" fill="#1B4EAB" stroke="#000000" strokeWidth="1.5" />
+                            {/* Top triangle (Blue) */}
+                            <polygon points="0,0 50,50 100,0" fill="#1B4EAB" stroke="#000000" strokeWidth="1.5" />
+                            {/* Right triangle (Green) */}
+                            <polygon points="100,0 50,50 100,100" fill="#009A44" stroke="#000000" strokeWidth="1.5" />
+                            {/* Bottom triangle (Yellow) */}
+                            <polygon points="0,100 50,50 100,100" fill="#FFCC00" stroke="#000000" strokeWidth="1.5" />
                           </svg>
-
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <span className="text-[7.5px] sm:text-[9.5px] font-black text-black tracking-tighter uppercase opacity-35 font-mono">HOME</span>
-                          </div>
                         </div>
                       );
                     }
                     return null;
                   }
 
-                  // Top-Left Yard (Red)
+                  // Top-Left Yard (Red) - With raised rounded plastic tray matching photo
                   if (r <= 5 && c <= 5) {
                     if (r >= 1 && r <= 4 && c >= 1 && c <= 4) {
                       const isCircle = (r === 1 && c === 1) || (r === 1 && c === 3) || (r === 3 && c === 1) || (r === 3 && c === 3);
                       return (
-                        <div key={`${r}-${c}`} className="relative bg-white border border-black flex items-center justify-center" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
-                          {isCircle && <div className="w-[68%] h-[68%] rounded-full bg-[#E52521] border border-black shadow-inner" />}
+                        <div key={`${r}-${c}`} className="relative bg-[#E52521] border border-[#A01010] flex items-center justify-center shadow-inner" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#E52521] border-2 border-[#A01010] shadow-md" />}
                         </div>
                       );
                     }
-                    return <div key={`${r}-${c}`} className="bg-[#E52521] border border-black" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                    return <div key={`${r}-${c}`} className="bg-[#E52521] border border-[#A01010]" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
                   }
 
-                  // Top-Right Yard (Green)
+                  // Top-Right Yard (Blue) - With raised rounded plastic tray matching photo
                   if (r <= 5 && c >= 9) {
                     if (r >= 1 && r <= 4 && c >= 10 && c <= 13) {
                       const isCircle = (r === 1 && c === 10) || (r === 1 && c === 12) || (r === 3 && c === 10) || (r === 3 && c === 12);
                       return (
-                        <div key={`${r}-${c}`} className="relative bg-white border border-black flex items-center justify-center" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
-                          {isCircle && <div className="w-[68%] h-[68%] rounded-full bg-[#009A44] border border-black shadow-inner" />}
+                        <div key={`${r}-${c}`} className="relative bg-[#1B4EAB] border border-[#0F357A] flex items-center justify-center shadow-inner" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#1B4EAB] border-2 border-[#0F357A] shadow-md" />}
                         </div>
                       );
                     }
-                    return <div key={`${r}-${c}`} className="bg-[#009A44] border border-black" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                    return <div key={`${r}-${c}`} className="bg-[#1B4EAB] border border-[#0F357A]" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
                   }
 
-                  // Bottom-Left Yard (Blue)
-                  if (r >= 9 && c <= 5) {
-                    if (r >= 10 && r <= 13 && c >= 1 && c <= 4) {
-                      const isCircle = (r === 10 && c === 1) || (r === 10 && c === 3) || (r === 12 && c === 1) || (r === 12 && c === 3);
-                      return (
-                        <div key={`${r}-${c}`} className="relative bg-white border border-black flex items-center justify-center" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
-                          {isCircle && <div className="w-[68%] h-[68%] rounded-full bg-[#1B4EAB] border border-black shadow-inner" />}
-                        </div>
-                      );
-                    }
-                    return <div key={`${r}-${c}`} className="bg-[#1B4EAB] border border-black" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
-                  }
-
-                  // Bottom-Right Yard (Yellow)
+                  // Bottom-Right Yard (Green) - With raised rounded plastic tray matching photo
                   if (r >= 9 && c >= 9) {
                     if (r >= 10 && r <= 13 && c >= 10 && c <= 13) {
                       const isCircle = (r === 10 && c === 10) || (r === 10 && c === 12) || (r === 12 && c === 10) || (r === 12 && c === 12);
                       return (
-                        <div key={`${r}-${c}`} className="relative bg-white border border-black flex items-center justify-center" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
-                          {isCircle && <div className="w-[68%] h-[68%] rounded-full bg-[#FFCC00] border border-black shadow-inner" />}
+                        <div key={`${r}-${c}`} className="relative bg-[#009A44] border border-[#00612B] flex items-center justify-center shadow-inner" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#009A44] border-2 border-[#00612B] shadow-md" />}
                         </div>
                       );
                     }
-                    return <div key={`${r}-${c}`} className="bg-[#FFCC00] border border-black" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                    return <div key={`${r}-${c}`} className="bg-[#009A44] border border-[#00612B]" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
                   }
 
-                  // Top Arm (r 0..5, c 6..8)
+                  // Bottom-Left Yard (Yellow) - With raised rounded plastic tray matching photo
+                  if (r >= 9 && c <= 5) {
+                    if (r >= 10 && r <= 13 && c >= 1 && c <= 4) {
+                      const isCircle = (r === 10 && c === 1) || (r === 10 && c === 3) || (r === 12 && c === 1) || (r === 12 && c === 3);
+                      return (
+                        <div key={`${r}-${c}`} className="relative bg-[#FFCC00] border border-[#C79F00] flex items-center justify-center shadow-inner" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#FFCC00] border-2 border-[#C79F00] shadow-md" />}
+                        </div>
+                      );
+                    }
+                    return <div key={`${r}-${c}`} className="bg-[#FFCC00] border border-[#C79F00]" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                  }
+
+                  // Top Arm (r 0..5, c 6..8) - Blue Path
                   if (r <= 5 && c >= 6 && c <= 8) {
-                    const isGreenPath = (c === 7 && r >= 1) || (r === 0 && (c === 7 || c === 8));
-                    const isGreenStart = r === 0 && c === 8;
-                    const isGreenEntry = r === 0 && c === 7;
+                    const isBluePath = (c === 7 && r >= 1) || (r === 0 && (c === 7 || c === 8));
+                    const isBlueStart = r === 0 && c === 8;
+                    const isBlueEntry = r === 0 && c === 7;
+                    const isBlueStar = r === 1 && c === 6; // Blue Star matching reference image
+
+                    return (
+                      <div 
+                        key={`${r}-${c}`} 
+                        className={`border border-black relative flex items-center justify-center ${isBluePath ? 'bg-[#1B4EAB]' : 'bg-white'}`} 
+                        style={{ gridRow: r + 1, gridColumn: c + 1 }}
+                      >
+                        {isBlueStart && <span className="text-[8px] sm:text-[10px] font-black text-white leading-none drop-shadow-sm">⬇</span>}
+                        {isBlueEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#1B4EAB] leading-none drop-shadow-sm">⬇</span>}
+                        {isBlueStar && <Star className="w-3 h-3 text-[#1B4EAB] fill-[#1B4EAB]" />}
+                      </div>
+                    );
+                  }
+
+                  // Right Arm (r 6..8, c 9..14) - Green Path
+                  if (r >= 6 && r <= 8 && c >= 9) {
+                    const isGreenPath = (r === 7) || (r === 8 && c === 14);
+                    const isGreenStart = r === 8 && c === 14;
+                    const isGreenEntry = r === 7 && c === 14;
+                    const isGreenStar = r === 6 && c === 13; // Green Star matching reference image
 
                     return (
                       <div 
@@ -608,17 +626,39 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                         className={`border border-black relative flex items-center justify-center ${isGreenPath ? 'bg-[#009A44]' : 'bg-white'}`} 
                         style={{ gridRow: r + 1, gridColumn: c + 1 }}
                       >
-                        {isGreenStart && <span className="text-[8px] sm:text-[10px] font-black text-white leading-none drop-shadow-sm">⬇</span>}
-                        {isGreenEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#009A44] leading-none drop-shadow-sm">⬇</span>}
+                        {isGreenStart && <span className="text-[8px] sm:text-[10px] font-black text-white leading-none drop-shadow-sm">⬅</span>}
+                        {isGreenEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#009A44] leading-none drop-shadow-sm">⬅</span>}
+                        {isGreenStar && <Star className="w-3 h-3 text-[#009A44] fill-[#009A44]" />}
                       </div>
                     );
                   }
 
-                  // Left Arm (r 6..8, c 0..5)
+                  // Bottom Arm (r 9..14, c 6..8) - Yellow Path
+                  if (r >= 9 && c >= 6 && c <= 8) {
+                    const isYellowPath = (c === 7 && r >= 9) || (r === 14 && c === 6);
+                    const isYellowStart = r === 14 && c === 6;
+                    const isYellowEntry = r === 14 && c === 7;
+                    const isYellowStar = r === 13 && c === 8; // Yellow Star matching reference image
+
+                    return (
+                      <div 
+                        key={`${r}-${c}`} 
+                        className={`border border-black relative flex items-center justify-center ${isYellowPath ? 'bg-[#FFCC00]' : 'bg-white'}`} 
+                        style={{ gridRow: r + 1, gridColumn: c + 1 }}
+                      >
+                        {isYellowStart && <span className="text-[8px] sm:text-[10px] font-black text-black leading-none drop-shadow-sm">⬆</span>}
+                        {isYellowEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#D9A300] leading-none drop-shadow-sm">⬆</span>}
+                        {isYellowStar && <Star className="w-3 h-3 text-[#D9A300] fill-[#D9A300]" />}
+                      </div>
+                    );
+                  }
+
+                  // Left Arm (r 6..8, c 0..5) - Red Path
                   if (r >= 6 && r <= 8 && c <= 5) {
                     const isRedPath = (r === 7) || (r === 6 && c === 0);
                     const isRedStart = r === 6 && c === 0;
                     const isRedEntry = r === 7 && c === 0;
+                    const isRedStar = r === 8 && c === 1; // Red Star matching reference image
 
                     return (
                       <div 
@@ -628,42 +668,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                       >
                         {isRedStart && <span className="text-[8px] sm:text-[10px] font-black text-white leading-none drop-shadow-sm">➔</span>}
                         {isRedEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#E52521] leading-none drop-shadow-sm">➔</span>}
-                      </div>
-                    );
-                  }
-
-                  // Right Arm (r 6..8, c 9..14)
-                  if (r >= 6 && r <= 8 && c >= 9) {
-                    const isYellowPath = (r === 7) || (r === 8 && c === 14);
-                    const isYellowStart = r === 8 && c === 14;
-                    const isYellowEntry = r === 7 && c === 14;
-
-                    return (
-                      <div 
-                        key={`${r}-${c}`} 
-                        className={`border border-black relative flex items-center justify-center ${isYellowPath ? 'bg-[#FFCC00]' : 'bg-white'}`} 
-                        style={{ gridRow: r + 1, gridColumn: c + 1 }}
-                      >
-                        {isYellowStart && <span className="text-[8px] sm:text-[10px] font-black text-black leading-none drop-shadow-sm">⬅</span>}
-                        {isYellowEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#D9A300] leading-none drop-shadow-sm">⬅</span>}
-                      </div>
-                    );
-                  }
-
-                  // Bottom Arm (r 9..14, c 6..8)
-                  if (r >= 9 && c >= 6 && c <= 8) {
-                    const isBluePath = (c === 7 && r >= 9) || (r === 14 && c === 6);
-                    const isBlueStart = r === 14 && c === 6;
-                    const isBlueEntry = r === 14 && c === 7;
-
-                    return (
-                      <div 
-                        key={`${r}-${c}`} 
-                        className={`border border-black relative flex items-center justify-center ${isBluePath ? 'bg-[#1B4EAB]' : 'bg-white'}`} 
-                        style={{ gridRow: r + 1, gridColumn: c + 1 }}
-                      >
-                        {isBlueStart && <span className="text-[8px] sm:text-[10px] font-black text-white leading-none drop-shadow-sm">⬆</span>}
-                        {isBlueEntry && <span className="text-[8px] sm:text-[10px] font-black text-[#1B4EAB] leading-none drop-shadow-sm">⬆</span>}
+                        {isRedStar && <Star className="w-3 h-3 text-[#E52521] fill-[#E52521]" />}
                       </div>
                     );
                   }
@@ -672,7 +677,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                 })
               )}
 
-              {/* Render Standing 3D Glossy Pawns placed precisely inside cell coordinates */}
+              {/* Render Standing 3D Molded Plastic Pawns placed precisely inside cell coordinates */}
               {[...tokens, ...DECORATIVE_TOKENS].map((token) => {
                 const isDec = 'isDecoration' in token || token.id.startsWith('blue') || token.id.startsWith('gold');
                 const [r, c] = getTokenCell(token as any);
@@ -698,7 +703,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           </div>
 
           {/* ========================================================== */}
-          {/* TWO SEMI-TRANSLUCENT WHITE DICE RESTING ON THE BOARD */}
+          {/* TWO TRANSLUCENT ACRYLIC GLASS DICE RESTING NEAR CENTER */}
           {/* ========================================================== */}
           <div 
             className="absolute bottom-[-15px] right-[80px] z-30"
@@ -731,10 +736,10 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       {/* ========================================================== */}
       {/* ACTION CONTROLS HUD */}
       {/* ========================================================== */}
-      <div className="relative sm:absolute sm:bottom-4 sm:left-4 mx-auto mt-2 sm:mt-0 w-full max-w-[300px] sm:w-auto bg-[#080d1a]/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-emerald-500/30 flex flex-col gap-1.5 shadow-[0_15px_30px_rgba(0,0,0,0.5)] z-30">
+      <div className="relative sm:absolute sm:bottom-4 sm:left-4 mx-auto mt-2 sm:mt-0 w-full max-w-[300px] sm:w-auto bg-[#180e08]/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-amber-500/30 flex flex-col gap-1.5 shadow-[0_15px_30px_rgba(0,0,0,0.5)] z-30">
         <div className="flex items-center gap-2">
           <div className={`w-2.5 h-2.5 rounded-full ${activePlayer === 'green' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-          <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest">
+          <span className="text-[10px] font-mono font-bold text-amber-300 uppercase tracking-widest">
             {activePlayer === 'green' ? 'GREEN\'S TURN (BOT)' : 'YOUR MOVE (RED)'}
           </span>
         </div>
@@ -744,8 +749,8 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           disabled={activePlayer !== 'red' || hasRolled || isRolling || gameResult !== 'playing' || botIsThinking}
           className={`w-full py-1.5 font-extrabold tracking-widest uppercase font-display text-center rounded-xl transition-all border text-xs cursor-pointer ${
             activePlayer === 'red' && !hasRolled && !isRolling && gameResult === 'playing'
-              ? 'bg-emerald-500/20 border-emerald-500 hover:bg-emerald-500/30 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.35)] animate-pulse'
-              : 'bg-[#0f1524] border-slate-800 text-slate-500 cursor-not-allowed'
+              ? 'bg-amber-500/20 border-amber-500 hover:bg-amber-500/30 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.35)] animate-pulse'
+              : 'bg-[#21140c] border-amber-950 text-amber-700/60 cursor-not-allowed'
           }`}
         >
           {isRolling ? 'ROLLING...' : 'ROLL DICE'}
@@ -753,25 +758,25 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       </div>
 
       {/* FLOATING LEADERBOARD PANEL */}
-      <div className="relative sm:absolute sm:top-16 sm:right-4 mx-auto mt-2 sm:mt-0 w-full max-w-[300px] sm:w-auto sm:max-w-[160px] bg-[#090F1B]/95 backdrop-blur-md py-2.5 px-3.5 rounded-2xl border border-cyan-500/25 shadow-2xl space-y-2 z-30">
-        <div className="flex justify-between items-center text-[8px] font-mono border-b border-cyan-500/15 pb-1">
-          <span className="font-extrabold text-[9.5px] tracking-wide text-cyan-300">⚔️ LUDO MATCH</span>
+      <div className="relative sm:absolute sm:top-16 sm:right-4 mx-auto mt-2 sm:mt-0 w-full max-w-[300px] sm:w-auto sm:max-w-[160px] bg-[#180e08]/95 backdrop-blur-md py-2.5 px-3.5 rounded-2xl border border-amber-500/25 shadow-2xl space-y-2 z-30">
+        <div className="flex justify-between items-center text-[8px] font-mono border-b border-amber-500/15 pb-1">
+          <span className="font-extrabold text-[9.5px] tracking-wide text-amber-300">⚔️ LUDO MATCH</span>
         </div>
 
-        <div className="flex justify-between items-center bg-[#050B14]/90 px-2 py-1 rounded-lg border border-slate-800">
-          <span className="text-[7.5px] text-slate-500 font-black uppercase">STAKE POOL</span>
+        <div className="flex justify-between items-center bg-[#0d0704]/90 px-2 py-1 rounded-lg border border-amber-950">
+          <span className="text-[7.5px] text-amber-500/70 font-black uppercase">STAKE POOL</span>
           <span className="text-[9.5px] text-[#FBBF24] font-black flex items-center gap-0.5">
             🪙 {entryFee}
           </span>
         </div>
 
         <div className="space-y-1 text-[8.5px]">
-          <div className="flex items-center justify-between text-slate-400">
+          <div className="flex items-center justify-between text-amber-200/70">
             <span className="truncate max-w-[60px] font-medium">{opponentName}</span>
             <span className="font-mono text-emerald-400 font-bold">Green</span>
           </div>
-          <div className="flex items-center justify-between text-slate-350">
-            <span className="truncate max-w-[60px] font-bold text-rose-300">You</span>
+          <div className="flex items-center justify-between text-amber-200">
+            <span className="truncate max-w-[60px] font-bold text-rose-400">You</span>
             <span className="font-mono text-cyan-400 font-bold">Red</span>
           </div>
         </div>
@@ -783,7 +788,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 };
 
 // ==========================================================
-// GLOSSY 3D PLASTIC PAWN (BLENDER RENDER STYLE)
+// GLOSSY 3D PLASTIC PAWN (EXACTLY MATCHING ATTACHED PHOTO)
 // ==========================================================
 const LudoPawn3D: React.FC<{ color: 'red' | 'green' | 'blue' | 'gold', isPlayable?: boolean, view3D?: boolean }> = ({ color, isPlayable, view3D }) => {
   const pawnColors = {
@@ -794,19 +799,19 @@ const LudoPawn3D: React.FC<{ color: 'red' | 'green' | 'blue' | 'gold', isPlayabl
       bodyGrad: 'from-[#FF3B30] via-[#E52521] to-[#990D0D]',
       border: '#990D0D'
     },
-    green: {
-      head: '#009A44',
-      headLight: '#55F292',
-      collar: '#E5FFE9',
-      bodyGrad: 'from-[#34C759] via-[#009A44] to-[#005425]',
-      border: '#005425'
-    },
     blue: {
       head: '#1B4EAB',
       headLight: '#6BA2FF',
       collar: '#E5EEFF',
       bodyGrad: 'from-[#007AFF] via-[#1B4EAB] to-[#092B70]',
       border: '#092B70'
+    },
+    green: {
+      head: '#009A44',
+      headLight: '#55F292',
+      collar: '#E5FFE9',
+      bodyGrad: 'from-[#34C759] via-[#009A44] to-[#005425]',
+      border: '#005425'
     },
     gold: {
       head: '#FFCC00',
@@ -873,7 +878,7 @@ const LudoPawn3D: React.FC<{ color: 'red' | 'green' | 'blue' | 'gold', isPlayabl
 };
 
 // ==========================================================
-// TWO SEMI-TRANSLUCENT WHITE DICE (BLENDER 3D RENDER STYLE)
+// TWO TRANSLUCENT ACRYLIC GLASS DICE
 // ==========================================================
 const SemiTranslucentWhiteDice: React.FC<{ value: number, isRolling: boolean }> = ({ value, isRolling }) => {
   const faceTransforms = [
