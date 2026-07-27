@@ -67,12 +67,16 @@ const SAFE_COORDS: Array<[number, number]> = [
   [6, 0], [0, 8], [8, 14], [14, 6]
 ];
 
-// Decorative static tokens for non-player colors to populate the visual board
+// Decorative static tokens for non-player colors to ensure 4 tokens in every quadrant
 const DECORATIVE_TOKENS = [
   { id: 'blue_1', color: 'blue' as const, position: -1, status: 'home' as const },
   { id: 'blue_2', color: 'blue' as const, position: -1, status: 'home' as const },
+  { id: 'blue_3', color: 'blue' as const, position: -1, status: 'home' as const },
+  { id: 'blue_4', color: 'blue' as const, position: -1, status: 'home' as const },
   { id: 'gold_1', color: 'gold' as const, position: -1, status: 'home' as const },
   { id: 'gold_2', color: 'gold' as const, position: -1, status: 'home' as const },
+  { id: 'gold_3', color: 'gold' as const, position: -1, status: 'home' as const },
+  { id: 'gold_4', color: 'gold' as const, position: -1, status: 'home' as const },
 ];
 
 export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
@@ -91,12 +95,16 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   // Game mode configuration
   const [view3D, setView3D] = useState<boolean>(true);
 
-  // Playable tokens: Red (Host/User) vs Green (Guest/Bot)
+  // Playable tokens: 4 Red (Host/User) vs 4 Green (Guest/Bot)
   const [tokens, setTokens] = useState<LudoToken[]>(() => liveGameState?.tokens || [
     { id: 'red_1', color: 'red', position: -1, status: 'home' },
     { id: 'red_2', color: 'red', position: -1, status: 'home' },
+    { id: 'red_3', color: 'red', position: -1, status: 'home' },
+    { id: 'red_4', color: 'red', position: -1, status: 'home' },
     { id: 'green_1', color: 'green', position: -1, status: 'home' },
-    { id: 'green_2', color: 'green', position: -1, status: 'home' }
+    { id: 'green_2', color: 'green', position: -1, status: 'home' },
+    { id: 'green_3', color: 'green', position: -1, status: 'home' },
+    { id: 'green_4', color: 'green', position: -1, status: 'home' }
   ]);
 
   const [activePlayer, setActivePlayer] = useState<'red' | 'green'>(() => liveGameState?.activePlayer || 'red');
@@ -311,12 +319,12 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       const redFinished = updated.filter(t => t.color === 'red' && t.status === 'finished').length;
       const greenFinished = updated.filter(t => t.color === 'green' && t.status === 'finished').length;
 
-      if (redFinished === 2) {
+      if (redFinished === 4) {
         nextResult = 'red_won';
         setGameResult('red_won');
         onAddLog(`[LUDO VICTORY] Red wins the match!`);
         setTimeout(() => onGameOver(myColor === 'red'), 3000);
-      } else if (greenFinished === 2) {
+      } else if (greenFinished === 4) {
         nextResult = 'green_won';
         setGameResult('green_won');
         onAddLog(`[LUDO VICTORY] Green wins the match!`);
@@ -352,16 +360,30 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   // Maps token to 15x15 board cell [row, col]
   const getTokenCell = (token: LudoToken | typeof DECORATIVE_TOKENS[0]): [number, number] => {
     if (token.status === 'home') {
+      const idNum = token.id.split('_')[1];
       if (token.color === 'red') {
-        return token.id.endsWith('2') ? [1, 3] : [1, 1];
+        if (idNum === '1') return [1, 1];
+        if (idNum === '2') return [1, 3];
+        if (idNum === '3') return [3, 1];
+        return [3, 3];
       }
       if (token.color === 'green') {
-        return token.id.endsWith('2') ? [1, 12] : [1, 10];
+        if (idNum === '1') return [1, 10];
+        if (idNum === '2') return [1, 12];
+        if (idNum === '3') return [3, 10];
+        return [3, 12];
       }
       if (token.color === 'blue') {
-        return token.id.endsWith('2') ? [10, 3] : [10, 1];
+        if (idNum === '1') return [10, 1];
+        if (idNum === '2') return [10, 3];
+        if (idNum === '3') return [12, 1];
+        return [12, 3];
       }
-      return token.id.endsWith('2') ? [10, 12] : [10, 10];
+      // Gold / Yellow
+      if (idNum === '1') return [10, 10];
+      if (idNum === '2') return [10, 12];
+      if (idNum === '3') return [12, 10];
+      return [12, 12];
     }
 
     if (token.status === 'finished') {
@@ -533,7 +555,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           )}
 
           {/* ========================================================== */}
-          {/* THE CLASSIC LUDO BOARD CANVAS (MATCHING ATTACHED IMAGE) */}
+          {/* THE CLASSIC LUDO BOARD CANVAS */}
           {/* ========================================================== */}
           <div 
             className="relative w-[340px] h-[340px] sm:w-[410px] sm:h-[410px] bg-black border-[3px] border-black p-[2px] shadow-[0_25px_60px_rgba(0,0,0,0.85)] ludo-board-container"
