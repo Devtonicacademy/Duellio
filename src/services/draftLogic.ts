@@ -51,6 +51,9 @@ export class DraftLogicService {
     const piece = state.pieces.find(p => p.id === pieceId);
     if (!piece) return false;
 
+    // Check active player turn
+    if (piece.playerId !== state.activePlayerId) return false;
+
     // Basic bounds check
     if (targetRow < 0 || targetRow > 7 || targetCol < 0 || targetCol > 7) return false;
     

@@ -5,9 +5,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Swords, ShieldCheck, Timer, Award, AlertTriangle, RotateCcw, HelpCircle, Trophy } from 'lucide-react';
+import { Swords, ShieldCheck, Timer, Award, AlertTriangle, RotateCcw, HelpCircle, Trophy, Box, Grid } from 'lucide-react';
 import { DraftLogicService } from '../services/draftLogic';
 import { DraftGameState, DraftPiece, UserProfile } from '../types';
+import { Draft3DScene } from './Draft3DScene';
 
 interface InteractiveDraftBoardProps {
   entryFee: number;
@@ -41,6 +42,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   const [botIsThinking, setBotIsThinking] = useState<boolean>(false);
   const [invalidMoveMessage, setInvalidMoveMessage] = useState<string | null>(null);
   const [showHelperRules, setShowHelperRules] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<'2D' | '3D'>('3D');
 
   // Active player turn checking
   const isPlayerTurn = gameState.activePlayerId === player1Id;
@@ -314,9 +316,35 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Viewport 2D / 3D Selector Toggle */}
+          <div className="flex items-center p-0.5 bg-[#070D18] border border-cyan-500/30 rounded-xl">
+            <button
+              onClick={() => setViewMode('2D')}
+              className={`px-3 py-1 rounded-lg font-mono text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === '2D'
+                  ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Grid className="w-3.5 h-3.5" />
+              <span>2D Matrix</span>
+            </button>
+            <button
+              onClick={() => setViewMode('3D')}
+              className={`px-3 py-1 rounded-lg font-mono text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === '3D'
+                  ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Box className="w-3.5 h-3.5" />
+              <span>3D Cyber View</span>
+            </button>
+          </div>
+
           <button
             onClick={() => setShowHelperRules(!showHelperRules)}
-            className="p-1.5 bg-[#090F1B]/90 hover:bg-neutral-900 border border-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors text-xs flex items-center gap-1 font-mono uppercase cursor-pointer"
+            className="p-1.5 bg-[#090F1B]/90 hover:bg-neutral-900 border border-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors text-xs flex items-center gap-1 font-mono uppercase cursor-pointer ml-1"
           >
             <HelpCircle className="w-3.5 h-3.5" />
             <span>Rules</span>
@@ -390,73 +418,87 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
           </div>
         </div>
 
-        {/* The 8x8 checkers matrix grid board */}
-        <div className="w-full max-w-[420px] aspect-square bg-[#050B14] p-1.5 rounded-2xl shadow-2xl border border-cyan-500/30 relative select-none">
-          <div className="w-full h-full grid grid-cols-8 grid-rows-8 border border-[#02060D] bg-neutral-950">
-            {Array.from({ length: 8 }).map((_, row) =>
-              Array.from({ length: 8 }).map((_, col) => {
-                const isDarkCell = (row + col) % 2 === 1;
-                
-                // Find matching piece on this coordinate
-                const piece = gameState.pieces.find(
-                  p => p.position.row === row && p.position.col === col
-                );
-                
-                const isPieceSelected = piece ? piece.id === selectedPieceId : false;
-                const isHighlightedDestination = validDestinations.some(
-                  ([vr, vc]) => vr === row && vc === col
-                );
-
-                return (
-                  <div
-                    key={`${row}-${col}`}
-                    onClick={() => {
-                      if (isHighlightedDestination) {
-                        handleCellClick(row, col);
-                      }
-                    }}
-                    className={`
-                      relative flex items-center justify-center transition-all duration-200 aspect-square
-                      ${isDarkCell ? 'bg-[#060D1A]' : 'bg-[#0B1426]'}
-                      ${isHighlightedDestination ? 'cursor-pointer hover:bg-emerald-500/10' : ''}
-                    `}
-                  >
-                    {/* Render coordinate indicator text details in corners */}
-                    {col === 0 && (
-                      <span className="absolute top-0.5 left-0.5 text-[6px] font-mono text-neutral-500 select-none pointer-events-none">
-                        {8 - row}
-                      </span>
-                    )}
-                    {row === 7 && (
-                      <span className="absolute bottom-0.5 right-0.5 text-[6px] font-mono text-neutral-500 select-none pointer-events-none">
-                        {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'][col]}
-                      </span>
-                    )}
-
-                    {piece && (
-                      <div 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePieceClick(piece.id);
-                        }}
-                        className="w-full h-full flex items-center justify-center"
-                      >
-                        {renderCheckersPiece(piece, isPieceSelected)}
-                      </div>
-                    )}
-
-                    {/* Glowing coordinate green ring target indicator */}
-                    {isHighlightedDestination && (
-                      <div className="absolute h-3 w-3 rounded-full bg-emerald-500/30 border border-emerald-400 animate-pulse pointer-events-none flex items-center justify-center">
-                        <div className="h-1 w-1 bg-emerald-400 rounded-full" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
+        {/* The checkers board: 3D scene or 2D grid matrix */}
+        {viewMode === '3D' ? (
+          <div className="w-full max-w-[560px] h-[380px] sm:h-[460px] md:h-[500px] rounded-2xl overflow-hidden border border-cyan-500/30 shadow-2xl relative">
+            <Draft3DScene
+              pieces={gameState.pieces}
+              player1Id={player1Id}
+              selectedPieceId={selectedPieceId}
+              validDestinations={validDestinations}
+              isPlayerTurn={isPlayerTurn}
+              onTileClick={handleCellClick}
+              onPieceClick={handlePieceClick}
+            />
           </div>
-        </div>
+        ) : (
+          <div className="w-full max-w-[420px] aspect-square bg-[#050B14] p-1.5 rounded-2xl shadow-2xl border border-cyan-500/30 relative select-none">
+            <div className="w-full h-full grid grid-cols-8 grid-rows-8 border border-[#02060D] bg-neutral-950">
+              {Array.from({ length: 8 }).map((_, row) =>
+                Array.from({ length: 8 }).map((_, col) => {
+                  const isDarkCell = (row + col) % 2 === 1;
+                  
+                  // Find matching piece on this coordinate
+                  const piece = gameState.pieces.find(
+                    p => p.position.row === row && p.position.col === col
+                  );
+                  
+                  const isPieceSelected = piece ? piece.id === selectedPieceId : false;
+                  const isHighlightedDestination = validDestinations.some(
+                    ([vr, vc]) => vr === row && vc === col
+                  );
+
+                  return (
+                    <div
+                      key={`${row}-${col}`}
+                      onClick={() => {
+                        if (isHighlightedDestination) {
+                          handleCellClick(row, col);
+                        }
+                      }}
+                      className={`
+                        relative flex items-center justify-center transition-all duration-200 aspect-square
+                        ${isDarkCell ? 'bg-[#060D1A]' : 'bg-[#0B1426]'}
+                        ${isHighlightedDestination ? 'cursor-pointer hover:bg-emerald-500/10' : ''}
+                      `}
+                    >
+                      {/* Render coordinate indicator text details in corners */}
+                      {col === 0 && (
+                        <span className="absolute top-0.5 left-0.5 text-[6px] font-mono text-neutral-500 select-none pointer-events-none">
+                          {8 - row}
+                        </span>
+                      )}
+                      {row === 7 && (
+                        <span className="absolute bottom-0.5 right-0.5 text-[6px] font-mono text-neutral-500 select-none pointer-events-none">
+                          {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'][col]}
+                        </span>
+                      )}
+
+                      {piece && (
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePieceClick(piece.id);
+                          }}
+                          className="w-full h-full flex items-center justify-center"
+                        >
+                          {renderCheckersPiece(piece, isPieceSelected)}
+                        </div>
+                      )}
+
+                      {/* Glowing coordinate green ring target indicator */}
+                      {isHighlightedDestination && (
+                        <div className="absolute h-3 w-3 rounded-full bg-emerald-500/30 border border-emerald-400 animate-pulse pointer-events-none flex items-center justify-center">
+                          <div className="h-1 w-1 bg-emerald-400 rounded-full" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Player Local Tag Footer */}
         <div className="w-full flex items-center justify-between px-4 py-2 border border-white/[0.03] bg-neutral-950/20 rounded-xl mt-4.5">
