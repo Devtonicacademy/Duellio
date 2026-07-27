@@ -85,24 +85,37 @@ export function Header({
     }
   }, [isSideNavOpen, isNotificationsOpen]);
 
-  // Close desktop notifications dropdown when clicking outside
+  // Close notifications dropdown when clicking outside (aware of both desktop dropdown & mobile modal)
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (desktopDropdownRef.current && !desktopDropdownRef.current.contains(e.target as Node)) {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      const isInsideDesktop = desktopDropdownRef.current?.contains(target);
+      const isInsideMobile = mobileModalRef.current?.contains(target);
+
+      const isBellButton = (target as HTMLElement)?.closest?.('#notification-bell-btn-desktop') || 
+                           (target as HTMLElement)?.closest?.('#notification-bell-btn-mobile');
+
+      if (!isInsideDesktop && !isInsideMobile && !isBellButton) {
         setIsNotificationsOpen(false);
       }
     };
+
     if (isNotificationsOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      const timer = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside);
+      }, 50);
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+      };
     }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
   }, [isNotificationsOpen]);
 
   const renderNotificationCardList = () => (
-    <>
-      <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+    <div onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-3 select-none">
         <div className="flex items-center gap-2">
           <Bell className="w-4 h-4 text-purple-400" />
           <span className="font-extrabold font-display tracking-wider uppercase text-[11px]">Match Notifications</span>
@@ -115,25 +128,35 @@ export function Header({
         <div className="flex items-center gap-1.5">
           {notifications.length > 0 && (
             <button
-              onClick={onMarkNotificationsRead}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMarkNotificationsRead?.();
+              }}
               title="Mark all read"
-              className="p-1 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 text-neutral-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer active:scale-95"
             >
               <CheckCheck className="w-4 h-4" />
             </button>
           )}
           {notifications.length > 0 && (
             <button
-              onClick={onClearNotifications}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClearNotifications?.();
+              }}
               title="Clear all"
-              className="p-1 text-neutral-400 hover:text-red-400 transition-colors cursor-pointer"
+              className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer active:scale-95"
             >
               <Trash2 className="w-4 h-4" />
             </button>
           )}
           <button
-            onClick={() => setIsNotificationsOpen(false)}
-            className="p-1 text-neutral-400 hover:text-white cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsNotificationsOpen(false);
+            }}
+            title="Close notifications"
+            className="p-1.5 text-neutral-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer active:scale-95"
           >
             <X className="w-4 h-4" />
           </button>
@@ -144,14 +167,20 @@ export function Header({
       <div className="flex items-center gap-2 mb-3 bg-purple-500/10 p-2 rounded-xl border border-purple-500/20 text-[10px]">
         <span className="text-purple-300 font-bold shrink-0">Simulate:</span>
         <button
-          onClick={() => onSimulateNotification?.('challenge')}
-          className="flex-1 py-1 px-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 rounded-lg font-bold transition-all text-center cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSimulateNotification?.('challenge');
+          }}
+          className="flex-1 py-1.5 px-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 rounded-lg font-bold transition-all text-center cursor-pointer active:scale-95"
         >
           + Challenge
         </button>
         <button
-          onClick={() => onSimulateNotification?.('forfeit')}
-          className="flex-1 py-1 px-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 rounded-lg font-bold transition-all text-center cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSimulateNotification?.('forfeit');
+          }}
+          className="flex-1 py-1.5 px-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 rounded-lg font-bold transition-all text-center cursor-pointer active:scale-95"
         >
           + Forfeit
         </button>
@@ -160,7 +189,7 @@ export function Header({
       {/* List of Notification Cards */}
       <div className="space-y-2.5 max-h-80 overflow-y-auto custom-scrollbar pr-1">
         {notifications.length === 0 ? (
-          <div className="py-8 text-center text-neutral-500 space-y-1">
+          <div className="py-8 text-center text-neutral-500 space-y-1 select-none">
             <Bell className="w-6 h-6 mx-auto opacity-30" />
             <p className="text-xs font-mono">No notifications right now</p>
           </div>
@@ -168,6 +197,7 @@ export function Header({
           notifications.map((item) => (
             <div
               key={item.id}
+              onClick={(e) => e.stopPropagation()}
               className={`p-3 rounded-xl border transition-all ${
                 item.read ? 'bg-neutral-900/40 border-white/5' : 'bg-purple-950/20 border-purple-500/30'
               }`}
@@ -202,18 +232,22 @@ export function Header({
               {item.type === 'challenge' && item.status === 'pending' && (
                 <div className="flex items-center gap-2 pt-1">
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       onAcceptChallenge?.(item);
                       setIsNotificationsOpen(false);
                     }}
-                    className="flex-1 py-1.5 px-3 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold rounded-lg text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 cursor-pointer"
+                    className="flex-1 py-1.5 px-3 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold rounded-lg text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 cursor-pointer active:scale-95"
                   >
                     <Check className="w-3.5 h-3.5" />
                     <span>Accept Challenge</span>
                   </button>
                   <button
-                    onClick={() => onDeclineChallenge?.(item.id)}
-                    className="py-1.5 px-3 bg-white/5 hover:bg-white/10 text-neutral-300 font-bold rounded-lg text-[10px] uppercase transition-all cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeclineChallenge?.(item.id);
+                    }}
+                    className="py-1.5 px-3 bg-white/5 hover:bg-white/10 text-neutral-300 font-bold rounded-lg text-[10px] uppercase transition-all cursor-pointer active:scale-95"
                   >
                     Decline
                   </button>
@@ -224,18 +258,22 @@ export function Header({
               {item.type === 'forfeit' && item.status === 'pending' && (
                 <div className="flex items-center gap-2 pt-1">
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       onAcceptForfeit?.(item);
                       setIsNotificationsOpen(false);
                     }}
-                    className="flex-1 py-1.5 px-3 bg-amber-500 hover:bg-amber-400 text-black font-extrabold rounded-lg text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-500/20 cursor-pointer"
+                    className="flex-1 py-1.5 px-3 bg-amber-500 hover:bg-amber-400 text-black font-extrabold rounded-lg text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-500/20 cursor-pointer active:scale-95"
                   >
                     <Check className="w-3.5 h-3.5" />
                     <span>Claim Victory</span>
                   </button>
                   <button
-                    onClick={() => onDeclineForfeit?.(item.id)}
-                    className="py-1.5 px-3 bg-white/5 hover:bg-white/10 text-neutral-300 font-bold rounded-lg text-[10px] uppercase transition-all cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeclineForfeit?.(item.id);
+                    }}
+                    className="py-1.5 px-3 bg-white/5 hover:bg-white/10 text-neutral-300 font-bold rounded-lg text-[10px] uppercase transition-all cursor-pointer active:scale-95"
                   >
                     Dismiss
                   </button>
@@ -252,7 +290,7 @@ export function Header({
           ))
         )}
       </div>
-    </>
+    </div>
   );
 
   return (
@@ -431,7 +469,11 @@ export function Header({
             {/* Desktop Notification Bell Button & Dropdown Container */}
             <div className="relative" ref={desktopDropdownRef}>
               <button 
-                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                id="notification-bell-btn-desktop"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsNotificationsOpen(!isNotificationsOpen);
+                }}
                 title="Match & Arena Notifications"
                 className={`relative flex items-center justify-center p-2.5 rounded-xl transition-all cursor-pointer font-sans shrink-0 border ${
                   unreadCount > 0
@@ -501,7 +543,11 @@ export function Header({
 
             {/* Quick Notification Bell on mobile/tablet */}
             <button 
-              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+              id="notification-bell-btn-mobile"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsNotificationsOpen(!isNotificationsOpen);
+              }}
               title="Notifications"
               className={`relative flex items-center justify-center p-2 rounded-xl transition-all cursor-pointer font-sans shrink-0 border ${
                 unreadCount > 0
@@ -544,13 +590,17 @@ export function Header({
 
       {/* Mobile/Tablet Glass Modal Overlay for Notifications (< lg) */}
       {isNotificationsOpen && (
-        <div className="lg:hidden fixed inset-0 z-[100] flex items-start justify-center p-3 pt-16 sm:pt-20">
-          <div 
-            className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity"
-            onClick={() => setIsNotificationsOpen(false)}
-          />
+        <div 
+          className="lg:hidden fixed inset-0 z-[100] flex items-start justify-center p-3 pt-16 sm:pt-20"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsNotificationsOpen(false);
+          }}
+        >
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity" />
           <div 
             ref={mobileModalRef}
+            onClick={(e) => e.stopPropagation()}
             className="relative w-full max-w-md bg-[#0B0B0E]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.95)] p-4 font-sans text-xs text-white z-10 animate-in fade-in zoom-in-95 duration-200 max-h-[80vh] overflow-y-auto"
           >
             {renderNotificationCardList()}
