@@ -84,18 +84,26 @@ export default function GameCanvas({ config, onUIUpdate, isPaused, isRestartTrig
     // Start ambient music
     engine.sound.startAmbient();
 
-    // Game loop with 60 FPS frame rate cap
+    // High-precision 60 FPS frame rate lock loop
     let lastTime = performance.now();
-    const fpsInterval = 1000 / 60; // ~16.67ms per frame
+    let accumulator = 0;
+    const TARGET_FPS = 60;
+    const INTERVAL = 1000 / TARGET_FPS; // ~16.666ms per frame
 
     const tick = (currentTime) => {
       requestRef.current = requestAnimationFrame(tick);
       
-      const elapsed = currentTime - lastTime;
-      if (elapsed >= fpsInterval - 2.0) {
-        // Adjust lastTime to account for timing drift without modulo resets
-        const overflow = Math.max(0, elapsed - fpsInterval);
-        lastTime = currentTime - overflow;
+      let delta = currentTime - lastTime;
+      lastTime = currentTime;
+
+      // Cap delta to 250ms to prevent physics warping/jumping on tab switches
+      if (delta > 250) delta = 250;
+
+      accumulator += delta;
+
+      // Perform updates and render at strictly locked 60 FPS rate (~16.67ms per step)
+      if (accumulator >= INTERVAL - 0.8) {
+        accumulator = accumulator % INTERVAL;
         
         if (!isPausedRef.current && engine.gameState !== 'gameover') {
           engine.update();
@@ -117,7 +125,7 @@ export default function GameCanvas({ config, onUIUpdate, isPaused, isRestartTrig
         engineRef.current.cleanUp();
       }
     };
-  }, [config, onUIUpdate]); // Only config ΓÇö NOT isPaused
+  }, [config, onUIUpdate]); // Only config — NOT isPaused
 
   // Handle restart triggers
   useEffect(() => {
@@ -135,10 +143,17 @@ export default function GameCanvas({ config, onUIUpdate, isPaused, isRestartTrig
     };
   }, [config]);
 
+  const handlePointerDown = () => {
+    if (engineRef.current && engineRef.current.sound) {
+      engineRef.current.sound.init();
+    }
+  };
+
   return (
     <div className="canvas-wrapper relative flex items-center justify-center bg-black w-full h-full overflow-hidden shadow-2xl rounded-2xl border border-zinc-900">
       <canvas
         ref={canvasRef}
+        onPointerDown={handlePointerDown}
         className="game-canvas select-none"
         style={{
           width: '100%',
