@@ -33,6 +33,10 @@ interface InteractiveStickmanBoardProps {
   onAddLog: (log: string) => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
   isBot?: boolean;
+  sessionId?: string;
+  isHost?: boolean;
+  liveGameState?: any;
+  onUpdateLiveState?: (newState: any) => void;
 }
 
 export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> = ({
@@ -42,7 +46,11 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
   onGameOver,
   onAddLog,
   botDifficulty = 'medium',
-  isBot = true
+  isBot = true,
+  sessionId,
+  isHost = true,
+  liveGameState,
+  onUpdateLiveState
 }) => {
   const isPractice = opponentName.toUpperCase().includes('PRACTICE') || entryFee === 0;
 

@@ -17,6 +17,10 @@ interface InteractiveChessBoardProps {
   onAddLog: (log: string) => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
   isBot?: boolean;
+  sessionId?: string;
+  isHost?: boolean;
+  liveGameState?: any;
+  onUpdateLiveState?: (newState: any) => void;
 }
 
 type PieceType = 'p' | 'r' | 'n' | 'b' | 'q' | 'k';
@@ -93,13 +97,17 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
   onGameOver,
   onAddLog,
   botDifficulty,
-  isBot = true
+  isBot = true,
+  sessionId,
+  isHost = true,
+  liveGameState,
+  onUpdateLiveState
 }) => {
-  const [board, setBoard] = useState<BoardGrid>(JSON.parse(JSON.stringify(INITIAL_BOARD)));
-  const [activeColor, setActiveColor] = useState<Color>('w'); // 'w' = Player, 'b' = Bot
+  const [board, setBoard] = useState<BoardGrid>(() => liveGameState?.board || JSON.parse(JSON.stringify(INITIAL_BOARD)));
+  const [activeColor, setActiveColor] = useState<Color>(() => liveGameState?.activeColor || 'w'); // 'w' = Player 1 / White, 'b' = Player 2 / Black
   const [selectedSquare, setSelectedSquare] = useState<[number, number] | null>(null);
-  const [castlingRights, setCastlingRights] = useState<CastlingRights>({ ...INITIAL_CASTLING_RIGHTS });
-  const [enPassantTarget, setEnPassantTarget] = useState<[number, number] | null>(null);
+  const [castlingRights, setCastlingRights] = useState<CastlingRights>(() => liveGameState?.castlingRights || { ...INITIAL_CASTLING_RIGHTS });
+  const [enPassantTarget, setEnPassantTarget] = useState<[number, number] | null>(() => liveGameState?.enPassantTarget || null);
   const [isCheck, setIsCheck] = useState<boolean>(false);
   const [whiteTimer, setWhiteTimer] = useState<number>(300); // 5 minutes standard speed
   const [blackTimer, setBlackTimer] = useState<number>(300);
@@ -111,6 +119,27 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
   const [showHelperRules, setShowHelperRules] = useState<boolean>(false);
   const [invalidMoveMessage, setInvalidMoveMessage] = useState<string | null>(null);
   const [selectedPieceTips, setSelectedPieceTips] = useState<string | null>(null);
+
+  const myColor: Color = isBot ? 'w' : (isHost ? 'w' : 'b');
+
+  // Sync live state from Firestore snapshot
+  useEffect(() => {
+    if (!isBot && liveGameState) {
+      if (liveGameState.board) setBoard(liveGameState.board);
+      if (liveGameState.activeColor) setActiveColor(liveGameState.activeColor);
+      if (liveGameState.castlingRights) setCastlingRights(liveGameState.castlingRights);
+      if (liveGameState.enPassantTarget !== undefined) setEnPassantTarget(liveGameState.enPassantTarget);
+      if (liveGameState.status === 'completed') {
+        if (liveGameState.winnerColor === myColor) {
+          setGameResult(myColor === 'w' ? 'white_won' : 'black_won');
+          onGameOver(true);
+        } else {
+          setGameResult(myColor === 'w' ? 'black_won' : 'white_won');
+          onGameOver(false);
+        }
+      }
+    }
+  }, [liveGameState, isBot, myColor, onGameOver]);
 
   // Trigger feedback tips helper when white coordinates are selected to assist beginner path alignment
   useEffect(() => {
@@ -314,6 +343,7 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
     setCastlingRights(nextCastling);
     setEnPassantTarget(nextEnPassant);
     setBoard(newBoard);
+    setActiveColor(nextColor);
     setSelectedSquare(null);
 
     // 3. Check for Check, Checkmate, and Stalemate
@@ -328,11 +358,22 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
 
     onAddLog(`[SAN VALIDATOR] ${isWhite ? 'Player' : opponentName} move: ${moveNotation}`);
 
+    if (!isBot && onUpdateLiveState) {
+      onUpdateLiveState({
+        board: newBoard,
+        activeColor: nextColor,
+        castlingRights: nextCastling,
+        enPassantTarget: nextEnPassant,
+        status: outcome === 'checkmate' || outcome === 'stalemate' ? 'completed' : 'playing',
+        winnerColor: outcome === 'checkmate' ? piece.color : undefined
+      });
+    }
+
     if (outcome === 'checkmate') {
       const winnerState = isWhite ? 'white_won' : 'black_won';
       setGameResult(winnerState);
       onAddLog(`[CHECKMATE] ${isWhite ? 'White' : 'Black'} has delivered CHECKMATE! Match concluded.`);
-      setTimeout(() => onGameOver(isWhite), 2500);
+      setTimeout(() => onGameOver(isWhite === (myColor === 'w')), 2500);
       return;
     } else if (outcome === 'stalemate') {
       setGameResult('draw');

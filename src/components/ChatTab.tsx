@@ -49,6 +49,8 @@ interface ChatTabProps {
     opponentType?: 'bot' | 'player';
     botDifficulty?: 'easy' | 'medium' | 'hard';
     rewardMultiplier?: number;
+    sessionId?: string;
+    isHost?: boolean;
   } | null) => void;
   addTransaction: (tx: WalletTransaction) => void;
 }
@@ -279,6 +281,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             timestamp: parseTimestamp(data.timestamp),
             isChallenge: data.isChallenge,
             challengeId: data.challengeId,
+            sessionId: data.sessionId,
             gameType: data.gameType,
             entryFee: data.entryFee,
             challengeStatus: data.challengeStatus
@@ -286,6 +289,21 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         });
         msgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         setChatMessages(msgs);
+
+        // Auto join if sender's challenge was accepted
+        const acceptedForMe = msgs.find(m => m.isChallenge && m.senderId === userProfile.uid && m.challengeStatus === 'accepted' && m.sessionId);
+        if (acceptedForMe && acceptedForMe.gameType && acceptedForMe.entryFee) {
+          // Join match as host
+          setFriendChallenge({
+            senderName: activeChat.name,
+            gameType: acceptedForMe.gameType,
+            entryFee: acceptedForMe.entryFee,
+            opponentType: 'player',
+            sessionId: acceptedForMe.sessionId,
+            isHost: true
+          });
+          setActiveTab('lobbies');
+        }
       });
     }
 
@@ -428,6 +446,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         if (isChallengeMsg && challengeData) {
           msgObj.isChallenge = true;
           msgObj.challengeId = `CHALL-CHAT-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+          msgObj.sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
           msgObj.gameType = challengeData.gameType;
           msgObj.entryFee = challengeData.entryFee;
           msgObj.challengeStatus = 'pending';
@@ -466,11 +485,15 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         timestamp: serverTimestamp()
       }, { merge: true });
 
+      const targetSessionId = msg.sessionId || `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
       setFriendChallenge({
         senderName: activeChat.name,
         gameType: msg.gameType as any,
         entryFee: msg.entryFee,
-        opponentType: 'player'
+        opponentType: 'player',
+        sessionId: targetSessionId,
+        isHost: false
       });
       setActiveTab('lobbies');
     } catch (err) {

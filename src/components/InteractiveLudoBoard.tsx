@@ -15,6 +15,10 @@ interface InteractiveLudoBoardProps {
   onAddLog: (log: string) => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
   isBot?: boolean;
+  sessionId?: string;
+  isHost?: boolean;
+  liveGameState?: any;
+  onUpdateLiveState?: (newState: any) => void;
 }
 
 interface LudoToken {
@@ -62,20 +66,24 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   onGameOver,
   onAddLog,
   botDifficulty,
-  isBot = true
+  isBot = true,
+  sessionId,
+  isHost = true,
+  liveGameState,
+  onUpdateLiveState
 }) => {
   // Game mode configuration
   const [view3D, setView3D] = useState<boolean>(true);
 
-  // Playable tokens: Red (User) vs Green (Bot)
-  const [tokens, setTokens] = useState<LudoToken[]>([
+  // Playable tokens: Red (Host/User) vs Green (Guest/Bot)
+  const [tokens, setTokens] = useState<LudoToken[]>(() => liveGameState?.tokens || [
     { id: 'red_1', color: 'red', position: -1, status: 'home' },
     { id: 'red_2', color: 'red', position: -1, status: 'home' },
     { id: 'green_1', color: 'green', position: -1, status: 'home' },
     { id: 'green_2', color: 'green', position: -1, status: 'home' }
   ]);
 
-  const [activePlayer, setActivePlayer] = useState<'red' | 'green'>('green'); // Matches image: Green's Turn first
+  const [activePlayer, setActivePlayer] = useState<'red' | 'green'>(() => liveGameState?.activePlayer || 'red');
   const [diceRollValue, setDiceRollValue] = useState<number>(5);
   const [secondDiceValue, setSecondDiceValue] = useState<number>(3); // Double dice like the image
   const [isRolling, setIsRolling] = useState<boolean>(false);
@@ -85,6 +93,23 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   const [botIsThinking, setBotIsThinking] = useState<boolean>(false);
   const [showHelperRules, setShowHelperRules] = useState<boolean>(false);
 
+  const myColor: 'red' | 'green' = isBot ? 'red' : (isHost ? 'red' : 'green');
+
+  // Sync live state from Firestore snapshot
+  useEffect(() => {
+    if (!isBot && liveGameState) {
+      if (liveGameState.tokens) setTokens(liveGameState.tokens);
+      if (liveGameState.activePlayer) setActivePlayer(liveGameState.activePlayer);
+      if (liveGameState.diceRollValue) setDiceRollValue(liveGameState.diceRollValue);
+      if (liveGameState.secondDiceValue) setSecondDiceValue(liveGameState.secondDiceValue);
+      if (liveGameState.gameResult) {
+        setGameResult(liveGameState.gameResult);
+        if (liveGameState.gameResult === (myColor + '_won')) onGameOver(true);
+        else if (liveGameState.gameResult !== 'playing') onGameOver(false);
+      }
+    }
+  }, [liveGameState, isBot, myColor, onGameOver]);
+
   // Auto Bot trigger on startup if it's Bot's turn
   useEffect(() => {
     if (isBot && activePlayer === 'green' && gameResult === 'playing' && !botIsThinking) {
@@ -93,7 +118,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   }, [activePlayer, isBot]);
 
   const rollDice = () => {
-    if (isRolling || hasRolled || gameResult !== 'playing' || activePlayer !== 'red' || botIsThinking) return;
+    if (isRolling || hasRolled || gameResult !== 'playing' || activePlayer !== myColor || botIsThinking) return;
 
     setIsRolling(true);
     onAddLog(`[DICE SEED] Dispatching crypto-secure random integer from validation engine.`);

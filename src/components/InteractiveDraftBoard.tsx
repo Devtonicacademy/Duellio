@@ -18,6 +18,10 @@ interface InteractiveDraftBoardProps {
   onAddLog: (log: string) => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
   isBot?: boolean;
+  sessionId?: string;
+  isHost?: boolean;
+  liveGameState?: any;
+  onUpdateLiveState?: (newState: any) => void;
 }
 
 export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
@@ -27,13 +31,18 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   onGameOver,
   onAddLog,
   botDifficulty,
-  isBot = true
+  isBot = true,
+  sessionId,
+  isHost = true,
+  liveGameState,
+  onUpdateLiveState
 }) => {
-  const player1Id = 'player-user';
-  const player2Id = 'bot-user';
+  const player1Id = isBot ? 'player-user' : (isHost ? 'host' : 'guest');
+  const player2Id = isBot ? 'bot-user' : (isHost ? 'guest' : 'host');
+  const myId = isBot ? player1Id : (isHost ? 'host' : 'guest');
 
   const [gameState, setGameState] = useState<DraftGameState>(() => 
-    DraftLogicService.initializeBoard('draft-session', player1Id, player2Id)
+    liveGameState || DraftLogicService.initializeBoard(sessionId || 'draft-session', player1Id, player2Id)
   );
 
   const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null);
@@ -47,7 +56,26 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   const [viewMode, setViewMode] = useState<'2D' | '3D'>('3D');
 
   // Active player turn checking
-  const isPlayerTurn = gameState.activePlayerId === player1Id;
+  const isPlayerTurn = isBot
+    ? gameState.activePlayerId === player1Id
+    : (gameState.activePlayerId === myId || gameState.activePlayerId === player1Id);
+
+  // Sync live state from Firestore snapshot
+  useEffect(() => {
+    if (!isBot && liveGameState && liveGameState.pieces) {
+      setGameState(liveGameState);
+      if (liveGameState.status === 'completed') {
+        const winnerId = liveGameState.winnerId;
+        if (winnerId === myId || winnerId === player1Id) {
+          setGameResult('player_won');
+          onGameOver(true);
+        } else {
+          setGameResult('bot_won');
+          onGameOver(false);
+        }
+      }
+    }
+  }, [liveGameState, isBot, myId, player1Id, onGameOver]);
 
   // Active timers countdown logic
   useEffect(() => {
@@ -80,7 +108,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPlayerTurn, gameResult, botIsThinking]);
+  }, [isPlayerTurn, gameResult, botIsThinking, opponentName, onAddLog, onGameOver]);
 
   // Bot move selector AI
   useEffect(() => {
@@ -89,7 +117,6 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
     setBotIsThinking(true);
 
     const timer = setTimeout(() => {
-      // Find all bot pieces
       const botPieces = gameState.pieces.filter(p => p.playerId === player2Id);
       const availableMoves: Array<{
         pieceId: string;
@@ -98,45 +125,39 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
         isCapture: boolean;
       }> = [];
 
-      // Look for any legal moves
-      for (const piece of botPieces) {
-        for (let row = 0; row < 8; row++) {
-          for (let col = 0; col < 8; col++) {
-            if ((row + col) % 2 === 1) {
-              if (DraftLogicService.isValidMove(gameState, piece.id, row, col)) {
-                const rowDiff = Math.abs(row - piece.position.row);
-                availableMoves.push({
-                  pieceId: piece.id,
-                  targetRow: row,
-                  targetCol: col,
-                  isCapture: rowDiff === 2
-                });
-              }
-            }
-          }
-        }
-      }
+      botPieces.forEach(piece => {
+        const forwardDir = 1;
+        const directions = piece.isKing
+          ? [[1, 1], [1, -1], [-1, 1], [-1, -1]]
+          : [[forwardDir, 1], [forwardDir, -1]];
 
-      // If no moves, bot loses
+        directions.forEach(([rDir, cDir]) => {
+          const simpleR = piece.position.row + rDir;
+          const simpleC = piece.position.col + cDir;
+          if (DraftLogicService.isValidMove(gameState, piece.id, simpleR, simpleC)) {
+            availableMoves.push({ pieceId: piece.id, targetRow: simpleR, targetCol: simpleC, isCapture: false });
+          }
+
+          const jumpR = piece.position.row + (rDir * 2);
+          const jumpC = piece.position.col + (cDir * 2);
+          if (DraftLogicService.isValidMove(gameState, piece.id, jumpR, jumpC)) {
+            availableMoves.push({ pieceId: piece.id, targetRow: jumpR, targetCol: jumpC, isCapture: true });
+          }
+        });
+      });
+
       if (availableMoves.length === 0) {
-        onAddLog(`[AI COLLAPSE] ${opponentName} has no valid moves left. Conceding.`);
+        setBotIsThinking(false);
         setGameResult('player_won');
+        onAddLog(`[STATE OVERFLOW] ${opponentName} has no valid tactical moves remaining. You win!`);
         setTimeout(() => onGameOver(true), 2500);
         return;
       }
 
-      // Prioritize moves based on difficulty
-      const isHard = botDifficulty === 'hard' || entryFee > 0;
       const captureMoves = availableMoves.filter(m => m.isCapture);
-      
-      let chosenMove: typeof availableMoves[0];
+      let chosenMove;
       if (captureMoves.length > 0) {
-        chosenMove = captureMoves[0];
-      } else if (isHard) {
-        // Hard mode: prioritize King promotions (reaching row 7) and advancing forward
-        const kingMoves = availableMoves.filter(m => m.targetRow === 7);
-        const forwardMoves = [...availableMoves].sort((a, b) => b.targetRow - a.targetRow);
-        chosenMove = kingMoves[0] || forwardMoves[0] || availableMoves[0];
+        chosenMove = captureMoves[Math.floor(Math.random() * captureMoves.length)];
       } else {
         chosenMove = availableMoves[Math.floor(Math.random() * availableMoves.length)];
       }
@@ -148,7 +169,6 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
         `[STATE TRANSITION] ${opponentName} played piece ${originalPiece.isKing ? 'KING' : ''} to row ${chosenMove.targetRow}, col ${chosenMove.targetCol}.`
       );
 
-      // Execute move
       const nextState = DraftLogicService.executeMove(
         gameState,
         chosenMove.pieceId,
@@ -156,7 +176,6 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
         chosenMove.targetCol
       );
 
-      // Check if user has any pieces left
       const playerPiecesCount = nextState.pieces.filter(p => p.playerId === player1Id).length;
       if (playerPiecesCount === 0) {
         setGameState(nextState);
@@ -166,7 +185,6 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
         return;
       }
 
-      // Update state
       setGameState(nextState);
       setBotIsThinking(false);
 
@@ -179,7 +197,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
 
     return () => clearTimeout(timer);
 
-  }, [isPlayerTurn, gameState, gameResult]);
+  }, [isPlayerTurn, gameState, gameResult, botIsThinking, isBot, opponentName, onAddLog, onGameOver, player1Id, player2Id]);
 
   // Handle cell selection
   const handleCellClick = (row: number, col: number) => {
@@ -201,18 +219,24 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
 
     const nextState = DraftLogicService.executeMove(gameState, selectedPieceId, row, col);
 
-    // Check if bot has any pieces left
-    const botPiecesCount = nextState.pieces.filter(p => p.playerId === player2Id).length;
-    if (botPiecesCount === 0) {
+    // Check if opponent has any pieces left
+    const opponentPiecesCount = nextState.pieces.filter(p => p.playerId === player2Id).length;
+    if (opponentPiecesCount === 0) {
+      nextState.status = 'completed';
+      nextState.winnerId = myId;
       setGameState(nextState);
       setGameResult('player_won');
       onAddLog(`[CELEBRATION] Victory! You captured all of ${opponentName}'s pieces!`);
+      if (!isBot && onUpdateLiveState) onUpdateLiveState(nextState);
       setTimeout(() => onGameOver(true), 2500);
       return;
     }
 
     setGameState(nextState);
     setSelectedPieceId(null);
+    if (!isBot && onUpdateLiveState) {
+      onUpdateLiveState(nextState);
+    }
 
     setMoveAttemptLogs(prev => [
       `White: ${piece.isKing ? 'K' : ''} -> ${targetPosStr}${rowDiff === 2 ? ' (x)' : ''}`,
@@ -225,7 +249,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
     if (gameResult !== 'playing' || !isPlayerTurn || botIsThinking) return;
 
     const piece = gameState.pieces.find(p => p.id === pieceId);
-    if (!piece || piece.playerId !== player1Id) {
+    if (!piece || (piece.playerId !== myId && piece.playerId !== player1Id)) {
       setInvalidMoveMessage("You cannot command opponent pieces.");
       return;
     }

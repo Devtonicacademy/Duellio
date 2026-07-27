@@ -12,6 +12,10 @@ interface InteractiveTicTacToeBoardProps {
   onAddLog: (log: string) => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
   isBot?: boolean;
+  sessionId?: string;
+  isHost?: boolean;
+  liveGameState?: any;
+  onUpdateLiveState?: (newState: any) => void;
 }
 
 export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps> = ({
@@ -21,13 +25,17 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
   onGameOver,
   onAddLog,
   botDifficulty = 'medium',
-  isBot = true
+  isBot = true,
+  sessionId,
+  isHost = true,
+  liveGameState,
+  onUpdateLiveState
 }) => {
-  const player1Id = 'player-user';
-  const player2Id = 'bot-user';
+  const player1Id = isBot ? 'player-user' : (isHost ? 'host' : 'guest');
+  const player2Id = isBot ? 'bot-user' : (isHost ? 'guest' : 'host');
 
   const [gameState, setGameState] = useState<TicTacToeGameState>(() =>
-    TicTacToeLogicService.initializeBoard('tictactoe-session', player1Id, player2Id)
+    liveGameState || TicTacToeLogicService.initializeBoard(sessionId || 'tictactoe-session', player1Id, isBot ? 'bot-user' : player2Id)
   );
 
   const [playerTimer, setPlayerTimer] = useState<number>(180); // 3 minutes standard
@@ -38,7 +46,27 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
   const [showHelperRules, setShowHelperRules] = useState<boolean>(false);
   const [scores, setScores] = useState<{ player: number; bot: number; draws: number }>({ player: 0, bot: 0, draws: 0 });
 
-  const isPlayerTurn = gameState.activePlayerId === player1Id;
+  const isPlayerTurn = isBot
+    ? gameState.activePlayerId === player1Id
+    : (isHost ? gameState.activePlayerId === 'host' || gameState.activePlayerId === player1Id : gameState.activePlayerId === 'guest' || gameState.activePlayerId === player2Id);
+
+  // Sync live state from Firestore snapshot
+  useEffect(() => {
+    if (!isBot && liveGameState && liveGameState.board) {
+      setGameState(liveGameState);
+      if (liveGameState.status === 'completed') {
+        const winnerId = liveGameState.winnerId;
+        const myId = isHost ? 'host' : 'guest';
+        if (winnerId === 'draw') {
+          setGameResult('draw');
+        } else if (winnerId === myId || winnerId === player1Id) {
+          setGameResult('player_won');
+        } else {
+          setGameResult('bot_won');
+        }
+      }
+    }
+  }, [liveGameState, isBot, isHost, player1Id]);
 
   // Active timers countdown logic
   useEffect(() => {
@@ -124,7 +152,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [gameState, isPlayerTurn, gameResult, botIsThinking, botDifficulty, opponentName, onAddLog, onGameOver, player1Id, player2Id]);
+  }, [gameState, isPlayerTurn, gameResult, botIsThinking, botDifficulty, opponentName, onAddLog, onGameOver, player1Id, player2Id, isBot]);
 
   const handleCellClick = (index: number) => {
     if (gameResult !== 'playing' || !isPlayerTurn || botIsThinking) return;
@@ -133,26 +161,31 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
     const nextState = TicTacToeLogicService.executeMove(gameState, index);
     setGameState(nextState);
 
+    if (!isBot && onUpdateLiveState) {
+      onUpdateLiveState(nextState);
+    }
+
     if (nextState.lastMoveMessage) {
       onAddLog(`[YOU] Claimed cell position ${index + 1}`);
       setMoveAttemptLogs(prev => [`[YOU] Cell ${index + 1}`, ...prev.slice(0, 7)]);
     }
 
     if (nextState.status === 'completed') {
-      if (nextState.winnerId === player1Id) {
+      const myId = isBot ? player1Id : (isHost ? 'host' : 'guest');
+      if (nextState.winnerId === myId || nextState.winnerId === player1Id) {
         setGameResult('player_won');
         setScores(s => ({ ...s, player: s.player + 1 }));
         onAddLog(`[GAME OVER] VICTORY! You defeated ${opponentName}.`);
         setTimeout(() => onGameOver(true), 2500);
-      } else if (nextState.winnerId === player2Id) {
-        setGameResult('bot_won');
-        setScores(s => ({ ...s, bot: s.bot + 1 }));
-        onAddLog(`[GAME OVER] DEFEAT. ${opponentName} won the match.`);
-        setTimeout(() => onGameOver(false), 2500);
-      } else {
+      } else if (nextState.winnerId === 'draw') {
         setGameResult('draw');
         setScores(s => ({ ...s, draws: s.draws + 1 }));
         onAddLog(`[GAME OVER] DRAW! Tactical standoff.`);
+        setTimeout(() => onGameOver(false), 2500);
+      } else {
+        setGameResult('bot_won');
+        setScores(s => ({ ...s, bot: s.bot + 1 }));
+        onAddLog(`[GAME OVER] DEFEAT. ${opponentName} won the match.`);
         setTimeout(() => onGameOver(false), 2500);
       }
     }

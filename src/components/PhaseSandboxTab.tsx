@@ -33,6 +33,8 @@ import { InteractiveChessBoard } from './InteractiveChessBoard';
 import { InteractiveDraftBoard } from './InteractiveDraftBoard';
 import { InteractiveTicTacToeBoard } from './InteractiveTicTacToeBoard';
 import { InteractiveStickmanBoard } from './InteractiveStickmanBoard';
+import { TicTacToeLogicService } from '../services/ticTacToeLogic';
+import { DraftLogicService } from '../services/draftLogic';
 import { db } from '../firebase';
 import { doc, setDoc, increment, updateDoc, onSnapshot, collection, query, where, getDoc } from 'firebase/firestore';
 
@@ -206,6 +208,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
   // Staking challenge state
   const [activeChallenge, setActiveChallenge] = useState<MatchChallenge | null>(null);
+  const [liveGameState, setLiveGameState] = useState<any>(null);
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [selectedBot, setSelectedBot] = useState<UserProfile | null>(() => otherUsers[0] || null);
   const [gameType, setGameType] = useState<'Whot' | 'Ludo' | 'Chess' | 'Draft' | 'TicTacToe' | 'Stickman'>('Stickman');
@@ -299,25 +302,41 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
             opponentType: 'player'
           };
 
-          const initialSession: WhotGameState = {
-            sessionId: sessionId,
-            playerIds: [userProfile.uid, ''],
-            playerHands: {
-              [userProfile.uid]: hostHand,
-              '': guestHand
-            },
-            deckCount: fullDeck.length,
-            discardPile: [starterCard],
-            activeSuit: starterCard.suit as any,
-            activePlayerId: userProfile.uid,
-            status: 'playing',
-            turnTimer: 120,
-            penaltyCount: 0,
-            lastActionMessage: 'Session initialized. Waiting for opponent to join...'
-          };
+          let initialSession: any = null;
+          if (friendChallenge.gameType === 'TicTacToe') {
+            initialSession = TicTacToeLogicService.initializeBoard(sessionId, 'host', 'guest');
+          } else if (friendChallenge.gameType === 'Draft') {
+            initialSession = DraftLogicService.initializeBoard(sessionId, 'host', 'guest');
+          } else if (friendChallenge.gameType === 'Whot') {
+            initialSession = {
+              sessionId: sessionId,
+              playerIds: [userProfile.uid, ''],
+              playerHands: {
+                [userProfile.uid]: hostHand,
+                '': guestHand
+              },
+              deckCount: fullDeck.length,
+              discardPile: [starterCard],
+              activeSuit: starterCard.suit as any,
+              activePlayerId: userProfile.uid,
+              status: 'playing',
+              turnTimer: 120,
+              penaltyCount: 0,
+              lastActionMessage: 'Session initialized. Waiting for opponent to join...'
+            };
+          } else if (friendChallenge.gameType === 'Chess') {
+            initialSession = { sessionId, activeColor: 'w', status: 'playing', playerIds: [userProfile.uid, ''] };
+          } else if (friendChallenge.gameType === 'Ludo') {
+            initialSession = { sessionId, activePlayer: 'red', status: 'playing', playerIds: [userProfile.uid, ''] };
+          } else {
+            initialSession = { sessionId, status: 'playing', playerIds: [userProfile.uid, ''] };
+          }
 
           whotDeckRef.current = fullDeck;
-          _setWhotGameState(initialSession);
+          if (friendChallenge.gameType === 'Whot') {
+            _setWhotGameState(initialSession);
+          }
+          setLiveGameState(initialSession);
           setActiveChallenge(inviteChallenge);
           setGamePlayStatus('playing');
 
@@ -990,6 +1009,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         // Sync local game state
         if (data.gameState) {
           _setWhotGameState(data.gameState);
+          setLiveGameState(data.gameState);
         }
         if (data.deck) {
           whotDeckRef.current = data.deck;
@@ -3339,6 +3359,14 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
                 isBot={activeChallenge?.opponentType === 'bot'}
+                sessionId={activeChallenge?.id}
+                isHost={activeChallenge?.senderId === userProfile.uid}
+                liveGameState={liveGameState}
+                onUpdateLiveState={(newState) => {
+                  if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
+                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), { gameState: newState, updatedAt: Date.now() }).catch(console.error);
+                  }
+                }}
               />
             ) : activeChallenge?.gameType === 'Draft' ? (
               <InteractiveDraftBoard
@@ -3349,6 +3377,14 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
                 isBot={activeChallenge?.opponentType === 'bot'}
+                sessionId={activeChallenge?.id}
+                isHost={activeChallenge?.senderId === userProfile.uid}
+                liveGameState={liveGameState}
+                onUpdateLiveState={(newState) => {
+                  if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
+                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), { gameState: newState, updatedAt: Date.now() }).catch(console.error);
+                  }
+                }}
               />
             ) : activeChallenge?.gameType === 'TicTacToe' ? (
               <InteractiveTicTacToeBoard
@@ -3359,6 +3395,14 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
                 isBot={activeChallenge?.opponentType === 'bot'}
+                sessionId={activeChallenge?.id}
+                isHost={activeChallenge?.senderId === userProfile.uid}
+                liveGameState={liveGameState}
+                onUpdateLiveState={(newState) => {
+                  if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
+                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), { gameState: newState, updatedAt: Date.now() }).catch(console.error);
+                  }
+                }}
               />
             ) : activeChallenge?.gameType === 'Stickman' ? (
               <InteractiveStickmanBoard
@@ -3369,6 +3413,14 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
                 isBot={activeChallenge?.opponentType === 'bot'}
+                sessionId={activeChallenge?.id}
+                isHost={activeChallenge?.senderId === userProfile.uid}
+                liveGameState={liveGameState}
+                onUpdateLiveState={(newState) => {
+                  if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
+                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), { gameState: newState, updatedAt: Date.now() }).catch(console.error);
+                  }
+                }}
               />
             ) : (
               <InteractiveChessBoard
@@ -3379,6 +3431,14 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
                 isBot={activeChallenge?.opponentType === 'bot'}
+                sessionId={activeChallenge?.id}
+                isHost={activeChallenge?.senderId === userProfile.uid}
+                liveGameState={liveGameState}
+                onUpdateLiveState={(newState) => {
+                  if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
+                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), { gameState: newState, updatedAt: Date.now() }).catch(console.error);
+                  }
+                }}
               />
             )}
           </div>

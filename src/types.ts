@@ -38,6 +38,7 @@ export interface ChatMessage {
   timestamp: string;
   isChallenge?: boolean;
   challengeId?: string;
+  sessionId?: string;
   gameType?: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman';
   entryFee?: number;
   challengeStatus?: 'pending' | 'accepted' | 'declined';
