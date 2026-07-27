@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import GameCanvas from '../game/stickman/GameCanvas';
 import HUD from '../game/stickman/HUD';
 import MobileControls from '../game/stickman/MobileControls';
@@ -107,12 +107,28 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
     weaponSpawnEnabled: true
   }), [mode, botDifficulty, opponentName, selectedMap]);
 
+  // Sync live state from Firestore snapshot
+  useEffect(() => {
+    if (!isBot && liveGameState) {
+      setUiState(liveGameState);
+      if (liveGameState.gameState === 'gameover' && !reportedOutcomeRef.current) {
+        reportedOutcomeRef.current = true;
+        const winnerIsMe = isHost ? liveGameState.winner === 1 : liveGameState.winner === 2;
+        onGameOver(winnerIsMe);
+      }
+    }
+  }, [liveGameState, isBot, isHost, onGameOver]);
+
   const handleUIUpdate = useCallback((state: any) => {
     setUiState(state);
 
+    if (!isBot && onUpdateLiveState) {
+      onUpdateLiveState(state);
+    }
+
     if (state.gameState === 'gameover' && !reportedOutcomeRef.current) {
       reportedOutcomeRef.current = true;
-      const winnerIsMe = state.winner === 1;
+      const winnerIsMe = isHost ? state.winner === 1 : state.winner === 2;
       if (winnerIsMe) {
         onAddLog(`[STICKMAN DUEL] Victory achieved! Player 1 defeated ${opponentName}.`);
       } else {
@@ -122,7 +138,7 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
         onGameOver(winnerIsMe);
       }, 3500);
     }
-  }, [opponentName, onGameOver, onAddLog]);
+  }, [opponentName, onGameOver, onAddLog, isBot, isHost, onUpdateLiveState]);
 
   const toggleSound = () => {
     const next = !isSoundOn;

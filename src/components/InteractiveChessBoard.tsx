@@ -233,7 +233,7 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
 
   // Human click action handler on standard tiles
   const handleTileClick = (row: number, col: number) => {
-    if (gameResult !== 'playing' || activeColor !== 'w' || botIsThinking) return;
+    if (gameResult !== 'playing' || activeColor !== myColor || botIsThinking) return;
 
     if (selectedSquare) {
       const [selRow, selCol] = selectedSquare;
@@ -248,7 +248,7 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
       const clickedPiece = board[row][col];
 
       // If clicked destination has our own piece -> update selection instead
-      if (clickedPiece && clickedPiece.color === 'w') {
+      if (clickedPiece && clickedPiece.color === myColor) {
         setSelectedSquare([row, col]);
         return;
       }
@@ -269,7 +269,7 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
     } else {
       // Pick piece first
       const piece = board[row][col];
-      if (piece && piece.color === 'w') {
+      if (piece && piece.color === myColor) {
         setSelectedSquare([row, col]);
         setInvalidMoveMessage(null);
       }

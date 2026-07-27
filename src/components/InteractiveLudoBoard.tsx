@@ -134,6 +134,8 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       const totalSteps = outcome1; // We'll use the main dice for Ludo mechanics
       onAddLog(`[DICE SEED] Generated outcomes: ${outcome1} & ${outcome2}`);
 
+      const nextPlayer = myColor === 'red' ? 'green' : 'red';
+
       // Check consecutive sixes rule
       if (totalSteps === 6) {
         const nextSixes = consecutiveSixes + 1;
@@ -142,8 +144,11 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         if (nextSixes >= 3) {
           setConsecutiveSixes(0);
           setHasRolled(false);
-          setActivePlayer('green');
+          setActivePlayer(nextPlayer);
           onAddLog(`[ROLL-SIX METER] Max sixes limit reached (3 consecutive sixes). Pass turn.`);
+          if (!isBot && onUpdateLiveState) {
+            onUpdateLiveState({ tokens, activePlayer: nextPlayer, diceRollValue: outcome1, secondDiceValue: outcome2, gameResult });
+          }
           return;
         } else {
           setConsecutiveSixes(nextSixes);
@@ -153,13 +158,18 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       }
 
       // Check if player has moves available
-      const playable = tokens.filter(t => t.color === 'red' && canMoveToken(t, totalSteps));
+      const playable = tokens.filter(t => t.color === myColor && canMoveToken(t, totalSteps));
       if (playable.length === 0) {
-        onAddLog(`[TURN GUARD] No valid moves available for Red with dice roll ${totalSteps}. Passing turn.`);
+        onAddLog(`[TURN GUARD] No valid moves available for ${myColor.toUpperCase()} with dice roll ${totalSteps}. Passing turn.`);
         setTimeout(() => {
-          setActivePlayer('green');
+          setActivePlayer(nextPlayer);
           setHasRolled(false);
+          if (!isBot && onUpdateLiveState) {
+            onUpdateLiveState({ tokens, activePlayer: nextPlayer, diceRollValue: outcome1, secondDiceValue: outcome2, gameResult });
+          }
         }, 300);
+      } else if (!isBot && onUpdateLiveState) {
+        onUpdateLiveState({ tokens, activePlayer: myColor, diceRollValue: outcome1, secondDiceValue: outcome2, gameResult });
       }
     }, 300);
   };
@@ -229,12 +239,15 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   };
 
   const handleSelectToken = (token: LudoToken) => {
-    if (activePlayer !== 'red' || !hasRolled || !canMoveToken(token, diceRollValue) || gameResult !== 'playing') return;
+    if (activePlayer !== myColor || !hasRolled || !canMoveToken(token, diceRollValue) || gameResult !== 'playing') return;
     onAddLog(`[USER TOKEN SELECT] Moving token ${token.id.toUpperCase()} by ${diceRollValue} tiles.`);
-    executeTokenMovement(token.id, diceRollValue, 'red');
+    executeTokenMovement(token.id, diceRollValue, myColor);
   };
 
   const executeTokenMovement = (tokenId: string, steps: number, playerColor: 'red' | 'green') => {
+    let nextResult = gameResult;
+    let nextTokens: LudoToken[] = [];
+    
     setTokens(prev => {
       let isCaptured = false;
       const updated = prev.map(t => {
@@ -284,23 +297,40 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       const greenFinished = updated.filter(t => t.color === 'green' && t.status === 'finished').length;
 
       if (redFinished === 2) {
+        nextResult = 'red_won';
         setGameResult('red_won');
-        onAddLog(`[LUDO VICTORY] You win the match!`);
-        setTimeout(() => onGameOver(true), 3000);
+        onAddLog(`[LUDO VICTORY] Red wins the match!`);
+        setTimeout(() => onGameOver(myColor === 'red'), 3000);
       } else if (greenFinished === 2) {
+        nextResult = 'green_won';
         setGameResult('green_won');
-        onAddLog(`[LUDO LOSS] Green opponent wins the match!`);
-        setTimeout(() => onGameOver(false), 3000);
+        onAddLog(`[LUDO VICTORY] Green wins the match!`);
+        setTimeout(() => onGameOver(myColor === 'green'), 3000);
       }
 
+      nextTokens = updated;
       return updated;
     });
 
     setHasRolled(false);
-    if (steps === 6 && gameResult === 'playing') {
+    const nextPlayer = (steps === 6 && nextResult === 'playing')
+      ? playerColor
+      : (playerColor === 'red' ? 'green' : 'red');
+
+    if (steps === 6 && nextResult === 'playing') {
       onAddLog(`[ROLL-SIX BONUS] Roll of 6 grants extra turn. Roll again!`);
     } else {
-      setActivePlayer(playerColor === 'red' ? 'green' : 'red');
+      setActivePlayer(nextPlayer);
+    }
+
+    if (!isBot && onUpdateLiveState) {
+      onUpdateLiveState({
+        tokens: nextTokens,
+        activePlayer: nextPlayer,
+        diceRollValue: steps,
+        secondDiceValue,
+        gameResult: nextResult
+      });
     }
   };
 
