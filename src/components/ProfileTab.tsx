@@ -20,7 +20,8 @@ import {
   Eye, 
   Coins,
   Pencil,
-  Camera
+  Camera,
+  Upload
 } from 'lucide-react';
 import { UserProfile, WalletTransaction } from '../types';
 import { db } from '../firebase';
@@ -36,6 +37,47 @@ interface ProfileTabProps {
   onSwitchProfile: (uid: string) => void;
   onUpdateProfile?: (username: string, avatar: string) => Promise<{ success: boolean; message: string }>;
   allProfiles: UserProfile[];
+}
+
+// Canvas-based image compression helper for device uploads
+function compressImageFile(file: File, maxWidth = 300, maxHeight = 300): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        } else {
+          resolve(e.target?.result as string);
+        }
+      };
+      img.onerror = (err) => reject(err);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
 }
 
 export const ProfileTab: React.FC<ProfileTabProps> = ({ 
@@ -917,8 +959,34 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
 
                 <div>
                   <label className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
-                    Choose Preset Avatar
+                    Choose Avatar Source
                   </label>
+
+                  {/* Device File Upload Button */}
+                  <div className="mb-3">
+                    <label className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-xl transition-all cursor-pointer text-xs font-bold font-sans hover:border-purple-400 select-none">
+                      <Upload className="w-4 h-4 text-purple-400 shrink-0" />
+                      <span>Choose Image File from Device</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              const compressedBase64 = await compressImageFile(file);
+                              setCustomAvatarUrl(compressedBase64);
+                              setEditAvatar(compressedBase64);
+                            } catch (err) {
+                              console.error("Error reading device image:", err);
+                            }
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+
                   <div className="flex gap-2 justify-between flex-wrap bg-neutral-950 p-2 rounded-2xl border border-white/5">
                     {availableAvatars.map((av) => (
                       <button
@@ -1021,6 +1089,31 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                   <label className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
                     Choose Profile Avatar
                   </label>
+
+                  {/* Device File Upload Button */}
+                  <div className="mb-2.5">
+                    <label className="w-full flex items-center justify-center gap-2 px-3.5 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-xl transition-all cursor-pointer text-xs font-bold font-sans hover:border-cyan-400 select-none">
+                      <Upload className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <span>Upload Device Photo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              const compressedBase64 = await compressImageFile(file);
+                              setRegSelectedAvatar(compressedBase64);
+                            } catch (err) {
+                              console.error("Error reading device image:", err);
+                            }
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+
                   <div className="flex gap-2 justify-between flex-wrap bg-neutral-950 p-2 rounded-2xl border border-white/5">
                     {availableAvatars.map((av) => (
                       <button
