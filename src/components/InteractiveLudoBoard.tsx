@@ -88,7 +88,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   liveGameState,
   onUpdateLiveState
 }) => {
-  // 3D camera mode configuration (default true to show physical 3D board view)
+  // 3D camera mode configuration
   const [view3D, setView3D] = useState<boolean>(true);
 
   // Playable tokens: 4 Red (Host/User) vs 4 Green (Guest/Bot)
@@ -424,19 +424,19 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   };
 
   return (
-    <div className="relative min-h-[520px] sm:min-h-[640px] bg-[#050811] rounded-2xl sm:rounded-3xl overflow-hidden border border-cyan-500/30 p-1 sm:p-2.5 font-sans flex flex-col justify-between shadow-[0_25px_60px_rgba(0,0,0,0.8)] select-none">
+    <div className="relative min-h-[520px] sm:min-h-[640px] bg-[#03060D] rounded-2xl sm:rounded-3xl overflow-hidden border border-cyan-500/30 p-1 sm:p-2.5 font-sans flex flex-col justify-between shadow-[0_25px_60px_rgba(0,0,0,0.9)] select-none">
       
-      {/* Ambient background glows */}
-      <div className="absolute top-2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent pointer-events-none" />
-      <div className="absolute bottom-2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-500/30 to-transparent pointer-events-none" />
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[350px] h-[350px] bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none" />
+      {/* Studio lighting environment glows */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-400/40 to-transparent pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[420px] h-[420px] bg-gradient-to-br from-cyan-500/10 via-purple-500/5 to-transparent rounded-full blur-[110px] pointer-events-none" />
 
       {/* VIEWPORT HEADER CONTROLS */}
       <div className="flex justify-between items-center px-4 pt-3 pb-2 z-10">
         <div className="flex items-center gap-2">
-          <div className="p-1 px-2.5 bg-[#091522] rounded-lg border border-cyan-500/25 flex items-center gap-1.5 text-[9px] font-mono text-cyan-400 tracking-wider">
+          <div className="p-1 px-2.5 bg-[#091522] rounded-lg border border-cyan-500/30 flex items-center gap-1.5 text-[9px] font-mono text-cyan-400 tracking-wider shadow-[0_0_12px_rgba(6,182,212,0.15)]">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>3D PHYSICAL LUDO ARENA v2.0</span>
+            <span>BLENDER 3D ISOMETRIC LUDO ARENA (8K)</span>
           </div>
         </div>
 
@@ -470,7 +470,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           >
             <h4 className="font-display font-black text-white uppercase text-sm tracking-wider flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-cyan-400" />
-              <span>Duellio Standard Ludo Contract Rules</span>
+              <span>Blender 3D Ludo Contract Rules</span>
             </h4>
             <ul className="list-disc pl-4 space-y-1 text-slate-400 font-mono text-[11px]">
               <li>You command the <span className="text-rose-400 font-bold">RED Pawns</span> in the Top-Left Base. Bot commands <span className="text-emerald-400 font-bold">GREEN Pawns</span> in Top-Right Base.</li>
@@ -491,28 +491,28 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           className="relative transition-all duration-1000 ease-out flex items-center justify-center"
           style={{
             transform: view3D 
-              ? 'perspective(1200px) rotateX(44deg) rotateZ(-20deg) translateY(-2%) scale(0.93)' 
+              ? 'perspective(1200px) rotateX(46deg) rotateZ(-22deg) translateY(-2%) scale(0.94)' 
               : 'perspective(1200px) rotateX(0deg) rotateZ(0deg) translateY(0) scale(1)',
             transformStyle: 'preserve-3d'
           }}
         >
-          {/* Holographic floor matrix underneath board */}
+          {/* Soft studio grid floor projection */}
           {view3D && (
-            <div className="absolute inset-[-70px] bg-[linear-gradient(rgba(6,182,212,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.03)_1px,transparent_1px)] bg-[size:28px_28px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)] pointer-events-none" />
+            <div className="absolute inset-[-80px] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)] pointer-events-none" />
           )}
 
           {/* ========================================================== */}
-          {/* THE PHYSICAL 3D LUDO BOARD SLAB (ELEVATED AESTHETICS) */}
+          {/* MAHOGANY WOODEN BOARD SLAB & GLOSSY TRACK (BLENDER STYLE) */}
           {/* ========================================================== */}
           <div 
-            className="relative w-[340px] h-[340px] sm:w-[430px] sm:h-[430px] bg-[#0c0f17] rounded-[32px] border-[3.5px] border-[#1e293b] p-[3px] shadow-[0_35px_80px_rgba(0,0,0,0.95),0_14px_0px_#070a12,0_16px_25px_rgba(0,0,0,0.8)] ludo-board-container"
-            style={{ transform: view3D ? 'translateZ(12px)' : 'none', transformStyle: 'preserve-3d' }}
+            className="relative w-[340px] h-[340px] sm:w-[430px] sm:h-[430px] bg-[#0f0b08] rounded-[36px] border-[4px] border-[#2a1d13] p-[3px] shadow-[0_45px_100px_rgba(0,0,0,0.95),0_16px_0px_#160d07,0_20px_35px_rgba(0,0,0,0.85)] ludo-board-container"
+            style={{ transform: view3D ? 'translateZ(14px)' : 'none', transformStyle: 'preserve-3d' }}
           >
-            {/* Ambient specular light sheen */}
-            <div className="absolute inset-0 rounded-[28px] bg-gradient-to-br from-white/10 via-transparent to-black/20 pointer-events-none z-10" />
+            {/* Polished mahogany wood sheen layer */}
+            <div className="absolute inset-0 rounded-[32px] bg-gradient-to-br from-white/15 via-transparent to-black/30 pointer-events-none z-10" />
 
             {/* 15x15 Grid Layout */}
-            <div className="grid grid-cols-15 grid-rows-15 w-full h-full bg-black gap-[1px] rounded-2xl overflow-hidden shadow-inner">
+            <div className="grid grid-cols-15 grid-rows-15 w-full h-full bg-black gap-[1px] rounded-2xl overflow-hidden shadow-2xl">
               {Array.from({ length: 15 }).map((_, r) =>
                 Array.from({ length: 15 }).map((_, c) => {
                   // Center 3x3 Home Box (rows 6..8, cols 6..8)
@@ -672,7 +672,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                 })
               )}
 
-              {/* Render Standing 3D Pawn Tokens placed precisely inside cell coordinates */}
+              {/* Render Standing 3D Glossy Pawns placed precisely inside cell coordinates */}
               {[...tokens, ...DECORATIVE_TOKENS].map((token) => {
                 const isDec = 'isDecoration' in token || token.id.startsWith('blue') || token.id.startsWith('gold');
                 const [r, c] = getTokenCell(token as any);
@@ -698,30 +698,30 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           </div>
 
           {/* ========================================================== */}
-          {/* 3D WHITE PHYSICAL DICE */}
+          {/* TWO SEMI-TRANSLUCENT WHITE DICE RESTING ON THE BOARD */}
           {/* ========================================================== */}
           <div 
             className="absolute bottom-[-15px] right-[80px] z-30"
             style={{
               transform: view3D 
-                ? 'translateZ(48px) rotateX(25deg) rotateY(-30deg) rotateZ(35deg)' 
+                ? 'translateZ(50px) rotateX(25deg) rotateY(-30deg) rotateZ(35deg)' 
                 : 'none',
               transformStyle: 'preserve-3d'
             }}
           >
-            <WhitePhysicalDice value={diceRollValue} isRolling={isRolling} />
+            <SemiTranslucentWhiteDice value={diceRollValue} isRolling={isRolling} />
           </div>
 
           <div 
             className="absolute bottom-[-5px] right-[25px] z-30"
             style={{
               transform: view3D 
-                ? 'translateZ(35px) rotateX(-20deg) rotateY(42deg) rotateZ(-12deg)' 
+                ? 'translateZ(38px) rotateX(-20deg) rotateY(42deg) rotateZ(-12deg)' 
                 : 'none',
               transformStyle: 'preserve-3d'
             }}
           >
-            <WhitePhysicalDice value={secondDiceValue} isRolling={isRolling} />
+            <SemiTranslucentWhiteDice value={secondDiceValue} isRolling={isRolling} />
           </div>
 
         </div>
@@ -783,34 +783,34 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 };
 
 // ==========================================================
-// HIGH-DETAIL 3D STANDING PAWN COMPONENT
+// GLOSSY 3D PLASTIC PAWN (BLENDER RENDER STYLE)
 // ==========================================================
 const LudoPawn3D: React.FC<{ color: 'red' | 'green' | 'blue' | 'gold', isPlayable?: boolean, view3D?: boolean }> = ({ color, isPlayable, view3D }) => {
   const pawnColors = {
     red: {
       head: '#E52521',
-      headLight: '#FF7370',
+      headLight: '#FF7D7A',
       collar: '#FFE5E5',
       bodyGrad: 'from-[#FF3B30] via-[#E52521] to-[#990D0D]',
       border: '#990D0D'
     },
     green: {
       head: '#009A44',
-      headLight: '#4DEB8A',
+      headLight: '#55F292',
       collar: '#E5FFE9',
       bodyGrad: 'from-[#34C759] via-[#009A44] to-[#005425]',
       border: '#005425'
     },
     blue: {
       head: '#1B4EAB',
-      headLight: '#619BFF',
+      headLight: '#6BA2FF',
       collar: '#E5EEFF',
       bodyGrad: 'from-[#007AFF] via-[#1B4EAB] to-[#092B70]',
       border: '#092B70'
     },
     gold: {
       head: '#FFCC00',
-      headLight: '#FFF08A',
+      headLight: '#FFF299',
       collar: '#FFFCE5',
       bodyGrad: 'from-[#FFD60A] via-[#FFCC00] to-[#997A00]',
       border: '#997A00'
@@ -832,7 +832,7 @@ const LudoPawn3D: React.FC<{ color: 'red' | 'green' | 'blue' | 'gold', isPlayabl
         whileHover={isPlayable ? { scale: 1.3, y: -5 } : { scale: 1.12 }}
         className="relative flex flex-col items-center transition-all duration-300 z-20"
         style={{
-          transform: view3D ? 'translateZ(22px) rotateX(-38deg) rotateY(18deg)' : 'none',
+          transform: view3D ? 'translateZ(24px) rotateX(-46deg) rotateY(22deg)' : 'none',
           transformStyle: 'preserve-3d'
         }}
       >
@@ -873,9 +873,9 @@ const LudoPawn3D: React.FC<{ color: 'red' | 'green' | 'blue' | 'gold', isPlayabl
 };
 
 // ==========================================================
-// 3D WHITE PHYSICAL CUBE DICE
+// TWO SEMI-TRANSLUCENT WHITE DICE (BLENDER 3D RENDER STYLE)
 // ==========================================================
-const WhitePhysicalDice: React.FC<{ value: number, isRolling: boolean }> = ({ value, isRolling }) => {
+const SemiTranslucentWhiteDice: React.FC<{ value: number, isRolling: boolean }> = ({ value, isRolling }) => {
   const faceTransforms = [
     'rotateX(0deg) rotateY(0deg)',
     'rotateY(180deg)',
@@ -907,7 +907,7 @@ const WhitePhysicalDice: React.FC<{ value: number, isRolling: boolean }> = ({ va
         {[...Array(9)].map((_, i) => (
           <div key={i} className="flex items-center justify-center">
             {activeDots.includes(i) && (
-              <div className="w-1.5 h-1.5 rounded-full bg-neutral-900 shadow-sm" />
+              <div className="w-1.5 h-1.5 rounded-full bg-neutral-950 shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
             )}
           </div>
         ))}
@@ -921,23 +921,23 @@ const WhitePhysicalDice: React.FC<{ value: number, isRolling: boolean }> = ({ va
         className="relative w-full h-full transition-transform duration-700" 
         style={{ ...style, transformStyle: 'preserve-3d' }}
       >
-        {/* White plastic dice faces with rounded corners */}
-        <div className="absolute inset-0 bg-white border border-slate-300 rounded-lg shadow-md flex items-center justify-center backface-hidden" style={{ transform: 'translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        {/* Semi-translucent frosted white acrylic dice faces with rounded corners */}
+        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.4),0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-center backface-hidden" style={{ transform: 'translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(5)}
         </div>
-        <div className="absolute inset-0 bg-white border border-slate-300 rounded-lg shadow-md flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(180deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.4),0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(180deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(2)}
         </div>
-        <div className="absolute inset-0 bg-white border border-slate-300 rounded-lg shadow-md flex items-center justify-center backface-hidden" style={{ transform: 'rotateX(90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.4),0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateX(90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(3)}
         </div>
-        <div className="absolute inset-0 bg-white border border-slate-300 rounded-lg shadow-md flex items-center justify-center backface-hidden" style={{ transform: 'rotateX(-90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.4),0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateX(-90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(4)}
         </div>
-        <div className="absolute inset-0 bg-white border border-slate-300 rounded-lg shadow-md flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(-90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.4),0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(-90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(1)}
         </div>
-        <div className="absolute inset-0 bg-white border border-slate-300 rounded-lg shadow-md flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.4),0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(6)}
         </div>
       </div>
