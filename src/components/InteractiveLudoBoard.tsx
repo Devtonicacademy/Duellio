@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, HelpCircle, Eye, EyeOff, Sparkles, Star, Users, UserCheck } from 'lucide-react';
+import { ShieldCheck, HelpCircle, Eye, EyeOff, Sparkles, Star, Users, UserCheck, CheckCircle2 } from 'lucide-react';
 
 interface InteractiveLudoBoardProps {
   entryFee: number;
@@ -96,6 +96,9 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   // Match Player Mode: 2-Player (2 Quadrants per player) vs 4-Player (1 Quadrant per player)
   const [playerMode, setPlayerMode] = useState<'2-player' | '4-player'>(initialMode || '2-player');
 
+  // Selected Quadrant Filter for 2-Player mode ('all' | 'red' | 'gold')
+  const [userSelectedQuadrant, setUserSelectedQuadrant] = useState<'all' | 'red' | 'gold'>('all');
+
   // 16 Active Tokens across all 4 Quadrants
   const [tokens, setTokens] = useState<LudoToken[]>(() => liveGameState?.tokens || [
     // Top-Left (Red)
@@ -180,7 +183,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       setHasRolled(true);
       
       const totalSteps = outcome1;
-      onAddLog(`[DICE ROLL] ${activePlayer.toUpperCase()} rolled: ${outcome1}`);
+      onAddLog(`[DICE ROLL] You rolled: ${outcome1}`);
 
       const nextPlayer = getNextPlayerColor(activePlayer);
 
@@ -204,10 +207,13 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         setConsecutiveSixes(0);
       }
 
-      // Check if active player has moves available
-      const playable = tokens.filter(t => t.color === activePlayer && canMoveToken(t, totalSteps));
+      // Check valid moves across all user-controlled quadrants
+      const playable = playerMode === '2-player' && isUserTurn(activePlayer)
+        ? tokens.filter(t => (t.color === 'red' || t.color === 'gold') && canMoveToken(t, totalSteps))
+        : tokens.filter(t => t.color === activePlayer && canMoveToken(t, totalSteps));
+
       if (playable.length === 0) {
-        onAddLog(`[NO MOVES] No valid moves available for ${activePlayer.toUpperCase()} with roll ${totalSteps}. Passing turn.`);
+        onAddLog(`[NO MOVES] No valid moves available for your pawns with roll ${totalSteps}. Passing turn.`);
         setTimeout(() => {
           setActivePlayer(nextPlayer);
           setHasRolled(false);
@@ -215,8 +221,21 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
             onUpdateLiveState({ tokens, activePlayer: nextPlayer, diceRollValue: outcome1, secondDiceValue: outcome2, gameResult });
           }
         }, 400);
-      } else if (!isBot && onUpdateLiveState) {
-        onUpdateLiveState({ tokens, activePlayer, diceRollValue: outcome1, secondDiceValue: outcome2, gameResult });
+      } else {
+        const redMoves = tokens.filter(t => t.color === 'red' && canMoveToken(t, totalSteps)).length;
+        const goldMoves = tokens.filter(t => t.color === 'gold' && canMoveToken(t, totalSteps)).length;
+
+        if (playerMode === '2-player' && redMoves > 0 && goldMoves > 0) {
+          onAddLog(`[QUADRANT OPTION] Both Red 🔴 and Yellow 🟡 have valid moves! Tap any pawn or select your quadrant.`);
+        } else if (playerMode === '2-player' && redMoves > 0) {
+          onAddLog(`[QUADRANT READY] Red 🔴 has valid moves available for roll ${totalSteps}.`);
+        } else if (playerMode === '2-player' && goldMoves > 0) {
+          onAddLog(`[QUADRANT READY] Yellow 🟡 has valid moves available for roll ${totalSteps}.`);
+        }
+
+        if (!isBot && onUpdateLiveState) {
+          onUpdateLiveState({ tokens, activePlayer, diceRollValue: outcome1, secondDiceValue: outcome2, gameResult });
+        }
       }
     }, 300);
   };
@@ -285,9 +304,24 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     return true;
   };
 
+  const isTokenPlayable = (token: LudoToken): boolean => {
+    if (!hasRolled || isRolling || gameResult !== 'playing' || botIsThinking) return false;
+    if (!isUserTurn(activePlayer)) return false;
+
+    if (playerMode === '2-player') {
+      if (token.color !== 'red' && token.color !== 'gold') return false;
+      if (userSelectedQuadrant !== 'all' && token.color !== userSelectedQuadrant) return false;
+      return canMoveToken(token, diceRollValue);
+    } else {
+      if (token.color !== activePlayer) return false;
+      return canMoveToken(token, diceRollValue);
+    }
+  };
+
   const handleSelectToken = (token: LudoToken) => {
-    if (token.color !== activePlayer || !isUserTurn(activePlayer) || !hasRolled || !canMoveToken(token, diceRollValue) || gameResult !== 'playing') return;
-    executeTokenMovement(token.id, diceRollValue, activePlayer);
+    if (!isTokenPlayable(token)) return;
+    onAddLog(`[QUADRANT CHOICE] You selected ${token.color.toUpperCase()} pawn ${token.id.toUpperCase()} to move.`);
+    executeTokenMovement(token.id, diceRollValue, token.color);
   };
 
   const executeTokenMovement = (tokenId: string, steps: number, playerColor: 'red' | 'blue' | 'green' | 'gold') => {
@@ -543,13 +577,12 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           >
             <h4 className="font-display font-black text-white uppercase text-sm tracking-wider flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Standard Ludo Modes & Rules</span>
+              <span>Dynamic Quadrant Choice & Standard Rules</span>
             </h4>
             <ul className="list-disc pl-4 space-y-1 text-amber-200/80 font-mono text-[11px]">
-              <li><span className="text-amber-300 font-bold">2-Player Match</span>: Each player commands 2 quadrants (You: Red + Yellow | Opponent: Blue + Green).</li>
-              <li><span className="text-cyan-300 font-bold">4-Player Match</span>: Each player commands 1 quadrant (Red vs Blue vs Green vs Yellow).</li>
-              <li><span className="text-yellow-300 font-bold">Release Pawn</span>: Must roll a 6 (or 5) to release a pawn from Home Base.</li>
-              <li><span className="text-emerald-300 font-bold">Bonus Roll</span>: Rolling 6, capturing an opponent pawn, or reaching Home grants an extra roll!</li>
+              <li><span className="text-amber-300 font-bold">Dynamic Choice</span>: In 2-Player match, after rolling the dice you can choose to move a pawn from <strong className="text-rose-400">RED 🔴</strong> OR <strong className="text-yellow-300">YELLOW 🟡</strong>!</li>
+              <li><span className="text-cyan-300 font-bold">2-Player Match</span>: You command 2 quadrants (Red + Yellow | 8 pawns). Opponent commands 2 (Blue + Green).</li>
+              <li><span className="text-emerald-300 font-bold">Bonus Roll</span>: Rolling a 6, capturing an opponent pawn, or reaching Home center grants a bonus roll!</li>
             </ul>
           </motion.div>
         )}
@@ -642,7 +675,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                   // Bottom-Right Yard (Green)
                   if (r >= 9 && c >= 9) {
                     if (r >= 10 && r <= 13 && c >= 10 && c <= 13) {
-                      const isCircle = (r === 10 && c === 10) || (r === 10 && c === 12) || (r === 12 && c === 10) || (r === 12 && c === 12);
+                      const isCircle = (r === 10 && c === 10) || (r === 10 && c === 12) || (r === 3 && c === 10) || (r === 3 && c === 12);
                       return (
                         <div key={`${r}-${c}`} className="relative bg-[#009A44] border border-[#00612B] flex items-center justify-center shadow-inner" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
                           {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#009A44] border-2 border-[#00612B] shadow-md" />}
@@ -752,8 +785,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
               {/* Render Standing 3D Pawns placed precisely inside cell coordinates */}
               {tokens.map((token) => {
                 const [r, c] = getTokenCell(token);
-                const isMine = isUserTurn(token.color);
-                const isPlayable = isMine && token.color === activePlayer && hasRolled && canMoveToken(token, diceRollValue);
+                const isPlayable = isTokenPlayable(token);
 
                 return (
                   <div
@@ -805,20 +837,62 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       </div>
 
       {/* ========================================================== */}
-      {/* ACTION CONTROLS HUD */}
+      {/* ACTION CONTROLS & DYNAMIC QUADRANT SELECTOR HUD */}
       {/* ========================================================== */}
-      <div className="relative sm:absolute sm:bottom-4 sm:left-4 mx-auto mt-2 sm:mt-0 w-full max-w-[320px] sm:w-auto bg-[#180e08]/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-amber-500/30 flex flex-col gap-1.5 shadow-[0_15px_30px_rgba(0,0,0,0.5)] z-30">
+      <div className="relative sm:absolute sm:bottom-4 sm:left-4 mx-auto mt-2 sm:mt-0 w-full max-w-[340px] sm:w-auto bg-[#180e08]/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-amber-500/30 flex flex-col gap-2 shadow-[0_15px_30px_rgba(0,0,0,0.5)] z-30">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className={`w-2.5 h-2.5 rounded-full ${isUserTurn(activePlayer) ? 'bg-amber-400 animate-pulse' : 'bg-slate-600'}`} />
             <span className="text-[10px] font-mono font-bold text-amber-300 uppercase tracking-widest">
-              {activePlayer.toUpperCase()}'S TURN ({isUserTurn(activePlayer) ? 'YOU' : 'BOT'})
+              {isUserTurn(activePlayer) 
+                ? (playerMode === '2-player' ? "YOUR TURN: PICK QUADRANT TO MOVE" : "YOUR TURN (RED 🔴)") 
+                : `${activePlayer.toUpperCase()}'S TURN (BOT)`}
             </span>
           </div>
           <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-amber-950/80 border border-amber-500/30 text-amber-300 uppercase">
             {playerMode}
           </span>
         </div>
+
+        {/* Dynamic Quadrant Filter Selector in 2-Player mode during User turn after rolling */}
+        {playerMode === '2-player' && isUserTurn(activePlayer) && hasRolled && (
+          <div className="flex items-center gap-1.5 p-1 bg-[#0f0905] rounded-xl border border-amber-500/25">
+            <span className="text-[9px] font-mono text-amber-500/70 font-bold px-1.5 uppercase">QUADRANT:</span>
+            <button
+              type="button"
+              onClick={() => setUserSelectedQuadrant('all')}
+              className={`px-2 py-1 rounded-lg text-[9.5px] font-mono font-bold transition-all ${
+                userSelectedQuadrant === 'all'
+                  ? 'bg-amber-400 text-black shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                  : 'text-amber-200/70 hover:text-white'
+              }`}
+            >
+              ANY (🔴 & 🟡)
+            </button>
+            <button
+              type="button"
+              onClick={() => setUserSelectedQuadrant('red')}
+              className={`px-2 py-1 rounded-lg text-[9.5px] font-mono font-bold transition-all flex items-center gap-1 ${
+                userSelectedQuadrant === 'red'
+                  ? 'bg-rose-500 text-white shadow-[0_0_8px_rgba(225,29,72,0.4)]'
+                  : 'text-rose-400/70 hover:text-rose-300'
+              }`}
+            >
+              RED 🔴
+            </button>
+            <button
+              type="button"
+              onClick={() => setUserSelectedQuadrant('gold')}
+              className={`px-2 py-1 rounded-lg text-[9.5px] font-mono font-bold transition-all flex items-center gap-1 ${
+                userSelectedQuadrant === 'gold'
+                  ? 'bg-yellow-400 text-black shadow-[0_0_8px_rgba(250,204,21,0.4)]'
+                  : 'text-yellow-400/70 hover:text-yellow-300'
+              }`}
+            >
+              YELLOW 🟡
+            </button>
+          </div>
+        )}
         
         <button
           onClick={rollDice}
@@ -829,7 +903,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
               : 'bg-[#21140c] border-amber-950 text-amber-700/60 cursor-not-allowed'
           }`}
         >
-          {isRolling ? 'ROLLING...' : `ROLL DICE FOR ${activePlayer.toUpperCase()}`}
+          {isRolling ? 'ROLLING...' : `ROLL DICE FOR YOUR TURN`}
         </button>
       </div>
 
