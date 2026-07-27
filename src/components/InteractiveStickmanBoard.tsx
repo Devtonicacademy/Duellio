@@ -98,17 +98,17 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
 
   const reportedOutcomeRef = useRef<boolean>(false);
 
-  const player1Name = useMemo(() => {
+  const player1Name = React.useMemo(() => {
     if (isBot) return userName || 'Player 1';
     return isHost ? (userName || 'Player 1') : (opponentName || 'Player 1');
   }, [isBot, isHost, userName, opponentName]);
 
-  const player2Name = useMemo(() => {
+  const player2Name = React.useMemo(() => {
     if (isBot) return opponentName;
     return isHost ? (opponentName || 'Player 2') : (userName || 'Player 2');
   }, [isBot, isHost, userName, opponentName]);
 
-  const gameConfig = useMemo(() => ({
+  const gameConfig = React.useMemo(() => ({
     mode,
     difficulty: botDifficulty,
     p1Color: '#06b6d4', // Cyan
