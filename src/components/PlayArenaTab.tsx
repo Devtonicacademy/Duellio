@@ -22,6 +22,8 @@ import {
   Copy
 } from 'lucide-react';
 import { UserProfile, WalletTransaction } from '../types';
+import { db } from '../firebase';
+import { collection, addDoc, setDoc, doc, serverTimestamp } from 'firebase/firestore';
 
 interface PlayArenaTabProps {
   userProfile: UserProfile;
@@ -165,7 +167,38 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
       } catch (err) {
         console.warn("Clipboard access error:", err);
       }
-      alert(`🎉 Multiplayer Match Ready!\n\nInvitation link:\n\n${inviteLink}\n\nShare this link with your challenger to start instantly!`);
+
+      // If a specific opponent was selected, dispatch direct challenge message
+      if (selectedOpponent?.uid) {
+        const chatId = userProfile.uid < selectedOpponent.uid
+          ? `${userProfile.uid}_${selectedOpponent.uid}`
+          : `${selectedOpponent.uid}_${userProfile.uid}`;
+
+        const chatRef = doc(db, 'chats', chatId);
+        setDoc(chatRef, {
+          id: chatId,
+          users: [userProfile.uid, selectedOpponent.uid],
+          lastMessage: `Staked Duel Challenge: ${selectedGame}`,
+          timestamp: serverTimestamp()
+        }, { merge: true }).catch(console.error);
+
+        const messagesRef = collection(db, 'chats', chatId, 'messages');
+        addDoc(messagesRef, {
+          senderId: userProfile.uid,
+          senderName: userProfile.username,
+          senderAvatar: userProfile.avatar,
+          text: `Staked Duel Challenge: ${selectedGame}`,
+          timestamp: serverTimestamp(),
+          isChallenge: true,
+          challengeId: `CHALL-CHAT-${Date.now()}`,
+          sessionId: sessionId,
+          gameType: selectedGame,
+          entryFee: actualStake,
+          challengeStatus: 'pending'
+        }).catch(console.error);
+      }
+
+      alert(`🎉 Multiplayer Match Ready!\n\nInvitation sent to ${opponentName}!\n\nInvite link also copied to clipboard:\n${inviteLink}`);
     }
 
     const effectiveBotDifficulty = opponentStyle === 'bot'

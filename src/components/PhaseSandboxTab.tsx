@@ -36,7 +36,7 @@ import { InteractiveStickmanBoard } from './InteractiveStickmanBoard';
 import { TicTacToeLogicService } from '../services/ticTacToeLogic';
 import { DraftLogicService } from '../services/draftLogic';
 import { db } from '../firebase';
-import { doc, setDoc, increment, updateDoc, onSnapshot, collection, query, where, getDoc } from 'firebase/firestore';
+import { doc, setDoc, increment, updateDoc, onSnapshot, collection, query, where, getDoc, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface PhaseSandboxTabProps {
   userProfile: UserProfile;
@@ -365,7 +365,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           getDoc(doc(db, 'gameSessions', sessionId)).then((docSnap) => {
             if (docSnap.exists()) {
               const sessionData = docSnap.data();
-              if (sessionData.status === 'waiting') {
+              const isParticipant = sessionData.hostId === userProfile.uid || sessionData.opponentId === userProfile.uid;
+              if (sessionData.status === 'waiting' || (sessionData.status === 'playing' && isParticipant)) {
                 const updatedGameState = {
                   ...(sessionData.gameState || {}),
                   playerIds: [sessionData.hostId, userProfile.uid],
@@ -392,6 +393,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 setActiveChallenge(inviteChallenge);
                 setGamePlayStatus('playing');
                 _setWhotGameState(updatedGameState);
+                setLiveGameState(sessionData.gameState || updatedGameState);
                 whotDeckRef.current = sessionData.deck || [];
 
                 updateDoc(doc(db, 'gameSessions', sessionId), {
@@ -407,7 +409,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                   `[MULTIPLAYER] Joined active session successfully!`
                 ]);
               } else {
-                alert("This game session is no longer available or already started.");
+                alert("This game session is no longer available or already full.");
                 setGamePlayStatus('none');
                 setActiveChallenge(null);
                 _setWhotGameState(null);
@@ -977,7 +979,28 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     if (!activeChallenge) return;
     setGamePlayStatus('playing');
     setShowReconciliation(false);
-    startInteractiveWhotGame(activeChallenge);
+
+    if (activeChallenge.gameType === 'Whot') {
+      startInteractiveWhotGame(activeChallenge);
+    } else {
+      let resetState: any = null;
+      const sessionId = activeChallenge.id;
+      if (activeChallenge.gameType === 'TicTacToe') resetState = TicTacToeLogicService.initializeBoard(sessionId, 'host', 'guest');
+      else if (activeChallenge.gameType === 'Draft') resetState = DraftLogicService.initializeBoard(sessionId, 'host', 'guest');
+      else if (activeChallenge.gameType === 'Chess') resetState = { sessionId, activeColor: 'w', status: 'playing' };
+      else if (activeChallenge.gameType === 'Ludo') resetState = { sessionId, activePlayer: 'red', status: 'playing' };
+      else resetState = { sessionId, status: 'playing' };
+
+      setLiveGameState(resetState);
+      if (activeChallenge.opponentType === 'player') {
+        updateDoc(doc(db, 'gameSessions', sessionId), {
+          gameState: resetState,
+          status: 'playing',
+          updatedAt: Date.now()
+        }).catch(console.error);
+      }
+    }
+
     setGamePlayLogs([
       `[REMATCH] New game started against ${opponentProfile?.username || 'Opponent'}!`
     ]);
@@ -1030,7 +1053,6 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           setActiveChallenge(prev => prev ? {
             ...prev,
             receiverId: data.opponentId,
-            senderName: data.hostId === userProfile.uid ? data.hostName : data.opponentName,
             status: 'accepted'
           } : null);
         }
@@ -1044,7 +1066,32 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       console.warn("gameSessions Firestore listener error:", error);
     });
 
-    return () => unsubscribe();
+    // Sub-listener for in-game Live Duel chat messages
+    const msgQuery = query(collection(db, 'gameSessions', sessionId, 'messages'), orderBy('timestamp', 'asc'));
+    const msgUnsub = onSnapshot(msgQuery, (msgSnap) => {
+      const msgs: ChatMessage[] = [];
+      msgSnap.forEach(mDoc => {
+        const mData = mDoc.data();
+        msgs.push({
+          id: mDoc.id,
+          senderId: mData.senderId,
+          senderName: mData.senderName,
+          senderAvatar: mData.senderAvatar,
+          text: mData.text,
+          timestamp: typeof mData.timestamp === 'string' ? mData.timestamp : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        } as ChatMessage);
+      });
+      if (msgs.length > 0) {
+        setChatMessages(msgs);
+      }
+    }, (error) => {
+      console.warn("gameSessions messages listener error:", error);
+    });
+
+    return () => {
+      unsubscribe();
+      msgUnsub();
+    };
   }, [activeChallenge?.id, activeChallenge?.opponentType, userProfile.uid]);
 
   // Loader for all active multiplayer lobbies and sessions from Firestore
@@ -1153,6 +1200,13 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
     setChatMessages(prev => [...prev, userMsg]);
     setInputMessage('');
+
+    if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
+      addDoc(collection(db, 'gameSessions', activeChallenge.id, 'messages'), {
+        ...userMsg,
+        timestamp: serverTimestamp()
+      }).catch(console.error);
+    }
   };
 
   const renderChatPanelContent = () => {

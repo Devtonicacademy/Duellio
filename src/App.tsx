@@ -104,7 +104,32 @@ export default function App() {
   }, [activeTab]);
 
   // Match & Forfeit Notifications State
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([
+    {
+      id: 'notif-1',
+      type: 'challenge',
+      title: 'Match Challenge Received!',
+      message: 'Grandmaster_Alex has challenged you to a Chess match for 500 Coins!',
+      senderName: 'Grandmaster_Alex',
+      gameType: 'Chess',
+      entryFee: 500,
+      timestamp: 'Just now',
+      read: false,
+      status: 'pending'
+    },
+    {
+      id: 'notif-2',
+      type: 'forfeit',
+      title: 'Forfeit Request Submitted',
+      message: 'Shadow_Knight has requested a forfeit in your Whot match. Accept to claim +300 Coins victory payout!',
+      senderName: 'Shadow_Knight',
+      gameType: 'Whot',
+      entryFee: 300,
+      timestamp: '5m ago',
+      read: false,
+      status: 'pending'
+    }
+  ]);
 
   // Wrapper for profile registration to automatically log the onboarding transaction
   const handleAddProfileWrapper = (username: string, email: string, pass: string, avatar: string) => {
@@ -143,6 +168,7 @@ export default function App() {
       gameType: notification.gameType as any || 'Chess',
       entryFee: notification.entryFee || 300,
       opponentType: 'player',
+      sessionId: notification.sessionId,
       isHost: false
     });
     setActiveTab('lobbies');
