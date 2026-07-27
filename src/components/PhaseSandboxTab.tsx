@@ -2790,6 +2790,84 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
               </div>
             )}
           </div>
+        ) : activeChallenge && activeChallenge.status === 'pending' && activeChallenge.senderId === userProfile.uid ? (
+          /* Dedicated Host Lobby Matchmaking Waiting Room */
+          <div className="bg-neutral-950/95 border-2 border-purple-500/40 rounded-3xl p-8 sm:p-12 max-w-2xl mx-auto shadow-[0_0_50px_rgba(168,85,247,0.25)] backdrop-blur-2xl text-center space-y-6 my-6 font-sans">
+            {/* Animated Radar Swords Icon */}
+            <div className="relative w-24 h-24 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-purple-500/20 border-2 border-purple-500/40 animate-ping opacity-75" />
+              <div className="w-20 h-20 rounded-full bg-purple-500/20 border-2 border-purple-500/60 flex items-center justify-center shadow-[0_0_30px_rgba(168,85,247,0.5)] z-10">
+                <Swords className="w-10 h-10 text-purple-300 animate-pulse" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="inline-block px-3 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-full text-xs font-mono font-black uppercase tracking-widest">
+                ⌛ LOBBY MATCHMAKING WAITING ROOM
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-white font-display">
+                Waiting for {opponentProfile?.username || activeChallenge.senderName || 'Opponent'} to Accept Challenge
+              </h2>
+              <p className="text-xs text-neutral-400 max-w-md mx-auto leading-relaxed">
+                Your entry stake of <strong className="text-emerald-400 font-mono font-bold">{activeChallenge.entryFee} Coins</strong> has been locked in atomic escrow. A live notification was dispatched to <strong>{opponentProfile?.username || activeChallenge.senderName || 'your opponent'}</strong>.
+              </p>
+            </div>
+
+            {/* Live Status Card */}
+            <div className="bg-black/60 border border-white/10 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs text-left">
+              <div className="flex items-center gap-3">
+                <span className="h-3 w-3 rounded-full bg-amber-400 animate-ping shrink-0" />
+                <div>
+                  <span className="block text-[10px] text-neutral-500 uppercase font-bold">Match Status</span>
+                  <span className="text-white font-bold">Awaiting Opponent Acceptance...</span>
+                </div>
+              </div>
+              <div className="text-right sm:text-right w-full sm:w-auto">
+                <span className="block text-[10px] text-neutral-500 uppercase font-bold">Session ID</span>
+                <code className="text-cyan-300 font-bold text-xs bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">{activeChallenge.id}</code>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const inviteLink = `${window.location.origin}${window.location.pathname}?friendInvite=true&game=${activeChallenge.gameType}&stake=${activeChallenge.entryFee}&sender=${encodeURIComponent(userProfile.username)}&sessionId=${activeChallenge.id}`;
+                  try {
+                    navigator.clipboard.writeText(inviteLink);
+                  } catch (e) {
+                    console.warn("Clipboard error:", e);
+                  }
+                  alert(`📋 Invitation Link Copied!\n\n${inviteLink}\n\nShare this link with your challenger to start instantly!`);
+                }}
+                className="w-full sm:w-auto px-6 py-3 bg-purple-500 hover:bg-purple-400 text-neutral-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-purple-500/25 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+              >
+                🔗 Copy Invite Link
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveChallenge(prev => prev ? { ...prev, status: 'accepted', opponentType: 'bot' } : null);
+                  setGamePlayLogs(prev => [...prev, `[SESSION MODE] Converted match to single-player Bot mode.`]);
+                }}
+                className="w-full sm:w-auto px-4 py-3 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+              >
+                🤖 Play vs Bot
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setUserProfile(prev => ({ ...prev, coins: prev.coins + activeChallenge.entryFee, status: 'online' }));
+                  setActiveChallenge(null);
+                  setGamePlayStatus('none');
+                }}
+                className="w-full sm:w-auto px-4 py-3 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+              >
+                Cancel Match
+              </button>
+            </div>
+          </div>
         ) : (
           /* Render Active Interactive Game matches */
           <div className={`grid grid-cols-1 ${activeChallenge?.opponentType === 'bot' ? 'xl:grid-cols-1' : 'xl:grid-cols-4'} gap-6 items-start`}>
