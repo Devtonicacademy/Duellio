@@ -22,7 +22,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { UserProfile, ChatMessage, WalletTransaction } from '../types';
-import { db, sanitizeForFirestore } from '../firebase';
+import { db } from '../firebase';
 import { 
   collection, 
   query, 
@@ -404,7 +404,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
 
       try {
         const chatRef = doc(db, 'chats', chatId);
-        await setDoc(chatRef, sanitizeForFirestore({
+        await setDoc(chatRef, {
           lastMessage: isChallengeMsg ? `Challenge: ${challengeData.gameType}` : cleanText,
           lastSenderId: userProfile.uid,
           timestamp: serverTimestamp(),
@@ -414,7 +414,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             [activeChat.id]: newRecipientUnread,
             [userProfile.uid]: 0
           }
-        }), { merge: true });
+        }, { merge: true });
 
         const messagesRef = collection(db, 'chats', chatId, 'messages');
         const msgObj: any = {
@@ -433,7 +433,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           msgObj.challengeStatus = 'pending';
         }
 
-        await addDoc(messagesRef, sanitizeForFirestore(msgObj));
+        await addDoc(messagesRef, msgObj);
         if (!isChallengeMsg) {
           setInputMessage('');
         }

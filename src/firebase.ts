@@ -26,15 +26,6 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
-/**
- * Recursively strips all undefined fields from payload to ensure 100% Firestore payload safety.
- * Firestore setDoc/updateDoc throws invalid data errors if any property has value `undefined`.
- */
-export function sanitizeForFirestore<T>(data: T): T {
-  if (data === null || data === undefined) return data;
-  return JSON.parse(JSON.stringify(data));
-}
-
 export {
   signInWithPopup,
   signInWithEmailAndPassword,

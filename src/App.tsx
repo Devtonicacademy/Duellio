@@ -189,7 +189,7 @@ export default function App() {
     }
     addTransaction({
       id: `TX-${Math.floor(100000 + Math.random() * 900000)}`,
-      userId: userProfile?.uid || '',
+      userId: userProfile!.uid,
       type: 'credit',
       amount: reward,
       description: `Forfeit Victory payout vs ${notification.senderName} (${notification.gameType})`,
@@ -364,7 +364,7 @@ export default function App() {
               {activeTab === 'discover' && (
                 <DiscoverTab 
                   onSelectGame={handleSelectGameFromDiscover} 
-                  userCoins={userProfile?.coins || 0} 
+                  userCoins={userProfile.coins} 
                 />
               )}
 
@@ -463,7 +463,7 @@ export default function App() {
           
           addTransaction({
             id: `TX-${Math.floor(100000 + Math.random() * 900000)}`,
-            userId: userProfile?.uid || '',
+            userId: userProfile.uid,
             type: 'credit',
             amount: bonusCoins,
             description: `Claimed Welcome Stake Credit: From ${friendInvite.sender}`,

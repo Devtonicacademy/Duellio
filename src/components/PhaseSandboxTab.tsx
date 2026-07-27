@@ -33,7 +33,7 @@ import { InteractiveChessBoard } from './InteractiveChessBoard';
 import { InteractiveDraftBoard } from './InteractiveDraftBoard';
 import { InteractiveTicTacToeBoard } from './InteractiveTicTacToeBoard';
 import { InteractiveStickmanBoard } from './InteractiveStickmanBoard';
-import { db, sanitizeForFirestore } from '../firebase';
+import { db } from '../firebase';
 import { doc, setDoc, increment, updateDoc, onSnapshot, collection, query, where, getDoc } from 'firebase/firestore';
 
 interface PhaseSandboxTabProps {
@@ -321,7 +321,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           setActiveChallenge(inviteChallenge);
           setGamePlayStatus('playing');
 
-          setDoc(doc(db, 'gameSessions', sessionId), sanitizeForFirestore({
+          setDoc(doc(db, 'gameSessions', sessionId), {
             sessionId,
             gameType: friendChallenge.gameType,
             hostId: userProfile.uid,
@@ -335,7 +335,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
             pauseRequest: null,
             createdAt: Date.now(),
             updatedAt: Date.now()
-          })).catch(console.error);
+          }).catch(console.error);
 
           setGamePlayLogs([
             `[ESCROW LOCK] Atomic escrow write success. STAKE: ${friendChallenge.entryFee} coins escrowed.`,
@@ -375,13 +375,13 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 _setWhotGameState(updatedGameState);
                 whotDeckRef.current = sessionData.deck || [];
 
-                updateDoc(doc(db, 'gameSessions', sessionId), sanitizeForFirestore({
+                updateDoc(doc(db, 'gameSessions', sessionId), {
                   opponentId: userProfile.uid,
                   opponentName: userProfile.username,
                   status: 'playing',
                   gameState: updatedGameState,
                   updatedAt: Date.now()
-                })).catch(console.error);
+                }).catch(console.error);
 
                 setGamePlayLogs([
                   `[ESCROW LOCK] Atomic escrow write success. STAKE: ${friendChallenge.entryFee} coins escrowed.`,
@@ -537,11 +537,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       const nextState = typeof value === 'function' ? (value as Function)(prev) : value;
       if (nextState && activeChallenge?.opponentType === 'player' && activeChallenge?.id) {
         const sessionRef = doc(db, 'gameSessions', activeChallenge.id);
-        updateDoc(sessionRef, sanitizeForFirestore({
+        updateDoc(sessionRef, {
           gameState: nextState,
           deck: whotDeckRef.current,
           updatedAt: Date.now()
-        })).catch(console.error);
+        }).catch(console.error);
       }
       return nextState;
     });
@@ -656,7 +656,9 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const handleMatchTimerExpiry = () => {
     if (!activeChallenge) return;
     
-    const opponentId = activeChallenge.senderId === userProfile.uid ? selectedBot?.uid || 'bot' : activeChallenge.senderId;
+    const opponentId = activeChallenge.opponentType === 'player'
+      ? (activeChallenge.senderId === userProfile.uid ? (activeChallenge.receiverId === 'pending' ? '' : activeChallenge.receiverId) : activeChallenge.senderId)
+      : (selectedBot?.uid || 'bot');
     
     let winnerName = "";
     let pointsMsg = "";
@@ -2688,13 +2690,13 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                                 _setWhotGameState(updatedGameState);
                                 whotDeckRef.current = s.deck || [];
 
-                                updateDoc(doc(db, 'gameSessions', s.sessionId), sanitizeForFirestore({
+                                updateDoc(doc(db, 'gameSessions', s.sessionId), {
                                   opponentId: userProfile.uid,
                                   opponentName: userProfile.username,
                                   status: 'playing',
                                   gameState: updatedGameState,
                                   updatedAt: Date.now()
-                                })).catch(console.error);
+                                }).catch(console.error);
 
                                 setGamePlayLogs([
                                   `[ESCROW LOCK] Atomic escrow write success. STAKE: ${s.entryFee} coins escrowed.`,
@@ -2777,6 +2779,52 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Host Waiting Banner Overlay when waiting for guest to join */}
+              {activeChallenge && activeChallenge.status === 'pending' && activeChallenge.senderId === userProfile.uid && (
+                <div className="bg-gradient-to-r from-purple-950/90 via-neutral-900 to-indigo-950/90 border-2 border-purple-500/40 p-4 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 font-sans">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-purple-500/20 text-purple-300 rounded-xl border border-purple-500/30 shrink-0">
+                      <Swords className="w-6 h-6 animate-pulse" />
+                    </div>
+                    <div>
+                      <span className="block text-[10px] font-mono text-purple-300 font-bold uppercase tracking-wider">
+                        ⌛ Live Duel Created — Waiting for Challenger to Join
+                      </span>
+                      <span className="text-xs font-bold text-white">
+                        Session ID: <code className="font-mono text-cyan-300 px-1.5 py-0.5 bg-black/50 rounded">{activeChallenge.id}</code> | Stakes: <strong className="text-emerald-400 font-mono">{activeChallenge.entryFee} Coins</strong>
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const inviteLink = `${window.location.origin}${window.location.pathname}?friendInvite=true&game=${activeChallenge.gameType}&stake=${activeChallenge.entryFee}&sender=${encodeURIComponent(userProfile.username)}&sessionId=${activeChallenge.id}`;
+                        try {
+                          navigator.clipboard.writeText(inviteLink);
+                        } catch (e) {
+                          console.warn("Clipboard error:", e);
+                        }
+                        alert(`📋 Invitation Link Copied!\n\n${inviteLink}\n\nShare this link with your challenger to start!`);
+                      }}
+                      className="flex-1 sm:flex-none px-4 py-2 bg-purple-500 hover:bg-purple-400 text-neutral-950 font-black rounded-xl text-xs uppercase tracking-wider cursor-pointer active:scale-95 transition-all shadow-md whitespace-nowrap"
+                    >
+                      🔗 Copy Invite Link
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveChallenge(prev => prev ? { ...prev, status: 'accepted', opponentType: 'bot' } : null);
+                        setGamePlayLogs(prev => [...prev, `[SESSION MODE] Match converted to single-player Bot mode while waiting.`]);
+                      }}
+                      className="flex-1 sm:flex-none px-3.5 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold rounded-xl text-xs cursor-pointer active:scale-95 transition-all whitespace-nowrap"
+                    >
+                      🤖 Play vs Bot
+                    </button>
+                  </div>
+                </div>
+              )}
 
             {activeChallenge?.gameType === 'Whot' && whotGameState ? (
               /* Playable Whot card game table! */
@@ -3354,9 +3402,9 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         </div>
       )}
 
-        {/* Incoming/Outgoing match challenge banner overlay alerts */}
+        {/* Incoming match challenge banner overlay alerts */}
         <AnimatePresence>
-          {activeChallenge && activeChallenge.status === 'pending' && (
+          {activeChallenge && activeChallenge.status === 'pending' && activeChallenge.senderId !== userProfile.uid && (
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
