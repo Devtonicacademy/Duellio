@@ -198,6 +198,26 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
         }).catch(console.error);
       }
 
+      // Dispatch Real-time Notification Document to target player in Firestore
+      const notifRef = collection(db, 'notifications');
+      addDoc(notifRef, {
+        receiverId: selectedOpponent?.uid || 'all',
+        receiverName: opponentName,
+        senderId: userProfile.uid,
+        senderName: userProfile.username,
+        senderAvatar: userProfile.avatar,
+        type: 'challenge',
+        title: '⚔️ Live Duel Challenge Received!',
+        message: `${userProfile.username} has challenged you to a ${selectedGame} match for ${actualStake} Coins!`,
+        gameType: selectedGame,
+        entryFee: actualStake,
+        sessionId: sessionId,
+        timestamp: Date.now(),
+        timeString: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        read: false,
+        status: 'pending'
+      }).catch(console.warn);
+
       alert(`🎉 Multiplayer Match Ready!\n\nInvitation sent to ${opponentName}!\n\nInvite link also copied to clipboard:\n${inviteLink}`);
     }
 

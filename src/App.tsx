@@ -4,9 +4,10 @@
  */
 
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { motion, useScroll, useSpring } from 'motion/react';
+import { motion, AnimatePresence, useScroll, useSpring } from 'motion/react';
 import { db } from './firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, addDoc } from 'firebase/firestore';
+import { Swords } from 'lucide-react';
 
 // Custom Hooks
 import { useTheme } from './hooks/useTheme';
@@ -160,6 +161,70 @@ export default function App() {
     return () => unsubscribe();
   }, [userProfile?.uid]);
 
+  const [incomingToastChallenge, setIncomingToastChallenge] = useState<NotificationItem | null>(null);
+
+  // Firestore Real-time Live Duel Challenge Notification Listener
+  useEffect(() => {
+    if (!userProfile?.uid && !userProfile?.username) return;
+
+    const notifRef = collection(db, 'notifications');
+    const q = query(notifRef);
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const liveNotifs: NotificationItem[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const isTarget = data.receiverId === userProfile.uid || 
+                         data.receiverName === userProfile.username || 
+                         data.receiverId === 'all';
+        const isNotSelf = data.senderId !== userProfile.uid && data.senderName !== userProfile.username;
+
+        if (isTarget && isNotSelf) {
+          liveNotifs.push({
+            id: docSnap.id,
+            type: data.type || 'challenge',
+            title: data.title || 'Match Challenge Received!',
+            message: data.message || `${data.senderName} challenged you to a live duel!`,
+            senderId: data.senderId,
+            senderName: data.senderName,
+            senderAvatar: data.senderAvatar,
+            gameType: data.gameType,
+            entryFee: data.entryFee,
+            sessionId: data.sessionId,
+            timestamp: data.timeString || 'Just now',
+            read: data.read || false,
+            status: data.status || 'pending'
+          });
+        }
+      });
+
+      if (liveNotifs.length > 0) {
+        setNotifications(prev => {
+          const notifMap = new Map<string, NotificationItem>();
+          prev.forEach(n => notifMap.set(n.id, n));
+
+          liveNotifs.forEach(n => {
+            if (!notifMap.has(n.id)) {
+              notifMap.set(n.id, n);
+              if (n.status === 'pending') {
+                setIncomingToastChallenge(n);
+              }
+            } else {
+              const existing = notifMap.get(n.id)!;
+              notifMap.set(n.id, { ...existing, ...n });
+            }
+          });
+
+          return Array.from(notifMap.values());
+        });
+      }
+    }, (error) => {
+      console.warn("Notifications Firestore listener warning:", error);
+    });
+
+    return () => unsubscribe();
+  }, [userProfile?.uid, userProfile?.username]);
+
   // Notification Handlers
   const handleAcceptChallenge = (notification: NotificationItem) => {
     setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true, status: 'accepted' } : n));
@@ -172,10 +237,23 @@ export default function App() {
       isHost: false
     });
     setActiveTab('lobbies');
+
+    if (notification.id) {
+      updateDoc(doc(db, 'notifications', notification.id), {
+        status: 'accepted',
+        read: true
+      }).catch(console.warn);
+    }
   };
 
   const handleDeclineChallenge = (notificationId: string) => {
     setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true, status: 'declined' } : n));
+    if (notificationId) {
+      updateDoc(doc(db, 'notifications', notificationId), {
+        status: 'declined',
+        read: true
+      }).catch(console.warn);
+    }
   };
 
   const handleAcceptForfeit = (notification: NotificationItem) => {
@@ -349,6 +427,59 @@ export default function App() {
           onSimulateNotification={handleSimulateNotification}
         />
       )}
+
+      {/* Real-time In-App Challenge Toast Alert Overlay */}
+      <AnimatePresence>
+        {incomingToastChallenge && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -30, scale: 0.95 }}
+            className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] w-[92%] max-w-lg bg-neutral-950/95 border-2 border-purple-500/50 rounded-2xl p-4 shadow-[0_0_35px_rgba(168,85,247,0.5)] backdrop-blur-2xl text-white font-sans flex flex-col sm:flex-row items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-purple-500/20 text-purple-300 rounded-xl border border-purple-500/30 shrink-0 animate-bounce">
+                <Swords className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono text-purple-300 font-black uppercase tracking-wider bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30">
+                    ⚡ LIVE DUEL INVITATION
+                  </span>
+                </div>
+                <span className="block text-xs font-bold text-white mt-1">
+                  {incomingToastChallenge.senderName} is challenging you to {incomingToastChallenge.gameType}!
+                </span>
+                <p className="text-[11px] text-neutral-400 font-mono">
+                  Stakes Lock: <strong className="text-emerald-400 font-bold">{incomingToastChallenge.entryFee} Coins</strong>
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  handleDeclineChallenge(incomingToastChallenge.id);
+                  setIncomingToastChallenge(null);
+                }}
+                className="flex-1 sm:flex-none px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Decline
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleAcceptChallenge(incomingToastChallenge);
+                  setIncomingToastChallenge(null);
+                }}
+                className="flex-1 sm:flex-none px-4 py-2 bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 text-neutral-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-500/30 active:scale-95 cursor-pointer whitespace-nowrap"
+              >
+                ⚔️ Accept & Play
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main viewport with Suspense boundary for lazy components */}
       <main className={`max-w-7xl mx-auto px-4 md:px-8 ${isGameActive ? 'mt-4 md:mt-6' : 'mt-10'}`}>

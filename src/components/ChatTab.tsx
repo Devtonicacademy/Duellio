@@ -450,6 +450,26 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           msgObj.gameType = challengeData.gameType;
           msgObj.entryFee = challengeData.entryFee;
           msgObj.challengeStatus = 'pending';
+
+          // Also dispatch real-time Firestore notification document to opponent
+          const notifRef = collection(db, 'notifications');
+          addDoc(notifRef, {
+            receiverId: activeChat.user?.uid || 'all',
+            receiverName: activeChat.user?.username || 'Challenger',
+            senderId: userProfile.uid,
+            senderName: userProfile.username,
+            senderAvatar: userProfile.avatar,
+            type: 'challenge',
+            title: '⚔️ Live Duel Challenge Received!',
+            message: `${userProfile.username} has challenged you to a ${challengeData.gameType} match for ${challengeData.entryFee} Coins!`,
+            gameType: challengeData.gameType,
+            entryFee: challengeData.entryFee,
+            sessionId: msgObj.sessionId,
+            timestamp: Date.now(),
+            timeString: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            read: false,
+            status: 'pending'
+          }).catch(console.warn);
         }
 
         await addDoc(messagesRef, msgObj);
