@@ -244,9 +244,15 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     }
   }, [preselectedGame, suggestedStake, onlineBots, setPreselectedGame, allProfiles, userProfile.uid]);
 
+  const processedChallengeRef = useRef<string | null>(null);
+
   // Trigger Friend Invite Matches
   useEffect(() => {
     if (friendChallenge) {
+      const challengeKey = `${friendChallenge.sessionId}_${friendChallenge.gameType}_${friendChallenge.entryFee}_${friendChallenge.isHost ? 'host' : 'guest'}`;
+      if (processedChallengeRef.current === challengeKey) return;
+      processedChallengeRef.current = challengeKey;
+
       if (friendChallenge.opponentType === 'player') {
         const sessionId = friendChallenge.sessionId || `session_${Date.now()}`;
         
@@ -296,6 +302,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
             senderId: userProfile.uid,
             senderName: userProfile.username,
             receiverId: 'pending',
+            receiverName: friendChallenge.senderName || 'Opponent',
             gameType: friendChallenge.gameType,
             entryFee: friendChallenge.entryFee,
             status: 'pending',
@@ -2845,10 +2852,10 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 ⌛ LOBBY MATCHMAKING WAITING ROOM
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-white font-display">
-                Waiting for {opponentProfile?.username || activeChallenge.senderName || 'Opponent'} to Accept Challenge
+                Waiting for {activeChallenge.receiverName || opponentProfile?.username || 'Opponent'} to Accept Challenge
               </h2>
               <p className="text-xs text-neutral-400 max-w-md mx-auto leading-relaxed">
-                Your entry stake of <strong className="text-emerald-400 font-mono font-bold">{activeChallenge.entryFee} Coins</strong> has been locked in atomic escrow. A live notification was dispatched to <strong>{opponentProfile?.username || activeChallenge.senderName || 'your opponent'}</strong>.
+                Your entry stake of <strong className="text-emerald-400 font-mono font-bold">{activeChallenge.entryFee} Coins</strong> has been locked in atomic escrow. A live notification was dispatched to <strong>{activeChallenge.receiverName || opponentProfile?.username || 'your opponent'}</strong>.
               </p>
             </div>
 

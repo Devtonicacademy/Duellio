@@ -49,6 +49,7 @@ export interface MatchChallenge {
   senderId: string;
   senderName: string;
   receiverId: string;
+  receiverName?: string;
   gameType: 'Whot' | 'Ludo' | 'Chess' | 'Draft' | 'TicTacToe' | 'Stickman';
   entryFee: number;
   status: 'pending' | 'accepted' | 'declined' | 'completed';
