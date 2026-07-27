@@ -230,6 +230,42 @@ export function useProfiles() {
       return { success: false, message: e.message };
     }
   };
+    // Update Profile (Username & Avatar)
+  const handleUpdateProfile = async (username: string, avatar: string) => {
+    if (!userProfile) return { success: false, message: 'No active user profile.' };
+    
+    const trimmedUser = username.trim();
+    if (!trimmedUser) {
+      return { success: false, message: 'Username cannot be empty.' };
+    }
+
+    if (trimmedUser.toLowerCase() !== userProfile.username.toLowerCase()) {
+      const isTaken = allProfiles.some(
+        u => u.uid !== userProfile.uid && u.username.toLowerCase() === trimmedUser.toLowerCase()
+      );
+      if (isTaken) {
+        return { success: false, message: `Username "${trimmedUser}" is already taken by another player.` };
+      }
+    }
+
+    const updated: UserProfile = {
+      ...userProfile,
+      username: trimmedUser,
+      avatar: avatar.trim() || userProfile.avatar
+    };
+
+    try {
+      setUserProfile(updated);
+      await updateDoc(doc(db, 'users', userProfile.uid), {
+        username: updated.username,
+        avatar: updated.avatar
+      });
+      return { success: true, message: 'Profile updated successfully!' };
+    } catch (err: any) {
+      console.error('Error updating profile in Firestore:', err);
+      return { success: false, message: err.message || 'Failed to update profile.' };
+    }
+  };
 
   return {
     allProfiles,
@@ -241,6 +277,7 @@ export function useProfiles() {
     handleSwitchProfile,
     handleDeleteProfile,
     handleAddProfile,
-    handleToggleDeactivate
+    handleToggleDeactivate,
+    handleUpdateProfile
   };
 }

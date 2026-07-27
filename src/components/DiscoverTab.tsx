@@ -212,12 +212,12 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
 
       {/* Discovery Category Filters & Dynamic Search Bar */}
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-5 border-b border-white/10 pb-5">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex overflow-x-auto no-scrollbar gap-2 py-1 scroll-smooth max-w-full select-none">
           {(['all', 'strategy', 'classic', 'fast', 'high'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4.5 py-2 text-xs font-medium rounded-full cursor-pointer transition-all ${
+              className={`px-4.5 py-2 text-xs font-medium rounded-full cursor-pointer transition-all shrink-0 active:scale-95 ${
                 activeCategory === tab
                   ? 'bg-purple-350 text-neutral-950 font-extrabold shadow-md shadow-purple-500/20'
                   : 'glass-pill text-neutral-300 hover:border-purple-500/40 hover:text-white'

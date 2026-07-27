@@ -18,7 +18,9 @@ import {
   UserPlus, 
   KeyRound, 
   Eye, 
-  Coins 
+  Coins,
+  Pencil,
+  Camera
 } from 'lucide-react';
 import { UserProfile, WalletTransaction } from '../types';
 import { db } from '../firebase';
@@ -32,6 +34,7 @@ interface ProfileTabProps {
   onDeleteProfile: (uid: string) => void;
   onAddProfile: (username: string, email: string, pass: string, avatar: string) => Promise<{ success: boolean; message: string; user?: UserProfile }>;
   onSwitchProfile: (uid: string) => void;
+  onUpdateProfile?: (username: string, avatar: string) => Promise<{ success: boolean; message: string }>;
   allProfiles: UserProfile[];
 }
 
@@ -43,6 +46,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   onDeleteProfile,
   onAddProfile,
   onSwitchProfile,
+  onUpdateProfile,
   allProfiles
 }) => {
   // Password change state
@@ -94,6 +98,14 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   const [regPass, setRegPass] = useState('');
   const [regSelectedAvatar, setRegSelectedAvatar] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80');
   const [regMsg, setRegMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Edit profile state
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [editUsername, setEditUsername] = useState('');
+  const [editAvatar, setEditAvatar] = useState('');
+  const [customAvatarUrl, setCustomAvatarUrl] = useState('');
+  const [editMsg, setEditMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const availableAvatars = [
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
@@ -162,6 +174,27 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       setRegMsg({ type: 'error', text: res.message });
     }
   };
+
+  const handleSaveEditProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onUpdateProfile) return;
+    setEditMsg(null);
+    setIsSavingEdit(true);
+
+    const finalAvatar = customAvatarUrl.trim() ? customAvatarUrl.trim() : editAvatar;
+    const res = await onUpdateProfile(editUsername, finalAvatar);
+    setIsSavingEdit(false);
+
+    if (res.success) {
+      setEditMsg({ type: 'success', text: res.message });
+      setTimeout(() => {
+        setShowEditProfileModal(false);
+        setEditMsg(null);
+      }, 1200);
+    } else {
+      setEditMsg({ type: 'error', text: res.message });
+    }
+  };
   
   // Actual user profiles on the app as friends
   const friends = allProfiles
@@ -188,13 +221,27 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
         
         {/* Left Side: Circular ELO / Badge indicators */}
         <div className="relative shrink-0">
-          <div className="w-32 h-32 md:w-36 md:h-36 rounded-2xl overflow-hidden border-2 border-purple-500/30 neon-glow-purple p-1 bg-neutral-900 shadow-xl">
+          <div 
+            onClick={() => {
+              setEditUsername(userProfile.username);
+              setEditAvatar(userProfile.avatar);
+              setCustomAvatarUrl('');
+              setEditMsg(null);
+              setShowEditProfileModal(true);
+            }}
+            className="w-32 h-32 md:w-36 md:h-36 rounded-2xl overflow-hidden border-2 border-purple-500/30 neon-glow-purple p-1 bg-neutral-900 shadow-xl cursor-pointer group relative"
+            title="Click to edit profile avatar"
+          >
             <div className="w-full h-full rounded-xl overflow-hidden relative">
               <img 
                 alt="Player Avatar" 
-                className="w-full h-full object-cover" 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                 src={userProfile.avatar} 
               />
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white font-sans text-xs font-bold">
+                <Camera className="w-5 h-5 text-purple-300" />
+                <span>Change</span>
+              </div>
               <div className="absolute bottom-0 inset-x-0 bg-purple-400/95 text-neutral-950 text-center font-display font-bold text-[9px] py-1 uppercase tracking-wide">
                 ELITE OPS
               </div>
@@ -216,6 +263,22 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             <span className="bg-purple-500/15 border border-purple-500/35 text-purple-300 px-3 py-0.5 rounded-full font-display text-[9px] font-bold tracking-wider uppercase animate-pulse">
               PRO MEMBER
             </span>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEditUsername(userProfile.username);
+                setEditAvatar(userProfile.avatar);
+                setCustomAvatarUrl('');
+                setEditMsg(null);
+                setShowEditProfileModal(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-full transition-all cursor-pointer font-sans text-xs font-bold shrink-0 select-none shadow-sm hover:border-purple-500/50"
+              title="Edit Profile Username & Avatar"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              <span>Edit Profile</span>
+            </button>
           </div>
 
           <p className="text-xs md:text-sm text-neutral-400 font-sans max-w-xl leading-relaxed">
@@ -784,6 +847,132 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
 
         </div>
       </section>
+
+      {/* Complete Modal Overlay for Edit Profile */}
+      <AnimatePresence>
+        {showEditProfileModal && (
+          <div className="fixed inset-0 bg-black/92 backdrop-blur-md flex items-center justify-center z-[120] p-4 font-sans">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: -15 }}
+              className="bg-[#0B0B0F] border-2 border-purple-500/30 rounded-3xl p-6 md:p-8 max-w-md w-full relative shadow-[0_0_50px_rgba(168,85,247,0.15)] space-y-6"
+            >
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => { setShowEditProfileModal(false); setEditMsg(null); }}
+                className="absolute top-4 right-4 text-neutral-500 hover:text-white font-black text-sm p-1.5 hover:bg-white/5 rounded-full cursor-pointer transition-colors select-none"
+              >
+                ✕
+              </button>
+
+              <div className="text-center space-y-2">
+                <div className="mx-auto h-14 w-14 bg-purple-500/15 rounded-2xl flex items-center justify-center border border-purple-400/30 shadow-[0_0_15px_rgba(168,85,247,0.15)]">
+                  <Pencil className="w-7 h-7 text-purple-300" />
+                </div>
+                <h3 className="text-lg md:text-xl font-black text-white tracking-tight font-display uppercase">
+                  Edit Player Profile
+                </h3>
+                <p className="text-xs text-neutral-400">
+                  Update your display name and avatar identity.
+                </p>
+              </div>
+
+              {/* Real-time Preview Badge */}
+              <div className="bg-neutral-950 p-3.5 rounded-2xl border border-white/10 flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-xl overflow-hidden border border-purple-400/40 shrink-0 bg-neutral-900">
+                  <img 
+                    src={customAvatarUrl.trim() ? customAvatarUrl.trim() : editAvatar} 
+                    alt="Preview Avatar" 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
+                    }}
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-mono font-bold text-neutral-500 block uppercase tracking-wider">LIVE PREVIEW</span>
+                  <p className="text-sm font-extrabold text-white truncate font-display uppercase">
+                    {editUsername.trim() || userProfile.username}
+                  </p>
+                  <span className="text-[10px] text-purple-300 font-mono block">PRO MEMBER • Level 42</span>
+                </div>
+              </div>
+
+              <form onSubmit={handleSaveEditProfile} className="space-y-4 text-left">
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                    Display Username
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editUsername}
+                    onChange={(e) => setEditUsername(e.target.value)}
+                    placeholder="Enter new username"
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-purple-500/50 font-sans font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
+                    Choose Preset Avatar
+                  </label>
+                  <div className="flex gap-2 justify-between flex-wrap bg-neutral-950 p-2 rounded-2xl border border-white/5">
+                    {availableAvatars.map((av) => (
+                      <button
+                        key={av}
+                        type="button"
+                        onClick={() => {
+                          setEditAvatar(av);
+                          setCustomAvatarUrl('');
+                        }}
+                        className={`w-10 h-10 rounded-full overflow-hidden border-2 transition-all cursor-pointer ${
+                          !customAvatarUrl && editAvatar === av ? 'border-purple-400 scale-105 shadow-md shadow-purple-500/30' : 'border-transparent hover:border-neutral-700'
+                        }`}
+                      >
+                        <img src={av} alt="Avatar Preset" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                    Or Custom Avatar Image URL
+                  </label>
+                  <input
+                    type="url"
+                    value={customAvatarUrl}
+                    onChange={(e) => setCustomAvatarUrl(e.target.value)}
+                    placeholder="https://example.com/avatar.jpg"
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-purple-500/50 font-mono text-[11px]"
+                  />
+                </div>
+
+                {editMsg && (
+                  <div className={`p-3 rounded-xl border text-xs font-semibold ${
+                    editMsg.type === 'success' 
+                      ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' 
+                      : 'bg-rose-500/10 border-rose-500/25 text-rose-400'
+                  }`}>
+                    {editMsg.text}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSavingEdit}
+                  className="w-full py-3.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-black text-sm rounded-xl cursor-pointer transition-all shadow-md active:scale-95 uppercase tracking-wider mt-3 select-none disabled:opacity-50"
+                >
+                  {isSavingEdit ? 'Saving Changes...' : 'Save Profile Changes'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Complete Modal Overlay for Add Profile */}
       <AnimatePresence>

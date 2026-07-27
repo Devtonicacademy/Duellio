@@ -54,6 +54,14 @@ html {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @utility neon-glow-purple {
   filter: drop-shadow(0 0 15px rgba(221, 183, 255, 0.3));
 }

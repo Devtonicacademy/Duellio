@@ -793,6 +793,71 @@ export function Header({
           </div>
         </div>
       )}
+
+      {/* Floating Glass Mobile Navigation Bottom Dock (< lg) */}
+      <div className="lg:hidden fixed bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-40 max-w-lg mx-auto">
+        <nav className="glass-floating-header rounded-full px-2 py-1.5 flex items-center justify-around shadow-[0_12px_40px_rgba(0,0,0,0.65)] ring-1 ring-white/12 border border-white/15 backdrop-blur-2xl">
+          <button
+            onClick={() => { setActiveTab('discover'); setPreselectedGame(null); }}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-all cursor-pointer select-none active:scale-95 ${
+              activeTab === 'discover'
+                ? 'bg-purple-350 text-[#070709] font-black shadow-md shadow-purple-500/20'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <Compass className="w-4 h-4 shrink-0" />
+            <span className="text-[9px] font-display uppercase tracking-wider font-bold">Discover</span>
+          </button>
+
+          <button
+            onClick={() => { setActiveTab('play-arena'); setPreselectedGame(null); }}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-all cursor-pointer select-none active:scale-95 ${
+              activeTab === 'play-arena'
+                ? 'bg-purple-350 text-[#070709] font-black shadow-md shadow-purple-500/20'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <Gamepad2 className="w-4 h-4 shrink-0" />
+            <span className="text-[9px] font-display uppercase tracking-wider font-bold">Arena</span>
+          </button>
+
+          <button
+            onClick={() => { setActiveTab('tournaments'); setPreselectedGame(null); }}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-all cursor-pointer select-none active:scale-95 ${
+              activeTab === 'tournaments'
+                ? 'bg-purple-350 text-[#070709] font-black shadow-md shadow-purple-500/20'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <Trophy className="w-4 h-4 shrink-0" />
+            <span className="text-[9px] font-display uppercase tracking-wider font-bold">Tourneys</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('lobbies')}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-all cursor-pointer select-none active:scale-95 ${
+              activeTab === 'lobbies'
+                ? 'bg-purple-350 text-[#070709] font-black shadow-md shadow-purple-500/20'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <Swords className="w-4 h-4 shrink-0" />
+            <span className="text-[9px] font-display uppercase tracking-wider font-bold">Lobbies</span>
+          </button>
+
+          <button
+            onClick={() => { setActiveTab('profile'); setPreselectedGame(null); }}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-all cursor-pointer select-none relative active:scale-95 ${
+              activeTab === 'profile'
+                ? 'bg-purple-350 text-[#070709] font-black shadow-md shadow-purple-500/20'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <User className="w-4 h-4 shrink-0" />
+            <span className="text-[9px] font-display uppercase tracking-wider font-bold">Profile</span>
+          </button>
+        </nav>
+      </div>
     </>
   );
 }
