@@ -687,11 +687,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     let refundedCoins = 0;
     
     if (activeChallenge.gameType === 'Whot' && whotGameState) {
-      const userHandCount = whotGameState.playerHands[userProfile.uid]?.length || 0;
-      const opponentHandCount = whotGameState.playerHands[opponentId]?.length || 0;
+      const userHandCount = whotGameState?.playerHands?.[userProfile.uid]?.length || 0;
+      const opponentHandCount = whotGameState?.playerHands?.[opponentId]?.length || 0;
       
-      const userPoints = whotGameState.playerHands[userProfile.uid]?.reduce((acc, c) => acc + (c.suit === 'Whot' ? 20 : c.value), 0) || 0;
-      const opponentPoints = whotGameState.playerHands[opponentId]?.reduce((acc, c) => acc + (c.suit === 'Whot' ? 20 : c.value), 0) || 0;
+      const userPoints = whotGameState?.playerHands?.[userProfile.uid]?.reduce((acc, c) => acc + (c.suit === 'Whot' ? 20 : c.value), 0) || 0;
+      const opponentPoints = whotGameState?.playerHands?.[opponentId]?.reduce((acc, c) => acc + (c.suit === 'Whot' ? 20 : c.value), 0) || 0;
       
       if (userHandCount < opponentHandCount) {
         userWon = true;
@@ -880,7 +880,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     ];
 
     for (const player of players) {
-      const currentCount = whotGameState.playerHands[player.id]?.length || 0;
+      const currentCount = whotGameState?.playerHands?.[player.id]?.length || 0;
       const prevCount = prevHandsRef.current[player.id];
 
       // Only alert if there was a real state change
@@ -918,8 +918,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const getTensionClass = () => {
     if (!whotGameState || whotGameState.status !== 'playing') return '';
     const botId = activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid : activeChallenge?.senderId;
-    const userCount = whotGameState.playerHands[userProfile.uid]?.length || 0;
-    const botCount = botId ? (whotGameState.playerHands[botId]?.length || 0) : 0;
+    const userCount = whotGameState?.playerHands?.[userProfile.uid]?.length || 0;
+    const botCount = botId ? (whotGameState?.playerHands?.[botId]?.length || 0) : 0;
     
     if (userCount === 1 || botCount === 1) {
       return 'tension-last';
@@ -938,8 +938,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       const opponentId = activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid : activeChallenge?.senderId;
       if (!opponentId) return;
 
-      const userHand = whotGameState.playerHands[userProfile.uid] || [];
-      const botHand = whotGameState.playerHands[opponentId] || [];
+      const userHand = whotGameState?.playerHands?.[userProfile.uid] || [];
+      const botHand = whotGameState?.playerHands?.[opponentId] || [];
 
       const userHasPlayable = hasAnyPlayableCard(userHand, whotGameState.activeSuit, whotGameState.discardPile[0], whotGameState.penaltyCount);
       const botHasPlayable = hasAnyPlayableCard(botHand, whotGameState.activeSuit, whotGameState.discardPile[0], whotGameState.penaltyCount);
@@ -1466,11 +1466,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
     setWhotGameState(prev => {
       if (!prev) return null;
-      const existingHand = prev.playerHands[playerId] || [];
+      const existingHand = prev?.playerHands?.[playerId] || [];
       return {
         ...prev,
         playerHands: {
-          ...prev.playerHands,
+          ...(prev?.playerHands || {}),
           [playerId]: [...existingHand, ...resultCards]
         },
         deckCount: currentDeck.length
@@ -1579,7 +1579,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       ? (activeChallenge.senderId === userProfile.uid ? (activeChallenge.receiverId === 'pending' ? '' : activeChallenge.receiverId) : activeChallenge.senderId)
       : (activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid || 'bot' : activeChallenge?.senderId));
 
-    const playerHand = whotGameState.playerHands[userProfile.uid] || [];
+    const playerHand = whotGameState?.playerHands?.[userProfile.uid] || [];
     const nextPlayerHand = playerHand.filter(c => c.id !== card.id);
     const isWinner = nextPlayerHand.length === 0;
 
@@ -1683,7 +1683,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const executeBotTurn = (botId: string) => {
     if (!whotGameState) return;
     
-    const botHand = whotGameState.playerHands[botId] || [];
+    const botHand = whotGameState?.playerHands?.[botId] || [];
     const topCard = whotGameState.discardPile[0];
     const activeSuit = whotGameState.activeSuit;
     const penaltyActive = whotGameState.penaltyCount > 0;
@@ -2964,7 +2964,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                       </div>
                       <p className="text-[11px] text-emerald-200/80 font-mono">Opponent's Hand Status</p>
                       <div className="mt-1 bg-black/60 text-white text-[10px] font-mono px-2.5 py-1 rounded-xl font-bold border border-white/10 inline-block">
-                        {whotGameState.playerHands[opponentId]?.length || 0} Cards
+                        {whotGameState?.playerHands?.[opponentId]?.length || 0} Cards
                       </div>
                     </div>
                   </div>
@@ -2976,12 +2976,12 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                       className="w-full max-w-full overflow-x-auto overflow-y-hidden pb-3 pt-1 shadow-inner scrollbar-thin select-none touch-pan-x whot-cards-row scroll-smooth"
                     >
                       <div className="flex gap-2 sm:gap-3 min-w-max mx-auto px-3 justify-center items-center">
-                        {whotGameState.status === 'completed' ? (
-                          whotGameState.playerHands[opponentId]?.map((card) => 
+                        {whotGameState?.status === 'completed' ? (
+                          whotGameState?.playerHands?.[opponentId]?.map((card) => 
                             renderWhotCard(card, false, undefined, true)
                           )
                         ) : (
-                          whotGameState.playerHands[opponentId]?.map((card) => (
+                          whotGameState?.playerHands?.[opponentId]?.map((card) => (
                             <motion.div 
                               key={card.id} 
                               layoutId={card.id}
@@ -3139,7 +3139,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 text-xs">
                     <span className="font-black text-white text-sm flex items-center gap-1.5 font-display uppercase tracking-wider">
                       <User className="w-5 h-5 text-amber-400 shrink-0" />
-                      Your Hand Deck ({whotGameState.playerHands[userProfile.uid]?.length || 0} cards)
+                      Your Hand Deck ({whotGameState?.playerHands?.[userProfile.uid]?.length || 0} cards)
                     </span>
                     
                     <div className="flex items-center gap-2">
@@ -3173,7 +3173,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                   {isFanMode ? (
                     /* ── FAN / SPIN LAYOUT ── */
                     (() => {
-                      const hand = whotGameState.playerHands[userProfile.uid] || [];
+                      const hand = whotGameState?.playerHands?.[userProfile.uid] || [];
                       const count = hand.length;
                       if (count === 0) return null;
 
@@ -3315,7 +3315,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                         className="w-full max-w-full overflow-x-auto overflow-y-hidden pb-4 pt-2.5 shadow-inner scrollbar-thin select-none touch-pan-x whot-cards-row scroll-smooth"
                       >
                         <div className="flex gap-2 sm:gap-3 min-w-max mx-auto px-4 justify-center items-center">
-                          {whotGameState.playerHands[userProfile.uid]?.map((card) => 
+                          {whotGameState?.playerHands?.[userProfile.uid]?.map((card) => 
                             renderWhotCard(card, true, () => handlePlayCard(card))
                           )}
                         </div>
