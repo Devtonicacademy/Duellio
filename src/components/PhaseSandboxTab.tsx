@@ -35,6 +35,7 @@ import { InteractiveTicTacToeBoard } from './InteractiveTicTacToeBoard';
 import { InteractiveStickmanBoard } from './InteractiveStickmanBoard';
 import { TicTacToeLogicService } from '../services/ticTacToeLogic';
 import { DraftLogicService } from '../services/draftLogic';
+import { ChessRulesService } from '../services/chessRulesService';
 import { db } from '../firebase';
 import { doc, setDoc, increment, updateDoc, onSnapshot, collection, query, where, getDoc, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { sanitizeFirestoreData } from '../utils/firestoreSanitizer';
@@ -333,7 +334,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
               lastActionMessage: 'Session initialized. Waiting for opponent to join...'
             };
           } else if (friendChallenge.gameType === 'Chess') {
-            initialSession = { sessionId, activeColor: 'w', status: 'playing', playerIds: [userProfile.uid, ''] };
+            initialSession = ChessRulesService.initializeBoard(sessionId, userProfile.uid, '');
           } else if (friendChallenge.gameType === 'Ludo') {
             initialSession = { sessionId, activePlayer: 'red', status: 'playing', playerIds: [userProfile.uid, ''] };
           } else {
@@ -394,6 +395,14 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                   lastActionMessage: `${userProfile.username} has joined! Match starts now.`
                 };
 
+                if (friendChallenge.gameType === 'Chess' && !updatedGameState.board) {
+                  const freshChess = ChessRulesService.initializeBoard(sessionId, sessionData.hostId, userProfile.uid);
+                  updatedGameState.board = freshChess.board;
+                  updatedGameState.activeColor = updatedGameState.activeColor || freshChess.activeColor;
+                  updatedGameState.castlingRights = updatedGameState.castlingRights || freshChess.castlingRights;
+                  updatedGameState.enPassantTarget = updatedGameState.enPassantTarget !== undefined ? updatedGameState.enPassantTarget : freshChess.enPassantTarget;
+                }
+
                 const inviteChallenge: MatchChallenge = {
                   id: sessionId,
                   senderId: sessionData.hostId,
@@ -409,7 +418,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 setActiveChallenge(inviteChallenge);
                 setGamePlayStatus('playing');
                 _setWhotGameState(updatedGameState);
-                setLiveGameState(sessionData.gameState || updatedGameState);
+                setLiveGameState(sessionData.gameState && sessionData.gameState.board ? sessionData.gameState : updatedGameState);
                 whotDeckRef.current = sessionData.deck || [];
 
                 updateDoc(doc(db, 'gameSessions', sessionId), sanitizeFirestoreData({
@@ -433,16 +442,26 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
               }
             } else {
               // Self-healing fallback: If session doc was not found on Firestore, initialize & set it up now
+              const hostId = friendChallenge.senderName || 'Host';
+              let fallbackGameState: any = {};
+              if (friendChallenge.gameType === 'Chess') {
+                fallbackGameState = ChessRulesService.initializeBoard(sessionId, hostId, userProfile.uid);
+              } else if (friendChallenge.gameType === 'Draft') {
+                fallbackGameState = DraftLogicService.initializeBoard(sessionId, hostId, userProfile.uid);
+              } else if (friendChallenge.gameType === 'TicTacToe') {
+                fallbackGameState = TicTacToeLogicService.initializeBoard(sessionId, hostId, userProfile.uid);
+              }
+
               const fallbackSessionData = sanitizeFirestoreData({
                 sessionId,
                 gameType: friendChallenge.gameType || 'Chess',
-                hostId: friendChallenge.senderName || 'Host',
-                hostName: friendChallenge.senderName || 'Host',
+                hostId,
+                hostName: hostId,
                 opponentId: userProfile.uid,
                 opponentName: userProfile.username,
                 status: 'playing',
                 entryFee: friendChallenge.entryFee || 0,
-                gameState: initialSession || {},
+                gameState: fallbackGameState,
                 deck: [],
                 createdAt: Date.now(),
                 updatedAt: Date.now()
@@ -452,8 +471,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
               const inviteChallenge: MatchChallenge = {
                 id: sessionId,
-                senderId: friendChallenge.senderName || 'Host',
-                senderName: friendChallenge.senderName || 'Host',
+                senderId: hostId,
+                senderName: hostId,
                 receiverId: userProfile.uid,
                 gameType: friendChallenge.gameType,
                 entryFee: friendChallenge.entryFee,
@@ -464,8 +483,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
               setActiveChallenge(inviteChallenge);
               setGamePlayStatus('playing');
-              _setWhotGameState(initialSession);
-              setLiveGameState(initialSession);
+              _setWhotGameState(null);
+              setLiveGameState(fallbackGameState);
 
               setGamePlayLogs([
                 `[ESCROW LOCK] Atomic escrow write success. STAKE: ${friendChallenge.entryFee} coins escrowed.`,

@@ -51,7 +51,7 @@ export const DraftBoard: React.FC<DraftBoardProps> = ({
                       w-4/5 h-4/5 rounded-full shadow-md cursor-pointer transition-transform
                       ${piece.playerId === gameState.playerIds[0] ? 'bg-white border-2 border-gray-300' : 'bg-black border-2 border-gray-800'}
                       ${isSelected ? 'ring-4 ring-yellow-400 scale-110' : 'hover:scale-105'}
-                      ${piece.isKing ? 'flex items-center justify-center after:content-["♔"] after:text-xl' : ''}
+                      ${piece.isKing ? 'flex items-center justify-center' : ''}
                     `}
                   >
                     {piece.isKing && (

@@ -21,6 +21,7 @@ interface Chess3DSceneProps {
   selectedSquare: [number, number] | null;
   validDestinations: Array<[number, number]>;
   activeColor: Color;
+  myColor?: Color;
   onTileClick: (row: number, col: number) => void;
 }
 
@@ -156,11 +157,6 @@ function getPieceGeometry(type: PieceType): THREE.BufferGeometry {
       new THREE.Vector2(0.34, 0.10),
       new THREE.Vector2(0.36, 0.14),
       new THREE.Vector2(0.26, 0.20),
-      new THREE.Vector2(0.16, 0.55),
-      new THREE.Vector2(0.25, 0.62),
-      new THREE.Vector2(0.16, 0.66),
-      new THREE.Vector2(0.30, 0.96),
-      new THREE.Vector2(0.20, 1.02),
       new THREE.Vector2(0, 1.02)
     ];
     const lathe = new THREE.LatheGeometry(points, 32);
@@ -262,6 +258,7 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
   selectedSquare,
   validDestinations,
   activeColor: _activeColor,
+  myColor = 'w',
   onTileClick
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -290,8 +287,13 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
 
     // Camera angled to match photo (38° tilt, clear view of back rank & piece silhouettes)
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    camera.position.set(0, 8.5, 9.5);
-    camera.lookAt(0, 0.2, 0.2);
+    if (myColor === 'b') {
+      camera.position.set(0, 8.5, -9.5);
+      camera.lookAt(0, 0.2, -0.2);
+    } else {
+      camera.position.set(0, 8.5, 9.5);
+      camera.lookAt(0, 0.2, 0.2);
+    }
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setSize(width, height);

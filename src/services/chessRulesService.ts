@@ -27,7 +27,66 @@ export const INITIAL_CASTLING_RIGHTS: CastlingRights = {
   bQ: true
 };
 
+export const INITIAL_BOARD: BoardGrid = [
+  [
+    { type: 'r', color: 'b' },
+    { type: 'n', color: 'b' },
+    { type: 'b', color: 'b' },
+    { type: 'q', color: 'b' },
+    { type: 'k', color: 'b' },
+    { type: 'b', color: 'b' },
+    { type: 'n', color: 'b' },
+    { type: 'r', color: 'b' }
+  ],
+  [
+    { type: 'p', color: 'b' },
+    { type: 'p', color: 'b' },
+    { type: 'p', color: 'b' },
+    { type: 'p', color: 'b' },
+    { type: 'p', color: 'b' },
+    { type: 'p', color: 'b' },
+    { type: 'p', color: 'b' },
+    { type: 'p', color: 'b' }
+  ],
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null],
+  [
+    { type: 'p', color: 'w' },
+    { type: 'p', color: 'w' },
+    { type: 'p', color: 'w' },
+    { type: 'p', color: 'w' },
+    { type: 'p', color: 'w' },
+    { type: 'p', color: 'w' },
+    { type: 'p', color: 'w' },
+    { type: 'p', color: 'w' }
+  ],
+  [
+    { type: 'r', color: 'w' },
+    { type: 'n', color: 'w' },
+    { type: 'b', color: 'w' },
+    { type: 'q', color: 'w' },
+    { type: 'k', color: 'w' },
+    { type: 'b', color: 'w' },
+    { type: 'n', color: 'w' },
+    { type: 'r', color: 'w' }
+  ]
+];
+
 export class ChessRulesService {
+  static initializeBoard(sessionId: string, hostId: string = 'host', guestId: string = 'guest') {
+    return {
+      sessionId,
+      board: JSON.parse(JSON.stringify(INITIAL_BOARD)),
+      activeColor: 'w',
+      castlingRights: { ...INITIAL_CASTLING_RIGHTS },
+      enPassantTarget: null,
+      status: 'playing',
+      playerIds: [hostId, guestId]
+    };
+  }
+
   // Verify path between from and to is empty (excluding endpoints)
   static isPathClear(board: BoardGrid, fromR: number, fromC: number, toR: number, toC: number): boolean {
     const rStep = Math.sign(toR - fromR);

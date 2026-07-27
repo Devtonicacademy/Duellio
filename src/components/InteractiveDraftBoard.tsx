@@ -126,7 +126,8 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
       }> = [];
 
       botPieces.forEach(piece => {
-        const forwardDir = 1;
+        const isPlayer1 = piece.playerId === gameState.playerIds[0];
+        const forwardDir = isPlayer1 ? 1 : -1;
         const directions = piece.isKing
           ? [[1, 1], [1, -1], [-1, 1], [-1, -1]]
           : [[forwardDir, 1], [forwardDir, -1]];
@@ -177,10 +178,10 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
       );
 
       const playerPiecesCount = nextState.pieces.filter(p => p.playerId === player1Id).length;
-      if (playerPiecesCount === 0) {
+      if (playerPiecesCount === 0 || !DraftLogicService.hasValidMoves(nextState, player1Id)) {
         setGameState(nextState);
         setGameResult('bot_won');
-        onAddLog(`[CRITICAL] All your pieces were captured! Gamedev session lost.`);
+        onAddLog(`[CRITICAL] All your pieces were captured or trapped! Match lost.`);
         setTimeout(() => onGameOver(false), 2500);
         return;
       }
@@ -219,21 +220,28 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
 
     const nextState = DraftLogicService.executeMove(gameState, selectedPieceId, row, col);
 
-    // Check if opponent has any pieces left
+    // Check if opponent has any pieces left or valid moves left
     const opponentPiecesCount = nextState.pieces.filter(p => p.playerId === player2Id).length;
-    if (opponentPiecesCount === 0) {
+    if (opponentPiecesCount === 0 || !DraftLogicService.hasValidMoves(nextState, player2Id)) {
       nextState.status = 'completed';
       nextState.winnerId = myId;
       setGameState(nextState);
       setGameResult('player_won');
-      onAddLog(`[CELEBRATION] Victory! You captured all of ${opponentName}'s pieces!`);
+      onAddLog(`[CELEBRATION] Victory! Opponent has no remaining pieces or legal moves!`);
       if (!isBot && onUpdateLiveState) onUpdateLiveState(nextState);
       setTimeout(() => onGameOver(true), 2500);
       return;
     }
 
     setGameState(nextState);
-    setSelectedPieceId(null);
+
+    // If multi-jump is active (turn didn't switch), keep piece selected
+    if (nextState.activePlayerId === gameState.activePlayerId) {
+      setSelectedPieceId(selectedPieceId);
+    } else {
+      setSelectedPieceId(null);
+    }
+
     if (!isBot && onUpdateLiveState) {
       onUpdateLiveState(nextState);
     }

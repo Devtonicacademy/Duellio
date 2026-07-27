@@ -455,8 +455,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           // Also dispatch real-time Firestore notification document to opponent
           const notifRef = collection(db, 'notifications');
           addDoc(notifRef, sanitizeFirestoreData({
-            receiverId: activeChat.user?.uid || 'all',
-            receiverName: activeChat.user?.username || 'Challenger',
+            receiverId: activeChat.id || 'all',
+            receiverName: activeChat.name || 'Challenger',
             senderId: userProfile.uid || 'sender',
             senderName: userProfile.username || 'Sender',
             senderAvatar: userProfile.avatar || '',

@@ -78,7 +78,7 @@ export class DraftLogicService {
     }
 
     if (rowDiff === 2 && colDiff === 2) {
-      // If not king, ensure moving forward (in checkers, standard pieces can only jump forward as well in basic rules, or backward in some. Let's enforce forward jump for standard pieces for simplicity, or allow backward if preferred. Standard rules allow forward jumps only for normal pieces.)
+      // If not king, ensure moving forward
       if (!piece.isKing) {
         const isPlayer1 = piece.playerId === state.playerIds[0];
         if (isPlayer1 && targetRow <= piece.position.row) return false;
@@ -100,6 +100,63 @@ export class DraftLogicService {
   }
 
   /**
+   * Helper to check if a specific player has any valid moves remaining.
+   */
+  static hasValidMoves(state: DraftGameState, playerId: string): boolean {
+    const playerPieces = state.pieces.filter(p => p.playerId === playerId);
+    if (playerPieces.length === 0) return false;
+
+    // Temporarily create state with activePlayerId set to this player for validation
+    const tempState = { ...state, activePlayerId: playerId };
+
+    for (const piece of playerPieces) {
+      const isPlayer1 = piece.playerId === state.playerIds[0];
+      const forwardDir = isPlayer1 ? 1 : -1;
+      const directions = piece.isKing
+        ? [[1, 1], [1, -1], [-1, 1], [-1, -1]]
+        : [[forwardDir, 1], [forwardDir, -1]];
+
+      for (const [rDir, cDir] of directions) {
+        // Step move
+        if (this.isValidMove(tempState, piece.id, piece.position.row + rDir, piece.position.col + cDir)) {
+          return true;
+        }
+        // Jump move
+        if (this.isValidMove(tempState, piece.id, piece.position.row + rDir * 2, piece.position.col + cDir * 2)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Helper to check if a specific piece has any jump (capture) moves available.
+   */
+  static getValidJumps(state: DraftGameState, pieceId: string): Array<{ row: number; col: number }> {
+    const piece = state.pieces.find(p => p.id === pieceId);
+    if (!piece) return [];
+
+    const jumps: Array<{ row: number; col: number }> = [];
+    const isPlayer1 = piece.playerId === state.playerIds[0];
+    const forwardDir = isPlayer1 ? 1 : -1;
+    const directions = piece.isKing
+      ? [[1, 1], [1, -1], [-1, 1], [-1, -1]]
+      : [[forwardDir, 1], [forwardDir, -1]];
+
+    for (const [rDir, cDir] of directions) {
+      const targetRow = piece.position.row + rDir * 2;
+      const targetCol = piece.position.col + cDir * 2;
+      if (this.isValidMove(state, piece.id, targetRow, targetCol)) {
+        jumps.push({ row: targetRow, col: targetCol });
+      }
+    }
+
+    return jumps;
+  }
+
+  /**
    * Executes a move and returns the new game state.
    */
   static executeMove(state: DraftGameState, pieceId: string, targetRow: number, targetCol: number): DraftGameState {
@@ -109,19 +166,20 @@ export class DraftLogicService {
 
     const piece = state.pieces.find(p => p.id === pieceId)!;
     const rowDiff = Math.abs(targetRow - piece.position.row);
+    let justPromotedToKing = false;
 
     let nextPieces = state.pieces.map(p => {
       if (p.id !== pieceId) return p;
       
-      const newPiece = { ...p, position: { row: targetRow, col: targetCol } };
-      
-      // Kinging logic: Reach opposite end
       const isPlayer1 = p.playerId === state.playerIds[0];
-      if ((isPlayer1 && targetRow === 7) || (!isPlayer1 && targetRow === 0)) {
-        newPiece.isKing = true;
-      }
-      
-      return newPiece;
+      const newlyKinged = !p.isKing && ((isPlayer1 && targetRow === 7) || (!isPlayer1 && targetRow === 0));
+      if (newlyKinged) justPromotedToKing = true;
+
+      return {
+        ...p,
+        position: { row: targetRow, col: targetCol },
+        isKing: p.isKing || newlyKinged
+      };
     });
 
     // If jump move (dist 2), remove the captured piece
@@ -131,14 +189,31 @@ export class DraftLogicService {
       nextPieces = nextPieces.filter(p => !(p.position.row === midRow && p.position.col === midCol));
     }
 
-    const nextActivePlayer = state.activePlayerId === state.playerIds[0] ? state.playerIds[1] : state.playerIds[0];
+    const updatedStateBeforeTurnSwitch: DraftGameState = {
+      ...state,
+      pieces: nextPieces
+    };
+
+    // Check multi-jump possibility: If a jump occurred and piece was NOT just crowned king, check if more jumps exist
+    let keepTurnForMultiJump = false;
+    if (rowDiff === 2 && !justPromotedToKing) {
+      const extraJumps = this.getValidJumps(updatedStateBeforeTurnSwitch, pieceId);
+      if (extraJumps.length > 0) {
+        keepTurnForMultiJump = true;
+      }
+    }
+
+    const nextActivePlayer = keepTurnForMultiJump
+      ? state.activePlayerId
+      : (state.activePlayerId === state.playerIds[0] ? state.playerIds[1] : state.playerIds[0]);
 
     return {
-      ...state,
-      pieces: nextPieces,
+      ...updatedStateBeforeTurnSwitch,
       activePlayerId: nextActivePlayer,
       lastMoveMessage: rowDiff === 2 
-        ? `Player jumped and captured piece at row ${(piece.position.row + targetRow) / 2}, col ${(piece.position.col + targetCol) / 2}`
+        ? (keepTurnForMultiJump 
+            ? `Multi-jump active! Player captured piece at row ${(piece.position.row + targetRow) / 2}, col ${(piece.position.col + targetCol) / 2}` 
+            : `Player jumped and captured piece at row ${(piece.position.row + targetRow) / 2}, col ${(piece.position.col + targetCol) / 2}`)
         : `Player moved to row ${targetRow}, col ${targetCol}`
     };
   }

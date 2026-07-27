@@ -643,6 +643,7 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
                 selectedSquare={selectedSquare}
                 validDestinations={validDestinations}
                 activeColor={activeColor}
+                myColor={myColor}
                 onTileClick={handleTileClick}
               />
             </div>
@@ -654,8 +655,11 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
               <div className="absolute inset-0 rounded-2xl sm:rounded-[28px] border border-cyan-500/10 pointer-events-none" />
 
               <div className="grid grid-cols-8 grid-rows-8 w-full h-full rounded-2xl overflow-hidden border border-neutral-850 bg-[#02050b]">
-                {board.map((row, rIdx) => 
-                  row.map((cell, cIdx) => {
+                {Array.from({ length: 8 }).map((_, dispR) => 
+                  Array.from({ length: 8 }).map((_, dispC) => {
+                    const rIdx = myColor === 'b' ? 7 - dispR : dispR;
+                    const cIdx = myColor === 'b' ? 7 - dispC : dispC;
+                    const cell = board[rIdx][cIdx];
                     const isSelected = selectedSquare && selectedSquare[0] === rIdx && selectedSquare[1] === cIdx;
                     const isDark = (rIdx + cIdx) % 2 === 1;
                     const isValidTarget = validDestinations.some(d => d[0] === rIdx && d[1] === cIdx);
@@ -671,7 +675,7 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
 
                     return (
                       <button
-                        key={`${rIdx}_${cIdx}`}
+                        key={`${dispR}_${dispC}`}
                         onClick={() => handleTileClick(rIdx, cIdx)}
                         className={`aspect-square relative flex items-center justify-center cursor-pointer select-none transition-all ${tileBg}`}
                       >
@@ -686,24 +690,24 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
                         )}
 
                         {/* Left & Right rank numbers for clear line-of-sight tracking */}
-                        {cIdx === 0 && (
+                        {dispC === 0 && (
                           <span className="absolute top-1 left-1.5 text-[9px] font-mono leading-none select-none font-extrabold text-cyan-450/60 pointer-events-none">
                             {8 - rIdx}
                           </span>
                         )}
-                        {cIdx === 7 && (
+                        {dispC === 7 && (
                           <span className="absolute top-1 right-1.5 text-[9px] font-mono leading-none select-none font-extrabold text-cyan-450/60 pointer-events-none">
                             {8 - rIdx}
                           </span>
                         )}
 
                         {/* Top & Bottom file letters for clear column-of-sight tracking */}
-                        {rIdx === 0 && (
+                        {dispR === 0 && (
                           <span className="absolute bottom-1 left-1.5 text-[9px] font-mono leading-none select-none font-extrabold text-cyan-455/60 pointer-events-none">
                             {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'][cIdx]}
                           </span>
                         )}
-                        {rIdx === 7 && (
+                        {dispR === 7 && (
                           <span className="absolute bottom-1 right-1.5 text-[9px] font-mono leading-none select-none font-extrabold text-cyan-455/60 pointer-events-none">
                             {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'][cIdx]}
                           </span>
@@ -741,7 +745,9 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
                   ? 'bg-cyan-500/10 border-cyan-400/50 shadow-[0_0_15px_rgba(6,182,212,0.15)] ring-1 ring-cyan-400/35' 
                   : 'bg-[#090F1B]/90 border-slate-900 text-slate-400'
               }`}>
-                <span className="text-[9px] font-mono text-slate-400 uppercase block tracking-wider">You (Cyan)</span>
+                <span className="text-[9px] font-mono text-slate-400 uppercase block tracking-wider">
+                  {myColor === 'w' ? 'You (White / Cyan)' : `${opponentName} (White / Cyan)`}
+                </span>
                 <div className="flex items-center justify-center gap-1.5 font-mono text-sm font-black text-cyan-300">
                   <Timer className={`w-4 h-4 ${activeColor === 'w' ? 'text-cyan-400' : 'text-slate-500'}`} />
                   <span>{formatTime(whiteTimer)}</span>
@@ -754,7 +760,9 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
                   ? 'bg-amber-500/10 border-amber-400/50 shadow-[0_0_15px_rgba(245,158,11,0.15)] ring-1 ring-amber-400/35' 
                   : 'bg-[#090F1B]/90 border-slate-900 text-slate-400'
               }`}>
-                <span className="text-[9px] font-mono block uppercase tracking-wider">{opponentName} (Gold)</span>
+                <span className="text-[9px] font-mono block uppercase tracking-wider">
+                  {myColor === 'b' ? 'You (Black / Gold)' : `${opponentName} (Black / Gold)`}
+                </span>
                 <div className="flex items-center justify-center gap-1.5 font-mono text-sm font-black text-amber-300">
                   <Timer className={`w-4 h-4 ${activeColor === 'b' ? 'text-amber-400' : 'text-slate-500'}`} />
                   <span>{formatTime(blackTimer)}</span>
