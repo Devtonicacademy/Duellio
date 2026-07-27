@@ -3540,6 +3540,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 sessionId={activeChallenge?.id}
                 isHost={activeChallenge?.senderId === userProfile.uid}
                 liveGameState={liveGameState}
+                initialMode={(activeChallenge as any)?.ludoMode}
                 onUpdateLiveState={(newState) => {
                   if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
                     updateDoc(doc(db, 'gameSessions', activeChallenge.id), sanitizeFirestoreData({ gameState: newState, updatedAt: Date.now() })).catch(console.error);

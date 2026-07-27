@@ -19,6 +19,7 @@ interface InteractiveLudoBoardProps {
   isHost?: boolean;
   liveGameState?: any;
   onUpdateLiveState?: (newState: any) => void;
+  initialMode?: '2-player' | '4-player';
 }
 
 interface LudoToken {
@@ -87,12 +88,13 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   sessionId,
   isHost = true,
   liveGameState,
-  onUpdateLiveState
+  onUpdateLiveState,
+  initialMode
 }) => {
   const [view3D, setView3D] = useState<boolean>(true);
   
   // Match Player Mode: 2-Player (2 Quadrants per player) vs 4-Player (1 Quadrant per player)
-  const [playerMode, setPlayerMode] = useState<'2-player' | '4-player'>('2-player');
+  const [playerMode, setPlayerMode] = useState<'2-player' | '4-player'>(initialMode || '2-player');
 
   // 16 Active Tokens across all 4 Quadrants
   const [tokens, setTokens] = useState<LudoToken[]>(() => liveGameState?.tokens || [

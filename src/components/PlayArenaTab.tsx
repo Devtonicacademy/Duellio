@@ -8,6 +8,7 @@ import { motion } from 'motion/react';
 import { 
   Swords, 
   Users, 
+  UserCheck,
   Bot, 
   Trophy, 
   Coins, 
@@ -37,6 +38,7 @@ interface PlayArenaTabProps {
     opponentName: string;
     multiplier: number;
     sessionId?: string;
+    ludoMode?: '2-player' | '4-player';
   }) => void;
   allProfiles: UserProfile[];
 }
@@ -121,15 +123,13 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
   const [botPlayMode, setBotPlayMode] = useState<'practice' | 'staked'>('staked');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [stake, setStake] = useState<number>(250);
+  const [ludoMode, setLudoMode] = useState<'2-player' | '4-player'>('2-player');
   
   // Available other live players from allProfiles (excluding current user)
   const onlinePlayers = allProfiles.filter(p => p.uid !== userProfile.uid);
   const [selectedPlayerUid, setSelectedPlayerUid] = useState<string>(onlinePlayers[0]?.uid || '');
 
   // Calculate bot multiplier modifier
-  // Easy: Stake * 2.0 payout (basic 1x return)
-  // Medium: Stake * 2.5 payout
-  // Hard: Stake * 3.5 payout (high difficulty high reward!)
   const getMultiplier = () => {
     if (opponentStyle === 'player') return 1.0;
     if (botPlayMode === 'practice') {
@@ -137,7 +137,7 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
       if (difficulty === 'medium') return 1.5;
       return 2.5;
     }
-    return 1.0; // Standard 1.0 multiplier for staked bot games
+    return 1.0;
   };
 
   const selectedOpponent = onlinePlayers.find(p => p.uid === selectedPlayerUid) || onlinePlayers[0];
@@ -233,7 +233,8 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
       entryFee: actualStake,
       opponentName,
       multiplier,
-      sessionId
+      sessionId,
+      ludoMode: selectedGame === 'Ludo' ? ludoMode : undefined
     });
 
     setSelectedGame(null);
@@ -490,6 +491,53 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* ── Ludo Quadrant Mode Selector (Before Initiating Game) ── */}
+            {selectedGame === 'Ludo' && (
+              <div className="space-y-2 animate-fade-in bg-emerald-500/[0.04] border border-emerald-500/20 p-3 sm:p-4 rounded-2xl">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-mono font-bold text-emerald-300 uppercase tracking-wider block">
+                    Ludo Match Type
+                  </label>
+                  <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/30">
+                    {ludoMode === '2-player' ? '2-Player (2 Quadrants Each)' : '4-Player (1 Quadrant Each)'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 p-1 bg-[#070709] rounded-xl border border-white/[0.04]">
+                  <button
+                    type="button"
+                    onClick={() => setLudoMode('2-player')}
+                    className={`py-2.5 rounded-lg font-bold text-[11px] sm:text-xs font-display flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      ludoMode === '2-player'
+                        ? 'bg-amber-400 text-neutral-950 shadow-[0_0_10px_rgba(245,158,11,0.4)]'
+                        : 'text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    <UserCheck className="w-3.5 h-3.5" />
+                    2 Players (2 Quadrants)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLudoMode('4-player')}
+                    className={`py-2.5 rounded-lg font-bold text-[11px] sm:text-xs font-display flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      ludoMode === '4-player'
+                        ? 'bg-cyan-400 text-neutral-950 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                        : 'text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    4 Players (1 Quadrant)
+                  </button>
+                </div>
+
+                <p className="text-[10px] text-neutral-400 font-mono">
+                  {ludoMode === '2-player'
+                    ? '💡 2-Player Duel: You command 2 quadrants (Red & Yellow) with 8 total pawns.'
+                    : '💡 4-Player Battle Royale: 4 distinct players command 1 quadrant each (Red vs Blue vs Green vs Yellow).'}
+                </p>
+              </div>
+            )}
 
             {/* ── Bot Play Mode (Practice vs Staked) ── */}
             {opponentStyle === 'bot' && (
