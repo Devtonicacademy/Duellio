@@ -2111,52 +2111,5 @@ export class Stickman {
     }
 
     ctx.restore();
-
-    // Render dynamic overhead health bar above stickman head
-    this.drawOverheadHealthBar(ctx);
-  }
-
-  drawOverheadHealthBar(ctx) {
-    if (!this.pos || this.health <= 0) return;
-
-    ctx.save();
-    const barWidth = 48;
-    const barHeight = 6;
-    const headX = this.pos.x;
-    const headY = this.pos.y - 70 * (this.scale || 1);
-
-    // Background container box
-    ctx.fillStyle = 'rgba(9, 9, 11, 0.85)';
-    ctx.strokeStyle = `${this.color}80`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(headX - barWidth / 2 - 4, headY - 14, barWidth + 8, barHeight + 17, 4);
-    ctx.fill();
-    ctx.stroke();
-
-    // Player Name text
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 9px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(this.name || 'Player', headX, headY - 4);
-
-    // Health bar fill percentage
-    const maxH = this.maxHealth || 150;
-    const pct = Math.max(0, Math.min(1, this.health / maxH));
-    const healthWidth = barWidth * pct;
-
-    // Health track background
-    ctx.fillStyle = 'rgba(24, 24, 27, 0.9)';
-    ctx.fillRect(headX - barWidth / 2, headY, barWidth, barHeight);
-
-    // Dynamic Health color (Green -> Yellow -> Red)
-    let barColor = this.color || '#00f0ff';
-    if (pct < 0.3) barColor = '#ef4444';
-    else if (pct < 0.6) barColor = '#f59e0b';
-
-    ctx.fillStyle = barColor;
-    ctx.fillRect(headX - barWidth / 2, headY, healthWidth, barHeight);
-
-    ctx.restore();
   }
 }
