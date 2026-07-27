@@ -1,8 +1,24 @@
-﻿import { Swords, Zap } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Swords, Zap } from 'lucide-react';
 import './MobileControls.css';
 
 export default function MobileControls({ inputHandler, p1Chi = 0 }) {
-  
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+    const checkTouch = () => {
+      const hasTouch = 'ontouchstart' in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
+      const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setIsTouchDevice(hasTouch || isMobileUA);
+    };
+    checkTouch();
+  }, []);
+
+  // Do NOT render control buttons on desktop
+  if (!isTouchDevice) {
+    return null;
+  }
+
   // Prevent zoom/scroll on touch gestures
   const handleTouchStart = (action, e) => {
     e.preventDefault();

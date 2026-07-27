@@ -12,6 +12,12 @@
   z-index: 30;
 }
 
+@media (pointer: fine), (min-width: 768px) {
+  .mobile-controls-overlay {
+    display: none !important;
+  }
+}
+
 /* Movement D-pad styling */
 .movement-pad {
   pointer-events: auto;
