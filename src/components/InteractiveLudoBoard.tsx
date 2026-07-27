@@ -24,38 +24,54 @@ interface InteractiveLudoBoardProps {
 interface LudoToken {
   id: string;
   color: 'red' | 'green' | 'blue' | 'gold';
-  position: number; // -1 means home base, 0 to 51 is the common path, 52-57 is the home runway
+  position: number; // -1 means home base, 0 to 51 is common path, 52-57 is home runway
   status: 'home' | 'board' | 'finished';
 }
 
-// 15x15 grid coordinates mapping for typical Ludo path cell indexes (0 to 51)
+// 15x15 grid coordinates mapping for standard Ludo path cell indexes (0 to 51)
+// Index 0: Red Start [6, 0]
+// Index 13: Green Start [0, 8]
+// Index 26: Yellow Start [8, 14]
+// Index 39: Blue Start [14, 6]
 const PATH_COORDINATES: Array<[number, number]> = [
-  [6, 1], [6, 2], [6, 3], [6, 4], [6, 5],
+  // Left arm going right from Red Start [6,0] to [6,5]
+  [6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5],
+  // Top arm going up from [5,6] to [0,6]
   [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6],
+  // Top arm top cross [0,7]
   [0, 7],
+  // Top arm going down from Green Start [0,8] to [5,8]
   [0, 8], [1, 8], [2, 8], [3, 8], [4, 8], [5, 8],
+  // Right arm going right from [6,9] to [6,14]
   [6, 9], [6, 10], [6, 11], [6, 12], [6, 13], [6, 14],
+  // Right arm right cross [7,14]
   [7, 14],
+  // Right arm going left from Yellow Start [8,14] to [8,9]
   [8, 14], [8, 13], [8, 12], [8, 11], [8, 10], [8, 9],
+  // Bottom arm going down from [9,8] to [14,8]
   [9, 8], [10, 8], [11, 8], [12, 8], [13, 8], [14, 8],
+  // Bottom arm bottom cross [14,7]
   [14, 7],
+  // Bottom arm going up from Blue Start [14,6] to [9,6]
   [14, 6], [13, 6], [12, 6], [11, 6], [10, 6], [9, 6],
+  // Left arm going left from [8,5] to [8,0]
   [8, 5], [8, 4], [8, 3], [8, 2], [8, 1], [8, 0],
-  [7, 0], [6, 0]
+  // Left arm left cross [7,0]
+  [7, 0]
 ];
 
-// Start paths and indices
 const RED_START_INDEX = 0;
-const GREEN_START_INDEX = 26;
+const GREEN_START_INDEX = 13;
 
-// Safe spaces (stars) index in general map
-const SAFE_INDICES = [0, 8, 13, 21, 26, 34, 39, 47];
+const SAFE_COORDS: Array<[number, number]> = [
+  [6, 0], [0, 8], [8, 14], [14, 6]
+];
 
-// Decorative static tokens for non-player colors (to mirror visual depth of the reference image)
+// Decorative static tokens for non-player colors to populate the visual board
 const DECORATIVE_TOKENS = [
-  { id: 'blue_1', color: 'blue' as const, position: 10, status: 'board' as const },
+  { id: 'blue_1', color: 'blue' as const, position: -1, status: 'home' as const },
   { id: 'blue_2', color: 'blue' as const, position: -1, status: 'home' as const },
-  { id: 'gold_1', color: 'gold' as const, position: 35, status: 'board' as const },
+  { id: 'gold_1', color: 'gold' as const, position: -1, status: 'home' as const },
   { id: 'gold_2', color: 'gold' as const, position: -1, status: 'home' as const },
 ];
 
@@ -85,7 +101,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 
   const [activePlayer, setActivePlayer] = useState<'red' | 'green'>(() => liveGameState?.activePlayer || 'red');
   const [diceRollValue, setDiceRollValue] = useState<number>(5);
-  const [secondDiceValue, setSecondDiceValue] = useState<number>(3); // Double dice like the image
+  const [secondDiceValue, setSecondDiceValue] = useState<number>(3);
   const [isRolling, setIsRolling] = useState<boolean>(false);
   const [hasRolled, setHasRolled] = useState<boolean>(false);
   const [consecutiveSixes, setConsecutiveSixes] = useState<number>(0);
@@ -131,7 +147,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       setIsRolling(false);
       setHasRolled(true);
       
-      const totalSteps = outcome1; // We'll use the main dice for Ludo mechanics
+      const totalSteps = outcome1;
       onAddLog(`[DICE SEED] Generated outcomes: ${outcome1} & ${outcome2}`);
 
       const nextPlayer = myColor === 'red' ? 'green' : 'red';
@@ -197,7 +213,6 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         return;
       }
 
-      // Heuristic select token
       const isHard = botDifficulty === 'hard' || entryFee > 0;
       let selection: LudoToken;
 
@@ -229,11 +244,11 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   const canMoveToken = (token: LudoToken, roll: number): boolean => {
     if (token.status === 'finished') return false;
     if (token.status === 'home') {
-      return roll === 6 || roll === 5; // Standard 5 or 6 to release from yard
+      return roll === 6 || roll === 5;
     }
     const currentPos = token.position;
     if (currentPos + roll > 57) {
-      return false; // must land exactly on the finish cell
+      return false;
     }
     return true;
   };
@@ -249,7 +264,6 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     let nextTokens: LudoToken[] = [];
     
     setTokens(prev => {
-      let isCaptured = false;
       const updated = prev.map(t => {
         if (t.id !== tokenId) return t;
 
@@ -257,7 +271,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         let nextStatus = t.status;
 
         if (t.status === 'home') {
-          nextPos = playerColor === 'red' ? RED_START_INDEX : GREEN_START_INDEX;
+          nextPos = 0;
           nextStatus = 'board' as const;
         } else {
           nextPos += steps;
@@ -272,13 +286,15 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 
       // Collision Engine
       const movingToken = updated.find(t => t.id === tokenId)!;
-      if (movingToken.status === 'board') {
-        const isSafeSpace = SAFE_INDICES.includes(movingToken.position);
-        const collided = updated.find(t => 
-          t.color !== movingToken.color && 
-          t.status === 'board' && 
-          t.position === movingToken.position
-        );
+      if (movingToken.status === 'board' && movingToken.position < 52) {
+        const targetCell = getTokenCell(movingToken);
+        const isSafeSpace = SAFE_COORDS.some(([r, c]) => r === targetCell[0] && c === targetCell[1]);
+
+        const collided = updated.find(t => {
+          if (t.id === tokenId || t.color === movingToken.color || t.status !== 'board' || t.position >= 52) return false;
+          const cell = getTokenCell(t);
+          return cell[0] === targetCell[0] && cell[1] === targetCell[1];
+        });
 
         if (collided) {
           if (isSafeSpace) {
@@ -287,7 +303,6 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
             onAddLog(`[GRID COLLISION] Capture! Opponent piece ${collided.id.toUpperCase()} returned to home base.`);
             collided.position = -1;
             collided.status = 'home';
-            isCaptured = true;
           }
         }
       }
@@ -334,58 +349,87 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     }
   };
 
-  // Convert coordinate [r, c] into correct CSS cell class according to our elegant cyberpunk board
-  const getCellTheme = (r: number, c: number): string => {
-    // Green camp bounds (top-left)
-    if (r < 6 && c < 6) return 'bg-[#051C1A]/70 border-[#10b981]/15';
-    // Red camp (top-right)
-    if (r < 6 && c > 8) return 'bg-[#1C0508]/70 border-[#ef4444]/15';
-    // Gold camp (bottom-right)
-    if (r > 8 && c > 8) return 'bg-[#1C1605]/70 border-[#f59e0b]/15';
-    // Blue camp (bottom-left)
-    if (r > 8 && c < 6) return 'bg-[#05111C]/70 border-[#06b6d4]/15';
+  // Maps token to 15x15 board cell [row, col]
+  const getTokenCell = (token: LudoToken | typeof DECORATIVE_TOKENS[0]): [number, number] => {
+    if (token.status === 'home') {
+      if (token.color === 'red') {
+        return token.id.endsWith('2') ? [1, 3] : [1, 1];
+      }
+      if (token.color === 'green') {
+        return token.id.endsWith('2') ? [1, 12] : [1, 10];
+      }
+      if (token.color === 'blue') {
+        return token.id.endsWith('2') ? [10, 3] : [10, 1];
+      }
+      return token.id.endsWith('2') ? [10, 12] : [10, 10];
+    }
 
-    // Pathways
-    return 'bg-[#0b1329]/50 border-cyan-500/10';
+    if (token.status === 'finished') {
+      if (token.color === 'red') return [7, 6];
+      if (token.color === 'green') return [6, 7];
+      if (token.color === 'blue') return [8, 7];
+      return [7, 8];
+    }
+
+    const pos = token.position;
+
+    if (token.color === 'red') {
+      if (pos >= 52) {
+        const redRunway: Array<[number, number]> = [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6]];
+        return redRunway[Math.min(pos - 52, 5)];
+      }
+      return PATH_COORDINATES[pos % 52];
+    }
+
+    if (token.color === 'green') {
+      if (pos >= 52) {
+        const greenRunway: Array<[number, number]> = [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [6, 7]];
+        return greenRunway[Math.min(pos - 52, 5)];
+      }
+      return PATH_COORDINATES[(GREEN_START_INDEX + pos) % 52];
+    }
+
+    if (token.color === 'blue') {
+      if (pos >= 52) {
+        const blueRunway: Array<[number, number]> = [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7], [8, 7]];
+        return blueRunway[Math.min(pos - 52, 5)];
+      }
+      return PATH_COORDINATES[(39 + pos) % 52];
+    }
+
+    // Gold / Yellow
+    if (pos >= 52) {
+      const yellowRunway: Array<[number, number]> = [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9], [7, 8]];
+      return yellowRunway[Math.min(pos - 52, 5)];
+    }
+    return PATH_COORDINATES[(26 + pos) % 52];
   };
 
-  // Check if position matches safe spots
-  const isSafeCoord = (r: number, c: number): boolean => {
-    return SAFE_INDICES.some(idx => {
-      const coord = PATH_COORDINATES[idx];
-      return coord && coord[0] === r && coord[1] === c;
-    });
-  };
-
-  // Renders the glowing 3D cylindrical token
+  // Render glowing 3D token cylinder
   const renderTokenItem = (token: LudoToken | typeof DECORATIVE_TOKENS[0], isDecoration = false) => {
     const isMine = token.color === 'red';
     const isPlayable = !isDecoration && isMine && hasRolled && canMoveToken(token as LudoToken, diceRollValue);
 
     const tokenColors = {
       green: {
-        glow: 'shadow-[0_0_15px_rgba(16,185,129,0.8)]',
+        glow: 'shadow-[0_0_12px_rgba(0,154,68,0.8)]',
         border: 'border-emerald-400',
-        bg: 'from-emerald-500 to-emerald-700/60',
-        laserGlow: 'bg-emerald-400/20'
+        bg: 'from-emerald-500 to-emerald-700/80',
       },
       red: {
-        glow: 'shadow-[0_0_15px_rgba(239,68,68,0.8)]',
-        border: 'border-rose-500',
-        bg: 'from-rose-500 to-rose-700/60',
-        laserGlow: 'bg-rose-500/20'
+        glow: 'shadow-[0_0_12px_rgba(229,37,33,0.8)]',
+        border: 'border-rose-400',
+        bg: 'from-rose-500 to-rose-700/80',
       },
       blue: {
-        glow: 'shadow-[0_0_15px_rgba(6,182,212,0.8)]',
-        border: 'border-cyan-400',
-        bg: 'from-cyan-500 to-cyan-700/60',
-        laserGlow: 'bg-cyan-400/20'
+        glow: 'shadow-[0_0_12px_rgba(27,78,171,0.8)]',
+        border: 'border-blue-400',
+        bg: 'from-blue-500 to-blue-700/80',
       },
       gold: {
-        glow: 'shadow-[0_0_15px_rgba(245,158,11,0.8)]',
+        glow: 'shadow-[0_0_12px_rgba(255,204,0,0.8)]',
         border: 'border-amber-400',
-        bg: 'from-amber-500 to-amber-700/60',
-        laserGlow: 'bg-amber-400/20'
+        bg: 'from-amber-400 to-amber-600/80',
       }
     };
 
@@ -396,46 +440,44 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         key={token.id}
         onClick={() => !isDecoration && handleSelectToken(token as LudoToken)}
         whileHover={isPlayable ? { scale: 1.3, y: -5 } : { scale: 1.1 }}
-        style={{ transform: view3D ? 'translateZ(18px)' : 'none', transformStyle: 'preserve-3d' }}
-        className={`relative w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border ${style.border} ${style.glow} transition-colors z-30`}
+        style={{ transform: view3D ? 'translateZ(16px)' : 'none', transformStyle: 'preserve-3d' }}
+        className={`relative w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center cursor-pointer border-2 ${style.border} ${style.glow} transition-colors z-30`}
       >
-        {/* Transparent physical cylinders body effect */}
-        <div className={`absolute inset-[2px] rounded-full bg-gradient-to-t ${style.bg} flex items-center justify-center`}>
-          <span className="text-white text-[12px] font-extrabold font-display tracking-tight text-shadow-[0_0_4px_rgba(255,255,255,1)]">D</span>
+        <div className={`absolute inset-[1.5px] rounded-full bg-gradient-to-t ${style.bg} flex items-center justify-center`}>
+          <span className="text-white text-[10px] font-extrabold font-display tracking-tight text-shadow-[0_0_4px_rgba(0,0,0,0.8)]">
+            D
+          </span>
         </div>
 
-        {/* Glossy glare overlay representing the 3D acrylic shine of the cylinders */}
-        <div className="absolute top-[2px] left-[5px] w-4.5 h-2 bg-white/40 rounded-full rotate-[-15deg] blur-[0.4px] pointer-events-none" />
+        <div className="absolute top-[1.5px] left-[3px] w-3.5 h-1.5 bg-white/50 rounded-full rotate-[-15deg] blur-[0.3px] pointer-events-none" />
 
-        {/* Highlight ring for active plays */}
         {isPlayable && (
-          <span className="absolute -inset-1 rounded-full border border-emerald-400/80 animate-ping" />
+          <span className="absolute -inset-1 rounded-full border-2 border-yellow-300 animate-ping" />
         )}
       </motion.div>
     );
   };
 
   return (
-    <div className="relative min-h-[460px] sm:min-h-[580px] bg-[#03060E] rounded-2xl sm:rounded-3xl overflow-hidden border border-cyan-500/30 p-1 sm:p-2.5 font-sans flex flex-col justify-between shadow-[0_25px_60px_rgba(0,0,0,0.8)] select-none">
+    <div className="relative min-h-[480px] sm:min-h-[600px] bg-[#050914] rounded-2xl sm:rounded-3xl overflow-hidden border border-cyan-500/30 p-1 sm:p-2.5 font-sans flex flex-col justify-between shadow-[0_25px_60px_rgba(0,0,0,0.8)] select-none">
       
-      {/* Background neon visual line decors exactly mirroring the screenshot */}
+      {/* Background neon decors */}
       <div className="absolute top-2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent pointer-events-none" />
       <div className="absolute bottom-2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-500/20 to-transparent pointer-events-none" />
-      <div className="absolute top-12 left-12 w-32 h-2.5 bg-cyan-400/10 rounded-full blur-[10px] rotate-[15deg] animate-pulse pointer-events-none" />
 
       {/* VIEWPORT HEADER CONTROLS */}
-      <div className="flex justify-between items-center px-6 pt-5 pb-2 z-10">
+      <div className="flex justify-between items-center px-4 pt-3 pb-2 z-10">
         <div className="flex items-center gap-2">
           <div className="p-1 px-2.5 bg-[#091522] rounded-lg border border-cyan-500/25 flex items-center gap-1.5 text-[9px] font-mono text-cyan-400 tracking-wider">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>DUELLIO ENCRYPTED MATCHMAKER v1.1.0</span>
+            <span>DUELLIO CYBER LUDO MATCHMAKER</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowHelperRules(!showHelperRules)}
-            className="p-1.5 bg-[#090F1B]/90 hover:bg-neutral-900 border border-slate-800 text-slate-450 hover:text-white rounded-lg transition-colors text-xs flex items-center gap-1 font-mono uppercase"
+            className="p-1.5 bg-[#090F1B]/90 hover:bg-neutral-900 border border-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors text-xs flex items-center gap-1 font-mono uppercase"
           >
             <HelpCircle className="w-3.5 h-3.5" />
             <span>Rules</span>
@@ -458,249 +500,176 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-16 left-6 right-6 bg-[#070D18]/95 backdrop-blur-md border border-cyan-500/40 p-4.5 rounded-2xl text-xs text-slate-350 space-y-2 z-40"
+            className="absolute top-16 left-6 right-6 bg-[#070D18]/95 backdrop-blur-md border border-cyan-500/40 p-4 rounded-2xl text-xs text-slate-350 space-y-2 z-40"
           >
-            <h4 className="font-display font-black text-white uppercase text-sm tracking-wider">Duellio Cyber-Ludo Contract rules</h4>
+            <h4 className="font-display font-black text-white uppercase text-sm tracking-wider">Duellio Standard Ludo Contract Rules</h4>
             <ul className="list-disc pl-4 space-y-1 text-slate-400 font-mono text-[11px]">
-              <li>You control the <span className="text-rose-400 font-bold">RED Cylinder</span>. Bot adversary runs the <span className="text-emerald-400 font-bold">GREEN Cylinder</span>.</li>
-              <li>A dice roll outcome of <span className="text-cyan-300 font-bold">5 or 6</span> releases your acrylic token from home base onto index start 0.</li>
-              <li>Land directly on an opponent's cell coordinates to capture their core piece, sending them back to base (excluding Safe Space Stars).</li>
-              <li>First player to navigate all pieces to the center Duellio home shield claims the <span className="text-yellow-400 font-bold">🪙 {entryFee * 2} Coins</span> prize database pool!</li>
+              <li>You command the <span className="text-rose-400 font-bold">RED Tokens</span> in the Top-Left Base. Bot commands <span className="text-emerald-400 font-bold">GREEN Tokens</span> in Top-Right Base.</li>
+              <li>A dice roll of <span className="text-yellow-300 font-bold">5 or 6</span> releases your piece onto the Red starting square on the left arm.</li>
+              <li>Land on opponent pieces to capture them back to base (except on colored start/safe squares).</li>
+              <li>First player to navigate pieces into the central home triangle wins the match stake pool!</li>
             </ul>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* ========================================================== */}
-      {/* CORE 3D ARENA VIEWPORT FRAME */}
+      {/* CORE 3D/2D ARENA VIEWPORT FRAME */}
       {/* ========================================================== */}
-      <div className="relative w-full flex-1 flex items-center justify-center pb-20 pt-2 transition-all duration-700">
+      <div className="relative w-full flex-1 flex items-center justify-center py-4 transition-all duration-700">
         
         <div 
           className="relative transition-all duration-1000 ease-out flex items-center justify-center"
           style={{
             transform: view3D 
-              ? 'perspective(1000px) rotateX(44deg) rotateZ(-22deg) translateY(-3%) translateX(1%) scale(0.95)' 
-              : 'perspective(1000px) rotateX(0deg) rotateZ(0deg) translateY(0) translateX(0) scale(1)',
+              ? 'perspective(1000px) rotateX(38deg) rotateZ(-18deg) translateY(-2%) scale(0.92)' 
+              : 'perspective(1000px) rotateX(0deg) rotateZ(0deg) translateY(0) scale(1)',
             transformStyle: 'preserve-3d'
           }}
         >
-          {/* Holographic grid matrix projection underneath the board */}
+          {/* Holographic matrix background projection */}
           {view3D && (
-            <div className="absolute inset-[-40px] bg-[linear-gradient(rgba(16,185,129,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.03)_1px,transparent_1px)] bg-[size:28px_28px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)] pointer-events-none" />
+            <div className="absolute inset-[-40px] bg-[linear-gradient(rgba(6,182,212,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.04)_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)] pointer-events-none" />
           )}
 
           {/* ========================================================== */}
-          {/* THE 3D LUDO BOARD CANVAS */}
+          {/* THE CLASSIC LUDO BOARD CANVAS (MATCHING ATTACHED IMAGE) */}
           {/* ========================================================== */}
           <div 
-            className="relative w-[380px] h-[380px] bg-[#070D18]/95 rounded-[28px] border border-cyan-500/35 p-1.5 flex flex-col justify-between shadow-[0_30px_70px_rgba(0,0,0,0.8),0_0_35px_rgba(6,182,212,0.15)] ludo-board-container"
+            className="relative w-[340px] h-[340px] sm:w-[410px] sm:h-[410px] bg-black border-[3px] border-black p-[2px] shadow-[0_25px_60px_rgba(0,0,0,0.85)] ludo-board-container"
             style={{ transform: view3D ? 'translateZ(10px)' : 'none', transformStyle: 'preserve-3d' }}
           >
-            {/* Ambient inner neon board glow lines */}
-            <div className="absolute inset-0 rounded-[28px] border border-emerald-500/10 pointer-events-none" />
+            {/* 15x15 Grid Layout */}
+            <div className="grid grid-cols-15 grid-rows-15 w-full h-full bg-black gap-[1px]">
+              {Array.from({ length: 15 }).map((_, r) =>
+                Array.from({ length: 15 }).map((_, c) => {
+                  // Center 3x3 Home Box (rows 6..8, cols 6..8)
+                  if (r >= 6 && r <= 8 && c >= 6 && c <= 8) {
+                    if (r === 6 && c === 6) {
+                      return (
+                        <div
+                          key="center-home"
+                          className="relative overflow-hidden bg-white border border-black"
+                          style={{ gridRow: '7 / span 3', gridColumn: '7 / span 3' }}
+                        >
+                          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            {/* Left triangle (Red) */}
+                            <polygon points="0,0 50,50 0,100" fill="#E52521" stroke="#000000" strokeWidth="1.5" />
+                            {/* Top triangle (Green) */}
+                            <polygon points="0,0 50,50 100,0" fill="#009A44" stroke="#000000" strokeWidth="1.5" />
+                            {/* Right triangle (Yellow) */}
+                            <polygon points="100,0 50,50 100,100" fill="#FFCC00" stroke="#000000" strokeWidth="1.5" />
+                            {/* Bottom triangle (Blue) */}
+                            <polygon points="0,100 50,50 100,100" fill="#1B4EAB" stroke="#000000" strokeWidth="1.5" />
+                          </svg>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }
 
-            {/* Custom Grid quadrants matching standard Ludo structure but meticulously stylized */}
-            <div className="grid grid-cols-2 gap-2 w-full h-full">
+                  // Top-Left Yard (Red)
+                  if (r <= 5 && c <= 5) {
+                    if (r >= 1 && r <= 4 && c >= 1 && c <= 4) {
+                      const isCircle = (r === 1 && c === 1) || (r === 1 && c === 3) || (r === 3 && c === 1) || (r === 3 && c === 3);
+                      return (
+                        <div key={`${r}-${c}`} className="relative bg-white border border-black flex items-center justify-center" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                          {isCircle && <div className="w-[68%] h-[68%] rounded-full bg-[#E52521] border border-black shadow-inner" />}
+                        </div>
+                      );
+                    }
+                    return <div key={`${r}-${c}`} className="bg-[#E52521] border border-black" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                  }
 
-              {/* [TOP-LEFT] GREEN CAMP base */}
-              <div className="bg-[#051C1A] rounded-2xl border border-emerald-500/25 p-3 flex flex-col justify-between relative overflow-hidden">
-                <div className="absolute top-1 right-1 w-6 h-6 border-t border-r border-emerald-500/20 rounded-tr-md" />
-                <div className="w-full text-[7px] font-mono font-bold text-emerald-400/40 tracking-widest uppercase">SECURE_A</div>
-                
-                {/* Central Shield Vector Icon exactly representing the shield artwork in source image */}
-                <div className="flex-1 flex items-center justify-center opacity-40">
-                  <svg className="w-14 h-14 text-emerald-500/20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    <circle cx="12" cy="11" r="3" />
-                    <line x1="12" y1="5" x2="12" y2="17" />
-                  </svg>
-                </div>
+                  // Top-Right Yard (Green)
+                  if (r <= 5 && c >= 9) {
+                    if (r >= 1 && r <= 4 && c >= 10 && c <= 13) {
+                      const isCircle = (r === 1 && c === 10) || (r === 1 && c === 12) || (r === 3 && c === 10) || (r === 3 && c === 12);
+                      return (
+                        <div key={`${r}-${c}`} className="relative bg-white border border-black flex items-center justify-center" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                          {isCircle && <div className="w-[68%] h-[68%] rounded-full bg-[#009A44] border border-black shadow-inner" />}
+                        </div>
+                      );
+                    }
+                    return <div key={`${r}-${c}`} className="bg-[#009A44] border border-black" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                  }
 
-                {/* Render active Bot green pieces inside yard */}
-                <div className="absolute inset-0 flex items-center justify-center gap-4.5">
-                  {tokens.filter(t => t.color === 'green' && t.status === 'home').map(t => (
-                    renderTokenItem(t)
-                  ))}
-                </div>
-              </div>
+                  // Bottom-Left Yard (Blue)
+                  if (r >= 9 && c <= 5) {
+                    if (r >= 10 && r <= 13 && c >= 1 && c <= 4) {
+                      const isCircle = (r === 10 && c === 1) || (r === 10 && c === 3) || (r === 12 && c === 1) || (r === 12 && c === 3);
+                      return (
+                        <div key={`${r}-${c}`} className="relative bg-white border border-black flex items-center justify-center" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                          {isCircle && <div className="w-[68%] h-[68%] rounded-full bg-[#1B4EAB] border border-black shadow-inner" />}
+                        </div>
+                      );
+                    }
+                    return <div key={`${r}-${c}`} className="bg-[#1B4EAB] border border-black" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                  }
 
-              {/* [TOP-RIGHT] RED CAMP (User target camp) */}
-              <div className="bg-[#1C0508]/90 rounded-2xl border border-rose-500/20 p-3 flex flex-col justify-between relative overflow-hidden">
-                <div className="absolute top-1 left-1 w-6 h-6 border-t border-l border-rose-500/20 rounded-tl-md" />
-                <div className="w-full text-[7px] font-mono font-bold text-rose-500/40 tracking-widest uppercase">REGION_B</div>
-                
-                <div className="flex-1 flex items-center justify-center opacity-40">
-                  <svg className="w-14 h-14 text-rose-500/20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    <circle cx="12" cy="11" r="3" />
-                  </svg>
-                </div>
+                  // Bottom-Right Yard (Yellow)
+                  if (r >= 9 && c >= 9) {
+                    if (r >= 10 && r <= 13 && c >= 10 && c <= 13) {
+                      const isCircle = (r === 10 && c === 10) || (r === 10 && c === 12) || (r === 12 && c === 10) || (r === 12 && c === 12);
+                      return (
+                        <div key={`${r}-${c}`} className="relative bg-white border border-black flex items-center justify-center" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                          {isCircle && <div className="w-[68%] h-[68%] rounded-full bg-[#FFCC00] border border-black shadow-inner" />}
+                        </div>
+                      );
+                    }
+                    return <div key={`${r}-${c}`} className="bg-[#FFCC00] border border-black" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                  }
 
-                {/* Main player active/standby pieces inside yard */}
-                <div className="absolute inset-0 flex items-center justify-center gap-4.5">
-                  {tokens.filter(t => t.color === 'red' && t.status === 'home').map(t => (
-                    renderTokenItem(t)
-                  ))}
-                </div>
-              </div>
+                  // Top Arm (r 0..5, c 6..8)
+                  if (r <= 5 && c >= 6 && c <= 8) {
+                    const isGreenPath = (c === 7 && r >= 1) || (r === 0 && (c === 7 || c === 8));
+                    return <div key={`${r}-${c}`} className={`border border-black ${isGreenPath ? 'bg-[#009A44]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                  }
 
-              {/* [BOTTOM-LEFT] BLUE CAMP (Decorative) */}
-              <div className="bg-[#05111C]/90 rounded-2xl border border-cyan-500/20 p-3 flex flex-col justify-between relative overflow-hidden">
-                <div className="w-full text-[7px] font-mono font-bold text-cyan-400/30 tracking-widest uppercase">STATION_D</div>
-                
-                <div className="flex-1 flex items-center justify-center opacity-30">
-                  <svg className="w-14 h-14 text-cyan-500/10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                </div>
+                  // Left Arm (r 6..8, c 0..5)
+                  if (r >= 6 && r <= 8 && c <= 5) {
+                    const isRedPath = (r === 7) || (r === 6 && c === 0);
+                    return <div key={`${r}-${c}`} className={`border border-black ${isRedPath ? 'bg-[#E52521]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                  }
 
-                {/* Decorative inactive standing blue pieces */}
-                <div className="absolute inset-0 flex items-center justify-center gap-4.5">
-                  {DECORATIVE_TOKENS.filter(t => t.color === 'blue' && t.status === 'home').map(t => (
-                    renderTokenItem(t, true)
-                  ))}
-                </div>
-              </div>
+                  // Right Arm (r 6..8, c 9..14)
+                  if (r >= 6 && r <= 8 && c >= 9) {
+                    const isYellowPath = (r === 7) || (r === 8 && c === 14);
+                    return <div key={`${r}-${c}`} className={`border border-black ${isYellowPath ? 'bg-[#FFCC00]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                  }
 
-              {/* [BOTTOM-RIGHT] GOLD/YELLOW CAMP */}
-              <div className="bg-[#1C1605]/95 rounded-2xl border border-amber-500/20 p-3 flex flex-col justify-between relative overflow-hidden">
-                <div className="w-full text-[7px] font-mono font-bold text-amber-400/35 tracking-widest uppercase">REGIMENT_C</div>
-                
-                <div className="flex-1 flex items-center justify-center opacity-40">
-                  <svg className="w-14 h-14 text-amber-500/15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    <path d="M12 8v8M8 12h8" />
-                  </svg>
-                </div>
+                  // Bottom Arm (r 9..14, c 6..8)
+                  if (r >= 9 && c >= 6 && c <= 8) {
+                    const isBluePath = (c === 7 && r >= 9) || (r === 14 && c === 6);
+                    return <div key={`${r}-${c}`} className={`border border-black ${isBluePath ? 'bg-[#1B4EAB]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                  }
 
-                {/* Decorative inactive standing golden pieces */}
-                <div className="absolute inset-0 flex items-center justify-center gap-4.5">
-                  {DECORATIVE_TOKENS.filter(t => t.color === 'gold' && t.status === 'home').map(t => (
-                    renderTokenItem(t, true)
-                  ))}
-                </div>
-              </div>
+                  return <div key={`${r}-${c}`} className="bg-white border border-black" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                })
+              )}
 
+              {/* Render Playable & Decorative Tokens placed precisely inside cell coordinates */}
+              {[...tokens, ...DECORATIVE_TOKENS].map((token) => {
+                const isDec = 'isDecoration' in token || token.id.startsWith('blue') || token.id.startsWith('gold');
+                const [r, c] = getTokenCell(token as any);
+                return (
+                  <div
+                    key={token.id}
+                    className="relative z-30 flex items-center justify-center w-full h-full pointer-events-auto"
+                    style={{ gridRow: r + 1, gridColumn: c + 1 }}
+                  >
+                    {renderTokenItem(token as any, isDec)}
+                  </div>
+                );
+              })}
             </div>
-
-            {/* ========================================================== */}
-            {/* LUDO CIRCUITS PATH CHANNELS ON GRID */}
-            {/* ========================================================== */}
-            {/* Left side green entrance track (As pictured in image with glowing rings) */}
-            <div className="absolute top-[148px] left-[15px] flex items-center gap-2 z-20">
-              <span className="w-5 h-5 rounded-full bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center text-[7px] text-cyan-300 font-mono">1</span>
-              
-              {/* Highlight path trail arc */}
-              <div className="relative">
-                <span className="w-5.5 h-5.5 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-[0_0_10px_rgba(16,185,129,0.6)] border border-emerald-400 flex items-center justify-center" />
-                <span className="absolute -inset-0.5 rounded-full border border-emerald-400/40 animate-ping pointer-events-none" />
-              </div>
-              
-              <span className="w-5 h-5 rounded-full bg-[#05111C] border border-cyan-550/30" />
-            </div>
-
-            {/* Right side yellow entry row */}
-            <div className="absolute bottom-[148px] right-[15px] flex items-center gap-2 z-20">
-              <span className="w-5 h-5 rounded-full bg-amber-500/20 border border-amber-500/45" />
-              <span className="w-5 h-5 rounded-full bg-[#070D18] border border-cyan-550/30" />
-              <span className="w-5 h-5 rounded-full bg-[#070D18] border border-cyan-550/30" />
-            </div>
-
-            {/* Render any Active Token pieces floating on the path spaces */}
-            {tokens.map(token => {
-              if (token.status !== 'board') return null;
-              // Map Ludo index to coordinate pixels
-              const coord = PATH_COORDINATES[token.position];
-              if (!coord) return null;
-              
-              // Calculate rough percent alignment
-              const leftPercent = 5 + (coord[1] / 14) * 82;
-              const topPercent = 5 + (coord[0] / 14) * 82;
-
-              return (
-                <div 
-                  key={token.id}
-                  className="absolute z-30 transition-all duration-500 ease-out" 
-                  style={{ 
-                    left: `${leftPercent}%`, 
-                    top: `${topPercent}%`,
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                >
-                  {renderTokenItem(token)}
-                </div>
-              );
-            })}
-
-            {/* Render Decorative extra components to perfectly replicate the image's layout */}
-            {DECORATIVE_TOKENS.map(dec => {
-              if (dec.status !== 'board') return null;
-              const coord = PATH_COORDINATES[dec.position];
-              if (!coord) return null;
-              const leftPercent = 5 + (coord[1] / 14) * 82;
-              const topPercent = 5 + (coord[0] / 14) * 82;
-
-              return (
-                <div 
-                  key={dec.id}
-                  className="absolute z-20" 
-                  style={{ 
-                    left: `${leftPercent}%`, 
-                    top: `${topPercent}%`,
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                >
-                  {renderTokenItem(dec, true)}
-                </div>
-              );
-            })}
-
-            {/* Curved trajectory laser arc as pictured in original artwork */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-75" viewBox="0 0 100 100">
-              <path 
-                d="M 18,52 Q 33,48 45,45" 
-                fill="none" 
-                stroke="#10b981" 
-                strokeWidth="1.3" 
-                strokeDasharray="2,2" 
-                className="animate-pulse"
-              />
-              <path 
-                d="M 33,54 C 42,50 43,46 51,46" 
-                fill="none" 
-                stroke="#06b6d4" 
-                strokeWidth="0.8" 
-                className="opacity-45"
-              />
-            </svg>
-
-            {/* ========================================================== */}
-            {/* THE CENTRAL PYRAMID DUEL SHIELD HOMLAND */}
-            {/* ========================================================== */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-[#03060C] border border-cyan-500/65 rounded-2xl flex flex-col items-center justify-center shadow-[0_0_25px_rgba(6,182,212,0.3)] overflow-hidden z-20">
-              <div className="absolute inset-0 bg-radial-[circle_at_center,rgba(16,185,129,0.18)_0%,transparent_85%]" />
-              
-              {/* Crossed Swords Shield Emblem exactly mirroring picture */}
-              <svg className="w-10 h-10 text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.6)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <line x1="5" y1="5" x2="19" y2="19" />
-                <line x1="19" y1="5" x2="5" y2="19" />
-              </svg>
-              
-              <span className="text-[11px] font-extrabold text-white tracking-[0.25em] font-display mt-2">DUELLIO</span>
-              <span className="text-[6.5px] font-mono text-cyan-400 tracking-[0.15em] mt-0.5 uppercase">CYBER SYSTEMS</span>
-            </div>
-
           </div>
 
           {/* ========================================================== */}
-          {/* THE 3D PHYSICS-BASED METALLIC DICE (FOIL EMBOSSED) */}
+          {/* 3D METALLIC DICE CUBES */}
           {/* ========================================================== */}
-          {/* Dice 1 (representing high value roll 5 / active tilt angle from screenshot) */}
           <div 
-            className="absolute bottom-[-15px] right-[100px] z-30"
+            className="absolute bottom-[-15px] right-[80px] z-30"
             style={{
               transform: view3D 
                 ? 'translateZ(48px) rotateX(25deg) rotateY(-30deg) rotateZ(35deg)' 
@@ -711,9 +680,8 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
             <ThreeDDice value={diceRollValue} isRolling={isRolling} />
           </div>
 
-          {/* Dice 2 (secondary detail matching tilted bottom right dice in screenshot) */}
           <div 
-            className="absolute bottom-[-5px] right-[40px] z-30"
+            className="absolute bottom-[-5px] right-[25px] z-30"
             style={{
               transform: view3D 
                 ? 'translateZ(35px) rotateX(-20deg) rotateY(42deg) rotateZ(-12deg)' 
@@ -729,79 +697,68 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       </div>
 
       {/* ========================================================== */}
-      {/* GLOWING ACTION CONTROLS HUD (Bottom Left) */}
+      {/* ACTION CONTROLS HUD */}
       {/* ========================================================== */}
-      <div className="relative sm:absolute sm:bottom-5 sm:left-5 mx-auto mt-4 sm:mt-0 w-full max-w-[320px] sm:w-auto sm:max-w-none bg-[#080d1a]/95 backdrop-blur-md px-4.5 py-3 rounded-2xl border border-emerald-500/30 flex flex-col gap-1.5 shadow-[0_15px_30px_rgba(0,0,0,0.5)] z-30 min-w-[150px]">
+      <div className="relative sm:absolute sm:bottom-4 sm:left-4 mx-auto mt-2 sm:mt-0 w-full max-w-[300px] sm:w-auto bg-[#080d1a]/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-emerald-500/30 flex flex-col gap-1.5 shadow-[0_15px_30px_rgba(0,0,0,0.5)] z-30">
         <div className="flex items-center gap-2">
           <div className={`w-2.5 h-2.5 rounded-full ${activePlayer === 'green' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
           <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest">
-            {activePlayer === 'green' ? 'GREEN\'S TURN' : 'YOUR MOVE (RED)'}
+            {activePlayer === 'green' ? 'GREEN\'S TURN (BOT)' : 'YOUR MOVE (RED)'}
           </span>
         </div>
         
-        {/* Physical Roll controller button */}
         <button
           onClick={rollDice}
           disabled={activePlayer !== 'red' || hasRolled || isRolling || gameResult !== 'playing' || botIsThinking}
           className={`w-full py-1.5 font-extrabold tracking-widest uppercase font-display text-center rounded-xl transition-all border text-xs cursor-pointer ${
             activePlayer === 'red' && !hasRolled && !isRolling && gameResult === 'playing'
-              ? 'bg-emerald-500/15 border-emerald-500 hover:bg-emerald-500/25 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.35)] animate-pulse'
+              ? 'bg-emerald-500/20 border-emerald-500 hover:bg-emerald-500/30 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.35)] animate-pulse'
               : 'bg-[#0f1524] border-slate-800 text-slate-500 cursor-not-allowed'
           }`}
         >
-          {isRolling ? 'ROLLING...' : 'ROLL'}
+          {isRolling ? 'ROLLING...' : 'ROLL DICE'}
         </button>
       </div>
 
-      {/* ========================================================== */}
-      {/* FLOATING LEADERBOARD SPECTATOR PANEL (Top Right) */}
-      {/* ========================================================== */}
-      <div className="relative sm:absolute sm:top-18 sm:right-5 mx-auto mt-4 sm:mt-0 w-full max-w-[320px] sm:w-auto sm:max-w-[170px] bg-[#090F1B]/95 backdrop-blur-md py-3 px-4 rounded-2xl border border-cyan-500/25 shadow-2xl space-y-2.5 z-30">
-        <div className="flex justify-between items-center text-[8px] font-mono border-b border-cyan-500/15 pb-1.5">
-          <span className="font-extrabold text-[10px] tracking-wide text-cyan-300">⚔️ DUEL RANK: 5</span>
+      {/* FLOATING LEADERBOARD PANEL */}
+      <div className="relative sm:absolute sm:top-16 sm:right-4 mx-auto mt-2 sm:mt-0 w-full max-w-[300px] sm:w-auto sm:max-w-[160px] bg-[#090F1B]/95 backdrop-blur-md py-2.5 px-3.5 rounded-2xl border border-cyan-500/25 shadow-2xl space-y-2 z-30">
+        <div className="flex justify-between items-center text-[8px] font-mono border-b border-cyan-500/15 pb-1">
+          <span className="font-extrabold text-[9.5px] tracking-wide text-cyan-300">⚔️ LUDO MATCH</span>
         </div>
 
-        {/* Stake Wallet */}
         <div className="flex justify-between items-center bg-[#050B14]/90 px-2 py-1 rounded-lg border border-slate-800">
           <span className="text-[7.5px] text-slate-500 font-black uppercase">STAKE POOL</span>
-          <span className="text-[10px] text-[#FBBF24] font-black flex items-center gap-0.5">
-            🪙 {entryFee} Coins
+          <span className="text-[9.5px] text-[#FBBF24] font-black flex items-center gap-0.5">
+            🪙 {entryFee}
           </span>
         </div>
 
-        {/* Rows exactly mirroring columns shown in top banner HUD */}
-        <div className="space-y-1.5 pt-0.5 text-[9px]">
+        <div className="space-y-1 text-[8.5px]">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="truncate max-w-[65px] font-medium">Green Boss</span>
-            <span className="font-mono text-emerald-400 font-bold">1st (Active)</span>
-          </div>
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="truncate max-w-[65px] font-medium">Meral</span>
-            <span className="font-mono text-slate-500 font-medium">Rank 2</span>
+            <span className="truncate max-w-[60px] font-medium">{opponentName}</span>
+            <span className="font-mono text-emerald-400 font-bold">Green</span>
           </div>
           <div className="flex items-center justify-between text-slate-350">
-            <span className="truncate max-w-[65px] font-bold text-rose-300">You (Red)</span>
-            <span className="font-mono text-cyan-400 font-bold">Playing</span>
+            <span className="truncate max-w-[60px] font-bold text-rose-300">You</span>
+            <span className="font-mono text-cyan-400 font-bold">Red</span>
           </div>
         </div>
       </div>
 
-      {/* Bottom overlay status gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent pointer-events-none" />
     </div>
   );
 };
 
-// Sub-component rendering physical-looking 3D Cubes
+// 3D Physics Dice Sub-component
 const ThreeDDice: React.FC<{ value: number, isRolling: boolean }> = ({ value, isRolling }) => {
-  // Rotate facing coordinates smoothly
   const faceTransforms = [
-    'rotateX(0deg) rotateY(0deg)',   // 1
-    'rotateY(180deg)',              // 2
-    'rotateX(-90deg)',             // 3
-    'rotateX(90deg)',              // 4
-    'rotateY(-90deg)',             // 5
-    'rotateY(90deg)'               // 6
+    'rotateX(0deg) rotateY(0deg)',
+    'rotateY(180deg)',
+    'rotateX(-90deg)',
+    'rotateX(90deg)',
+    'rotateY(-90deg)',
+    'rotateY(90deg)'
   ];
   
   const style = {
@@ -822,7 +779,7 @@ const ThreeDDice: React.FC<{ value: number, isRolling: boolean }> = ({ value, is
     };
     const activeDots = dotsMap[num] || [4];
     return (
-      <div className="grid grid-cols-3 gap-1 w-full h-full p-2">
+      <div className="grid grid-cols-3 gap-1 w-full h-full p-1.5">
         {[...Array(9)].map((_, i) => (
           <div key={i} className="flex items-center justify-center">
             {activeDots.includes(i) && (
@@ -835,41 +792,28 @@ const ThreeDDice: React.FC<{ value: number, isRolling: boolean }> = ({ value, is
   };
 
   return (
-    <div className="w-9 h-9" style={{ perspective: '300px' }}>
+    <div className="w-8 h-8 sm:w-9 sm:h-9" style={{ perspective: '300px' }}>
       <div 
         className="relative w-full h-full transition-transform duration-700" 
         style={{ ...style, transformStyle: 'preserve-3d' }}
       >
-        {/* Front */}
         <div className="absolute inset-0 bg-[#1E2530] border-2 border-slate-700/80 rounded-lg shadow-md flex items-center justify-center backface-hidden" style={{ transform: 'translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(5)}
         </div>
-        {/* Back */}
         <div className="absolute inset-0 bg-[#1E2530] border-2 border-slate-700/80 rounded-lg shadow-md flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(180deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(2)}
         </div>
-        {/* Top */}
         <div className="absolute inset-0 bg-[#1E2530] border-2 border-slate-700/80 rounded-lg shadow-md flex items-center justify-center backface-hidden" style={{ transform: 'rotateX(90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(3)}
         </div>
-        {/* Bottom */}
         <div className="absolute inset-0 bg-[#1E2530] border-2 border-slate-700/80 rounded-lg shadow-md flex items-center justify-center backface-hidden" style={{ transform: 'rotateX(-90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(4)}
         </div>
-        {/* Left */}
         <div className="absolute inset-0 bg-[#1E2530] border-2 border-slate-700/80 rounded-lg shadow-md flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(-90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(1)}
         </div>
-        {/* Right */}
         <div className="absolute inset-0 bg-[#1E2530] border-2 border-slate-700/80 rounded-lg shadow-md flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(6)}
-        </div>
-
-        {/* Back-shield emblem detail engraved on side */}
-        <div className="absolute inset-[2.5px] bg-[#0F131A] border border-slate-800 rounded-md flex items-center justify-center opacity-90 pointer-events-none" style={{ transform: 'rotateY(90deg) translateZ(17.8px)' }}>
-          <svg className="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
         </div>
       </div>
     </div>
