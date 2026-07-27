@@ -1088,7 +1088,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
     const timer = setTimeout(() => {
       executeBotTurn(botId);
-    }, 1800);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [whotGameState?.activePlayerId, whotGameState?.status, whotGameState?.discardPile, activeChallenge?.opponentType]);

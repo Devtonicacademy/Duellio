@@ -132,9 +132,9 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         setTimeout(() => {
           setActivePlayer('green');
           setHasRolled(false);
-        }, 1200);
+        }, 300);
       }
-    }, 1200);
+    }, 300);
   };
 
   const triggerBotTurn = () => {
@@ -156,7 +156,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         setTimeout(() => {
           setActivePlayer('red');
           setBotIsThinking(false);
-        }, 1100);
+        }, 300);
         return;
       }
 
@@ -184,9 +184,9 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         onAddLog(`[BOT PIECE MOVE] Bot moves token ${selection.id.toUpperCase()}`);
         executeTokenMovement(selection.id, outcome1, 'green');
         setBotIsThinking(false);
-      }, 1000);
+      }, 200);
 
-    }, 1500);
+    }, 300);
   };
 
   const canMoveToken = (token: LudoToken, roll: number): boolean => {

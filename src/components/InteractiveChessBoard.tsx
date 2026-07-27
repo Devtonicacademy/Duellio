@@ -401,7 +401,7 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
 
       executeChessMove(chosen.from[0], chosen.from[1], chosen.to[0], chosen.to[1]);
       setBotIsThinking(false);
-    }, 1500);
+    }, 250);
 
   }, [activeColor, board, gameResult, castlingRights, enPassantTarget]);
 

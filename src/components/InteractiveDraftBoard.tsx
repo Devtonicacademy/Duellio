@@ -171,7 +171,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
         ...prev
       ]);
 
-    }, 2000);
+    }, 250);
 
     return () => clearTimeout(timer);
 
