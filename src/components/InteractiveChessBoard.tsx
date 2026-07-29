@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Swords, ShieldCheck, Timer, Award, AlertTriangle, Play, Eye, EyeOff, HelpCircle, Trophy } from 'lucide-react';
 import { Chess3DScene } from './Chess3DScene';
-import { ChessRulesService, CastlingRights, INITIAL_CASTLING_RIGHTS, normalizeBoard } from '../services/chessRulesService';
+import { ChessRulesService, CastlingRights, INITIAL_CASTLING_RIGHTS, normalizeBoard, Color, PieceType } from '../services/chessRulesService';
 
 interface InteractiveChessBoardProps {
   entryFee: number;

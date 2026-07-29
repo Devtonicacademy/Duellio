@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Swords, ShieldCheck, Timer, Award, RotateCcw, HelpCircle, Trophy, Sparkles, X as XIcon, Circle, AlertCircle } from 'lucide-react';
+import { Swords, ShieldCheck, Timer, Award, HelpCircle, Trophy, Sparkles, X as XIcon, Circle, AlertCircle } from 'lucide-react';
 import { TicTacToeLogicService } from '../services/ticTacToeLogic';
 import { TicTacToeGameState } from '../types';
 
@@ -31,11 +31,16 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
   liveGameState,
   onUpdateLiveState
 }) => {
-  const player1Id = isBot ? 'player-user' : (isHost ? 'host' : 'guest');
-  const player2Id = isBot ? 'bot-user' : (isHost ? 'guest' : 'host');
+  // In PvP, Host (P1) is ALWAYS 'host' (Index 0 => 'X'), Guest (P2) is ALWAYS 'guest' (Index 1 => 'O')
+  const player1Id = isBot ? 'player-user' : 'host';
+  const player2Id = isBot ? 'bot-user' : 'guest';
+  const myId = isBot ? 'player-user' : (isHost ? 'host' : 'guest');
+
+  const myMarker = isBot ? 'X' : (isHost ? 'X' : 'O');
+  const opponentMarker = isBot ? 'O' : (isHost ? 'O' : 'X');
 
   const [gameState, setGameState] = useState<TicTacToeGameState>(() =>
-    liveGameState || TicTacToeLogicService.initializeBoard(sessionId || 'tictactoe-session', player1Id, isBot ? 'bot-user' : player2Id)
+    liveGameState || TicTacToeLogicService.initializeBoard(sessionId || 'tictactoe-session', player1Id, player2Id)
   );
 
   const [playerTimer, setPlayerTimer] = useState<number>(180); // 3 minutes standard
@@ -46,9 +51,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
   const [showHelperRules, setShowHelperRules] = useState<boolean>(false);
   const [scores, setScores] = useState<{ player: number; bot: number; draws: number }>({ player: 0, bot: 0, draws: 0 });
 
-  const isPlayerTurn = isBot
-    ? gameState.activePlayerId === player1Id
-    : (isHost ? gameState.activePlayerId === 'host' || gameState.activePlayerId === player1Id : gameState.activePlayerId === 'guest' || gameState.activePlayerId === player2Id);
+  const isPlayerTurn = gameState.activePlayerId === myId;
 
   // Sync live state from Firestore snapshot
   useEffect(() => {
@@ -56,17 +59,16 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
       setGameState(liveGameState);
       if (liveGameState.status === 'completed') {
         const winnerId = liveGameState.winnerId;
-        const myId = isHost ? 'host' : 'guest';
         if (winnerId === 'draw') {
           setGameResult('draw');
-        } else if (winnerId === myId || winnerId === player1Id) {
+        } else if (winnerId === myId) {
           setGameResult('player_won');
         } else {
           setGameResult('bot_won');
         }
       }
     }
-  }, [liveGameState, isBot, isHost, player1Id]);
+  }, [liveGameState, isBot, myId]);
 
   // Active timers countdown logic
   useEffect(() => {
@@ -171,8 +173,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
     }
 
     if (nextState.status === 'completed') {
-      const myId = isBot ? player1Id : (isHost ? 'host' : 'guest');
-      if (nextState.winnerId === myId || nextState.winnerId === player1Id) {
+      if (nextState.winnerId === myId) {
         setGameResult('player_won');
         setScores(s => ({ ...s, player: s.player + 1 }));
         onAddLog(`[GAME OVER] VICTORY! You defeated ${opponentName}.`);
@@ -189,15 +190,6 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
         setTimeout(() => onGameOver(false), 2500);
       }
     }
-  };
-
-  const handleResetMatch = () => {
-    setGameState(TicTacToeLogicService.initializeBoard('tictactoe-session', player1Id, player2Id));
-    setGameResult('playing');
-    setPlayerTimer(180);
-    setBotTimer(180);
-    setBotIsThinking(false);
-    onAddLog(`[MATCH RESTART] Board re-initialized.`);
   };
 
   const formatTimer = (seconds: number) => {
@@ -224,7 +216,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
                 Cyber Tic-Tac-Toe Arena
               </h2>
               <span className="px-2 py-0.5 text-[10px] font-mono font-extrabold uppercase rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                {botDifficulty.toUpperCase()} AI
+                {isBot ? `${botDifficulty.toUpperCase()} AI` : 'LIVE PVP'}
               </span>
             </div>
             <p className="text-xs text-neutral-400 mt-0.5">
@@ -240,13 +232,6 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
           >
             <HelpCircle className="w-4 h-4 text-cyan-400" />
             <span className="hidden sm:inline">Rules</span>
-          </button>
-          <button
-            onClick={handleResetMatch}
-            className="p-2 bg-neutral-900/80 hover:bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <RotateCcw className="w-4 h-4 text-pink-400" />
-            <span className="hidden sm:inline">Restart</span>
           </button>
         </div>
       </div>
@@ -265,9 +250,9 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
               <button onClick={() => setShowHelperRules(false)} className="text-neutral-400 hover:text-white">✕</button>
             </div>
             <ul className="list-disc pl-4 space-y-1 text-neutral-300">
-              <li>Take turns placing your neon <strong>X</strong> mark on any empty cell in the 3x3 grid.</li>
+              <li>Take turns placing your neon <strong>X</strong> or <strong>O</strong> mark on any empty cell in the 3x3 grid.</li>
               <li>Align <strong>3 marks horizontally, vertically, or diagonally</strong> to trigger victory!</li>
-              <li>You are playing as <span className="text-cyan-400 font-bold">X (Cyan)</span>; Opponent is <span className="text-pink-400 font-bold">O (Pink)</span>.</li>
+              <li>In Live PvP Matches: <strong>Host (P1) plays as X (Cyan)</strong> and moves first; <strong>Guest (P2) plays as O (Pink)</strong>.</li>
               <li>Hard Bot difficulty utilizes optimal algorithmic evaluation for high-stakes competition.</li>
             </ul>
           </motion.div>
@@ -284,12 +269,16 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
         }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center font-black text-cyan-300 text-sm">
-                X
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm ${
+                myMarker === 'X'
+                  ? 'bg-cyan-500/20 border border-cyan-400 text-cyan-300'
+                  : 'bg-pink-500/20 border border-pink-400 text-pink-300'
+              }`}>
+                {myMarker}
               </div>
               <div>
                 <span className="block text-xs font-bold text-white truncate max-w-[100px] md:max-w-[140px]">
-                  You (Player)
+                  You ({myMarker})
                 </span>
                 <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold">
                   Score: {scores.player}
@@ -311,16 +300,20 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
         }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-400 flex items-center justify-center font-black text-pink-300 text-sm overflow-hidden">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm overflow-hidden ${
+                opponentMarker === 'O'
+                  ? 'bg-pink-500/20 border border-pink-400 text-pink-300'
+                  : 'bg-cyan-500/20 border border-cyan-400 text-cyan-300'
+              }`}>
                 {opponentAvatar ? (
                   <img src={opponentAvatar} alt={opponentName} className="w-full h-full object-cover" />
                 ) : (
-                  'O'
+                  opponentMarker
                 )}
               </div>
               <div>
                 <span className="block text-xs font-bold text-white truncate max-w-[100px] md:max-w-[140px]">
-                  {opponentName}
+                  {opponentName} ({opponentMarker})
                 </span>
                 <span className="text-[10px] font-mono text-pink-400 uppercase font-bold">
                   Score: {scores.bot}
@@ -485,13 +478,6 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
                 ? `${opponentName} outmaneuvered the board matrix. Good try!`
                 : `Both players matched every line step for step.`}
             </p>
-
-            <button
-              onClick={handleResetMatch}
-              className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-450 hover:to-blue-550 text-white font-black text-sm uppercase rounded-xl shadow-lg hover:scale-105 transition-all cursor-pointer"
-            >
-              Play Another Match
-            </button>
           </motion.div>
         )}
       </AnimatePresence>

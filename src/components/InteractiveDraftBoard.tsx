@@ -37,13 +37,13 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   liveGameState,
   onUpdateLiveState
 }) => {
-  const player1Id = isBot ? 'player-user' : (isHost ? 'host' : 'guest');
-  const player2Id = isBot ? 'bot-user' : (isHost ? 'guest' : 'host');
-  const myId = isBot ? player1Id : (isHost ? 'host' : 'guest');
-
   const [gameState, setGameState] = useState<DraftGameState>(() => 
-    liveGameState || DraftLogicService.initializeBoard(sessionId || 'draft-session', player1Id, player2Id)
+    liveGameState || DraftLogicService.initializeBoard(sessionId || 'draft-session', 'host', 'guest')
   );
+
+  const player1Id = gameState?.playerIds?.[0] || (isBot ? 'player-user' : 'host');
+  const player2Id = gameState?.playerIds?.[1] || (isBot ? 'bot-user' : 'guest');
+  const myId = isBot ? player1Id : (isHost ? player1Id : player2Id);
 
   const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null);
   const [playerTimer, setPlayerTimer] = useState<number>(300); // 5 minutes standard
@@ -58,7 +58,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   // Active player turn checking
   const isPlayerTurn = isBot
     ? gameState.activePlayerId === player1Id
-    : (gameState.activePlayerId === myId || gameState.activePlayerId === player1Id);
+    : gameState.activePlayerId === myId;
 
   // Sync live state from Firestore snapshot
   useEffect(() => {
@@ -256,14 +256,34 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   const handlePieceClick = (pieceId: string) => {
     if (gameResult !== 'playing' || !isPlayerTurn || botIsThinking) return;
 
-    const piece = gameState.pieces.find(p => p.id === pieceId);
-    if (!piece || (piece.playerId !== myId && piece.playerId !== player1Id)) {
-      setInvalidMoveMessage("You cannot command opponent pieces.");
+    const clickedPiece = gameState.pieces.find(p => p.id === pieceId);
+    if (!clickedPiece) return;
+
+    // If clicking own piece, select it
+    if (clickedPiece.playerId === myId) {
+      setInvalidMoveMessage(null);
+      setSelectedPieceId(pieceId);
       return;
     }
 
-    setInvalidMoveMessage(null);
-    setSelectedPieceId(pieceId);
+    // If a piece is already selected and user clicks an opponent piece:
+    // Check if jumping over this opponent piece to the square beyond it is a valid move!
+    if (selectedPieceId) {
+      const selectedPiece = gameState.pieces.find(p => p.id === selectedPieceId);
+      if (selectedPiece && selectedPiece.playerId === myId) {
+        const rDir = clickedPiece.position.row > selectedPiece.position.row ? 1 : (clickedPiece.position.row < selectedPiece.position.row ? -1 : 0);
+        const cDir = clickedPiece.position.col > selectedPiece.position.col ? 1 : (clickedPiece.position.col < selectedPiece.position.col ? -1 : 0);
+        const jumpTargetRow = selectedPiece.position.row + rDir * 2;
+        const jumpTargetCol = selectedPiece.position.col + cDir * 2;
+
+        if (DraftLogicService.isValidMove(gameState, selectedPieceId, jumpTargetRow, jumpTargetCol)) {
+          handleCellClick(jumpTargetRow, jumpTargetCol);
+          return;
+        }
+      }
+    }
+
+    setInvalidMoveMessage("You cannot command opponent pieces.");
   };
 
   // Format timers

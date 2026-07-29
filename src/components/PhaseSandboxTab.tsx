@@ -418,7 +418,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 setActiveChallenge(inviteChallenge);
                 setGamePlayStatus('playing');
                 _setWhotGameState(updatedGameState);
-                setLiveGameState(sessionData.gameState && sessionData.gameState.board ? sessionData.gameState : updatedGameState);
+                setLiveGameState(sessionData.gameState && (sessionData.gameState.board || sessionData.gameState.pieces) ? sessionData.gameState : updatedGameState);
                 whotDeckRef.current = sessionData.deck || [];
 
                 updateDoc(doc(db, 'gameSessions', sessionId), sanitizeFirestoreData({

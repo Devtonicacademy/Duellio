@@ -628,9 +628,24 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
 
       raycaster.setFromCamera(mouse, camera);
 
+      const allTiles: THREE.Mesh[] = [];
+      tileMeshesRef.current.forEach(row => row.forEach(t => allTiles.push(t)));
+      const tileIntersects = raycaster.intersectObjects(allTiles);
+
       const activePieceGroupList: THREE.Object3D[] = [];
       pieceMeshesRef.current.forEach(group => activePieceGroupList.push(group));
       const pieceIntersects = raycaster.intersectObjects(activePieceGroupList, true);
+
+      // If a piece is already selected, check if clicking a valid destination tile first
+      if (selectedPieceIdRef.current && tileIntersects.length > 0) {
+        const hitTile = tileIntersects[0].object as THREE.Mesh;
+        const { row, col } = hitTile.userData;
+        const isValidTarget = validDestinationsRef.current.some(([vr, vc]) => vr === row && vc === col);
+        if (isValidTarget) {
+          onTileClickRef.current(row, col);
+          return;
+        }
+      }
 
       if (pieceIntersects.length > 0) {
         let parentGroup: THREE.Object3D | null = pieceIntersects[0].object;
@@ -642,10 +657,6 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
           return;
         }
       }
-
-      const allTiles: THREE.Mesh[] = [];
-      tileMeshesRef.current.forEach(row => row.forEach(t => allTiles.push(t)));
-      const tileIntersects = raycaster.intersectObjects(allTiles);
 
       if (tileIntersects.length > 0) {
         const hitTile = tileIntersects[0].object as THREE.Mesh;
