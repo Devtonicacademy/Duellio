@@ -108,6 +108,8 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
     return isHost ? (opponentName || 'Player 2') : (userName || 'Player 2');
   }, [isBot, isHost, userName, opponentName]);
 
+  const lastFirestoreUpdateRef = useRef<number>(0);
+
   const gameConfig = React.useMemo(() => ({
     mode,
     difficulty: botDifficulty,
@@ -116,8 +118,9 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
     p1Name: player1Name,
     p2Name: player2Name,
     map: selectedMap,
-    weaponSpawnEnabled: true
-  }), [mode, botDifficulty, player1Name, player2Name, selectedMap]);
+    weaponSpawnEnabled: true,
+    isRemoteClient: !isBot && !isHost
+  }), [mode, botDifficulty, player1Name, player2Name, selectedMap, isBot, isHost]);
 
   // Sync live state from Firestore snapshot for non-host subscriber
   useEffect(() => {
@@ -140,7 +143,10 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
     setUiState(state);
 
     // ONLY the host writes authoritative live game state to Firestore to prevent clashing writes
-    if (!isBot && isHost && onUpdateLiveState) {
+    // Throttle Firestore writes to max once every 50ms (20 updates/sec) to avoid network queue congestion
+    const now = Date.now();
+    if (!isBot && isHost && onUpdateLiveState && (now - lastFirestoreUpdateRef.current >= 50 || state.gameState === 'gameover')) {
+      lastFirestoreUpdateRef.current = now;
       onUpdateLiveState(state);
     }
 

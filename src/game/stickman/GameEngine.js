@@ -18,6 +18,7 @@ export class GameEngine {
     this.p1Name = config.p1Name || 'Dragon P1';
     this.p2Name = config.p2Name || (this.mode === 'p1_vs_cpu' ? 'Tiger CPU' : 'Snake P2');
     this.weaponSpawnEnabled = config.weaponSpawnEnabled !== false;
+    this.isRemoteClient = config.isRemoteClient === true;
 
     // Dimensions (Logical internal bounds for physics)
     this.width = 960;
@@ -324,8 +325,11 @@ export class GameEngine {
     if (!state) return;
 
     if (this.p1 && state.p1Pos) {
-      this.p1.pos.x = state.p1Pos.x;
-      this.p1.pos.y = state.p1Pos.y;
+      this.targetP1Pos = state.p1Pos;
+      if (!this.isRemoteClient) {
+        this.p1.pos.x = state.p1Pos.x;
+        this.p1.pos.y = state.p1Pos.y;
+      }
       if (state.p1State) this.p1.state = state.p1State;
       if (typeof state.p1FacingRight === 'boolean') this.p1.facingRight = state.p1FacingRight;
       if (typeof state.p1Health === 'number') {
@@ -336,8 +340,11 @@ export class GameEngine {
     }
 
     if (this.p2 && state.p2Pos) {
-      this.p2.pos.x = state.p2Pos.x;
-      this.p2.pos.y = state.p2Pos.y;
+      this.targetP2Pos = state.p2Pos;
+      if (!this.isRemoteClient) {
+        this.p2.pos.x = state.p2Pos.x;
+        this.p2.pos.y = state.p2Pos.y;
+      }
       if (state.p2State) this.p2.state = state.p2State;
       if (typeof state.p2FacingRight === 'boolean') this.p2.facingRight = state.p2FacingRight;
       if (typeof state.p2Health === 'number') {
@@ -360,6 +367,21 @@ export class GameEngine {
   }
 
   update() {
+    // If remote client (guest), smoothly interpolate positions towards host authoritative targets
+    if (this.isRemoteClient) {
+      if (this.p1 && this.targetP1Pos) {
+        this.p1.pos.x += (this.targetP1Pos.x - this.p1.pos.x) * 0.45;
+        this.p1.pos.y += (this.targetP1Pos.y - this.p1.pos.y) * 0.45;
+      }
+      if (this.p2 && this.targetP2Pos) {
+        this.p2.pos.x += (this.targetP2Pos.x - this.p2.pos.x) * 0.45;
+        this.p2.pos.y += (this.targetP2Pos.y - this.p2.pos.y) * 0.45;
+      }
+      this.effects.update();
+      this.notifyUI();
+      return;
+    }
+
     // Decrement impact flash duration
     if (this.impactFlashDuration > 0) {
       this.impactFlashDuration--;
