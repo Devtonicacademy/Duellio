@@ -500,12 +500,12 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         return;
       }
 
-      // Setup the MatchChallenge object
+      const isHostPlayer = friendChallenge.isHost !== false;
       const inviteChallenge: MatchChallenge = {
-        id: `friend_${Date.now()}`,
-        senderId: 'friend_user',
-        senderName: friendChallenge.senderName,
-        receiverId: userProfile.uid,
+        id: friendChallenge.sessionId || `friend_${Date.now()}`,
+        senderId: isHostPlayer ? userProfile.uid : (friendChallenge.senderName || 'friend_user'),
+        senderName: isHostPlayer ? userProfile.username : friendChallenge.senderName,
+        receiverId: isHostPlayer ? 'friend_user' : userProfile.uid,
         gameType: friendChallenge.gameType,
         entryFee: friendChallenge.entryFee,
         status: 'accepted',
