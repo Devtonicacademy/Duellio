@@ -112,7 +112,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
 
     setBotIsThinking(true);
 
-    const delay = Math.floor(Math.random() * 150) + 150; // Ultra-fast 150-300ms bot turn response
+    const delay = Math.floor(Math.random() * 60) + 80; // Instant 80-140ms bot response delay
 
     const timer = setTimeout(() => {
       const botMoveIndex = TicTacToeLogicService.getBotMove(

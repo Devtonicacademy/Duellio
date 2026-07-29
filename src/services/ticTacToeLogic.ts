@@ -137,14 +137,21 @@ export class TicTacToeLogicService {
       return availableIndices[Math.floor(Math.random() * availableIndices.length)];
     }
 
-    // Hard mode: Minimax Algorithm for unbeatable AI
+    // Hard mode: Minimax Algorithm with Alpha-Beta Pruning & Instant Opening Book
+    if (availableIndices.length >= 8) {
+      // Instant opening response on first 1-2 moves (0ms calculation)
+      if (board[4] === null) return 4;
+      const openCorners = [0, 2, 6, 8].filter(i => board[i] === null);
+      if (openCorners.length > 0) return openCorners[Math.floor(Math.random() * openCorners.length)];
+    }
+
     let bestScore = -Infinity;
     let bestMove = availableIndices[0];
 
     for (const idx of availableIndices) {
       const tempBoard = [...board];
       tempBoard[idx] = botMarker;
-      const score = this.minimax(tempBoard, 0, false, botMarker, opponentMarker);
+      const score = this.minimax(tempBoard, 0, false, botMarker, opponentMarker, -Infinity, Infinity);
       if (score > bestScore) {
         bestScore = score;
         bestMove = idx;
@@ -159,7 +166,9 @@ export class TicTacToeLogicService {
     depth: number,
     isMaximizing: boolean,
     botMarker: 'X' | 'O',
-    opponentMarker: 'X' | 'O'
+    opponentMarker: 'X' | 'O',
+    alpha: number = -Infinity,
+    beta: number = Infinity
   ): number {
     const { winner } = this.checkWinner(board);
     if (winner === botMarker) return 10 - depth;
@@ -174,18 +183,22 @@ export class TicTacToeLogicService {
       let bestScore = -Infinity;
       for (const idx of availableIndices) {
         board[idx] = botMarker;
-        const score = this.minimax(board, depth + 1, false, botMarker, opponentMarker);
+        const score = this.minimax(board, depth + 1, false, botMarker, opponentMarker, alpha, beta);
         board[idx] = null;
         bestScore = Math.max(score, bestScore);
+        alpha = Math.max(alpha, bestScore);
+        if (beta <= alpha) break; // Alpha-Beta Cutoff
       }
       return bestScore;
     } else {
       let bestScore = Infinity;
       for (const idx of availableIndices) {
         board[idx] = opponentMarker;
-        const score = this.minimax(board, depth + 1, true, botMarker, opponentMarker);
+        const score = this.minimax(board, depth + 1, true, botMarker, opponentMarker, alpha, beta);
         board[idx] = null;
         bestScore = Math.min(score, bestScore);
+        beta = Math.min(beta, bestScore);
+        if (beta <= alpha) break; // Alpha-Beta Cutoff
       }
       return bestScore;
     }
