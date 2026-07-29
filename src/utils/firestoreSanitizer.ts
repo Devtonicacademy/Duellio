@@ -15,6 +15,16 @@ export function sanitizeFirestoreData<T>(obj: T): T {
     return obj;
   }
   if (Array.isArray(obj)) {
+    // Firestore does not support nested arrays (arrays of arrays).
+    // Convert 2D arrays into index-keyed map objects: { "0": [...], "1": [...] }
+    const is2DArray = obj.some(item => Array.isArray(item));
+    if (is2DArray) {
+      const sanitizedMap: Record<string, any> = {};
+      obj.forEach((row, idx) => {
+        sanitizedMap[idx.toString()] = sanitizeFirestoreData(row);
+      });
+      return sanitizedMap as any;
+    }
     return obj
       .filter(item => item !== undefined)
       .map(item => sanitizeFirestoreData(item)) as any;

@@ -74,7 +74,27 @@ export const INITIAL_BOARD: BoardGrid = [
   ]
 ];
 
+export function normalizeBoard(boardData: any): BoardGrid {
+  if (!boardData) return JSON.parse(JSON.stringify(INITIAL_BOARD));
+  if (Array.isArray(boardData)) {
+    if (boardData.length > 0 && Array.isArray(boardData[0])) {
+      return boardData;
+    }
+  }
+  if (typeof boardData === 'object') {
+    const grid: BoardGrid = [];
+    for (let i = 0; i < 8; i++) {
+      const row = boardData[i] || boardData[i.toString()] || [];
+      grid.push(Array.isArray(row) ? row : []);
+    }
+    return grid;
+  }
+  return JSON.parse(JSON.stringify(INITIAL_BOARD));
+}
+
 export class ChessRulesService {
+  static normalizeBoard = normalizeBoard;
+
   static initializeBoard(sessionId: string, hostId: string = 'host', guestId: string = 'guest') {
     return {
       sessionId,

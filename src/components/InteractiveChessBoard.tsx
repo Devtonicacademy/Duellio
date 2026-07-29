@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Swords, ShieldCheck, Timer, Award, AlertTriangle, Play, Eye, EyeOff, HelpCircle, Trophy } from 'lucide-react';
 import { Chess3DScene } from './Chess3DScene';
-import { ChessRulesService, CastlingRights, INITIAL_CASTLING_RIGHTS } from '../services/chessRulesService';
+import { ChessRulesService, CastlingRights, INITIAL_CASTLING_RIGHTS, normalizeBoard } from '../services/chessRulesService';
 
 interface InteractiveChessBoardProps {
   entryFee: number;
@@ -20,15 +20,12 @@ interface InteractiveChessBoardProps {
   sessionId?: string;
   isHost?: boolean;
   liveGameState?: any;
-  onUpdateLiveState?: (newState: any) => void;
+  onUpdateLiveState?: (state: any) => void;
 }
 
-type PieceType = 'p' | 'r' | 'n' | 'b' | 'q' | 'k';
-type Color = 'w' | 'b';
-
 interface ChessPiece {
-  type: PieceType;
-  color: Color;
+  type: 'p' | 'r' | 'n' | 'b' | 'q' | 'k';
+  color: 'w' | 'b';
 }
 
 type BoardGrid = Array<Array<ChessPiece | null>>;
@@ -96,14 +93,14 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
   opponentAvatar,
   onGameOver,
   onAddLog,
-  botDifficulty,
+  botDifficulty = 'medium',
   isBot = true,
   sessionId,
   isHost = true,
   liveGameState,
   onUpdateLiveState
 }) => {
-  const [board, setBoard] = useState<BoardGrid>(() => liveGameState?.board || JSON.parse(JSON.stringify(INITIAL_BOARD)));
+  const [board, setBoard] = useState<BoardGrid>(() => normalizeBoard(liveGameState?.board));
   const [activeColor, setActiveColor] = useState<Color>(() => liveGameState?.activeColor || 'w'); // 'w' = Player 1 / White, 'b' = Player 2 / Black
   const [selectedSquare, setSelectedSquare] = useState<[number, number] | null>(null);
   const [castlingRights, setCastlingRights] = useState<CastlingRights>(() => liveGameState?.castlingRights || { ...INITIAL_CASTLING_RIGHTS });
@@ -125,7 +122,7 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
   // Sync live state from Firestore snapshot
   useEffect(() => {
     if (!isBot && liveGameState) {
-      if (liveGameState.board) setBoard(liveGameState.board);
+      if (liveGameState.board) setBoard(normalizeBoard(liveGameState.board));
       if (liveGameState.activeColor) setActiveColor(liveGameState.activeColor);
       if (liveGameState.castlingRights) setCastlingRights(liveGameState.castlingRights);
       if (liveGameState.enPassantTarget !== undefined) setEnPassantTarget(liveGameState.enPassantTarget);

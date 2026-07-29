@@ -334,7 +334,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
               lastActionMessage: 'Session initialized. Waiting for opponent to join...'
             };
           } else if (friendChallenge.gameType === 'Chess') {
-            initialSession = ChessRulesService.initializeBoard(sessionId, userProfile.uid, '');
+            initialSession = ChessRulesService.initializeBoard(sessionId, userProfile.uid, 'guest');
           } else if (friendChallenge.gameType === 'Ludo') {
             initialSession = { sessionId, activePlayer: 'red', status: 'playing', playerIds: [userProfile.uid, ''] };
           } else {
