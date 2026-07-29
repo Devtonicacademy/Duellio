@@ -6,6 +6,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { DraftPiece } from '../types';
+import { DraftLogicService } from '../services/draftLogic';
 import { RotateCcw, Eye, Compass } from 'lucide-react';
 
 interface Draft3DSceneProps {
@@ -797,7 +798,7 @@ export const Draft3DScene: React.FC<Draft3DSceneProps> = ({
     });
 
     pieces.forEach(piece => {
-      const isPlayer1 = piece.playerId === player1Id;
+      const isPlayer1 = DraftLogicService.isPlayer1(piece, { playerIds: [player1Id] });
       const bodyMat = isPlayer1 ? bodyDarkMat : bodyGoldDarkMat;
       const glowMat = isPlayer1 ? cyanGlowMat : goldGlowMat;
 

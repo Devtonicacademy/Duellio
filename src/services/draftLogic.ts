@@ -44,6 +44,28 @@ export class DraftLogicService {
   }
 
   /**
+   * Helper to robustly check if a piece belongs to Player 1 (top 3 rows at start / Cyan).
+   */
+  static isPlayer1(piece: DraftPiece, state: { playerIds?: string[] }): boolean {
+    if (piece.id.startsWith('p1-')) return true;
+    if (piece.id.startsWith('p2-')) return false;
+    if (state.playerIds && state.playerIds[0]) {
+      if (piece.playerId === state.playerIds[0]) return true;
+    }
+    return piece.playerId === 'host' || piece.playerId === 'player-user';
+  }
+
+  /**
+   * Helper to check if a piece belongs to the active player whose turn it is.
+   */
+  static isPieceActive(piece: DraftPiece, state: DraftGameState): boolean {
+    if (piece.playerId === state.activePlayerId) return true;
+    const activeIsP1 = state.activePlayerId === state.playerIds[0] || state.activePlayerId === 'host' || state.activePlayerId === 'player-user';
+    const pieceIsP1 = this.isPlayer1(piece, state);
+    return activeIsP1 === pieceIsP1;
+  }
+
+  /**
    * Validates if a move is legal.
    * A highly simplified version - checking bounds and destination emptiness.
    */
@@ -52,7 +74,7 @@ export class DraftLogicService {
     if (!piece) return false;
 
     // Check active player turn
-    if (piece.playerId !== state.activePlayerId) return false;
+    if (!this.isPieceActive(piece, state)) return false;
 
     // Basic bounds check
     if (targetRow < 0 || targetRow > 7 || targetCol < 0 || targetCol > 7) return false;
@@ -66,13 +88,13 @@ export class DraftLogicService {
 
     const rowDiff = Math.abs(targetRow - piece.position.row);
     const colDiff = Math.abs(targetCol - piece.position.col);
+    const isP1 = this.isPlayer1(piece, state);
     
     if (rowDiff === 1 && colDiff === 1) {
       // If not king, ensure moving forward
       if (!piece.isKing) {
-        const isPlayer1 = piece.playerId === state.playerIds[0];
-        if (isPlayer1 && targetRow <= piece.position.row) return false; // P1 moves down (increasing row)
-        if (!isPlayer1 && targetRow >= piece.position.row) return false; // P2 moves up (decreasing row)
+        if (isP1 && targetRow <= piece.position.row) return false; // P1 moves down (increasing row)
+        if (!isP1 && targetRow >= piece.position.row) return false; // P2 moves up (decreasing row)
       }
       return true;
     }
@@ -80,9 +102,8 @@ export class DraftLogicService {
     if (rowDiff === 2 && colDiff === 2) {
       // If not king, ensure moving forward
       if (!piece.isKing) {
-        const isPlayer1 = piece.playerId === state.playerIds[0];
-        if (isPlayer1 && targetRow <= piece.position.row) return false;
-        if (!isPlayer1 && targetRow >= piece.position.row) return false;
+        if (isP1 && targetRow <= piece.position.row) return false;
+        if (!isP1 && targetRow >= piece.position.row) return false;
       }
 
       // Check intermediate cell
@@ -91,8 +112,11 @@ export class DraftLogicService {
       const midPiece = state.pieces.find(p => p.position.row === midRow && p.position.col === midCol);
       
       // Must contain opponent's piece
-      if (midPiece && midPiece.playerId !== piece.playerId) {
-        return true;
+      if (midPiece) {
+        const midPieceIsP1 = this.isPlayer1(midPiece, state);
+        if (midPieceIsP1 !== isP1) {
+          return true;
+        }
       }
     }
 
@@ -103,15 +127,16 @@ export class DraftLogicService {
    * Helper to check if a specific player has any valid moves remaining.
    */
   static hasValidMoves(state: DraftGameState, playerId: string): boolean {
-    const playerPieces = state.pieces.filter(p => p.playerId === playerId);
+    const isTargetP1 = playerId === state.playerIds[0] || playerId === 'host' || playerId === 'player-user';
+    const playerPieces = state.pieces.filter(p => this.isPlayer1(p, state) === isTargetP1);
     if (playerPieces.length === 0) return false;
 
     // Temporarily create state with activePlayerId set to this player for validation
     const tempState = { ...state, activePlayerId: playerId };
 
     for (const piece of playerPieces) {
-      const isPlayer1 = piece.playerId === state.playerIds[0];
-      const forwardDir = isPlayer1 ? 1 : -1;
+      const isP1 = this.isPlayer1(piece, state);
+      const forwardDir = isP1 ? 1 : -1;
       const directions = piece.isKing
         ? [[1, 1], [1, -1], [-1, 1], [-1, -1]]
         : [[forwardDir, 1], [forwardDir, -1]];

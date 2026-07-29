@@ -39,13 +39,22 @@ export class TicTacToeLogicService {
     return board[index] === null;
   }
 
+  static isPlayer1(playerId: string, state: TicTacToeGameState): boolean {
+    if (!playerId || !state.playerIds || state.playerIds.length === 0) return true;
+    return (
+      playerId === state.playerIds[0] ||
+      playerId === 'host' ||
+      playerId === 'player-user'
+    );
+  }
+
   static executeMove(state: TicTacToeGameState, index: number): TicTacToeGameState {
     if (state.status !== 'playing' || !this.isValidMove(state.board, index)) {
       return state;
     }
 
-    const isPlayer1 = state.activePlayerId === state.playerIds[0];
-    const marker: 'X' | 'O' = isPlayer1 ? 'X' : 'O';
+    const isP1 = this.isPlayer1(state.activePlayerId, state);
+    const marker: 'X' | 'O' = isP1 ? 'X' : 'O';
 
     const newBoard = [...state.board];
     newBoard[index] = marker;
@@ -53,7 +62,7 @@ export class TicTacToeLogicService {
     const { winner, line } = this.checkWinner(newBoard);
 
     if (winner) {
-      const winnerId = winner === 'draw' ? 'draw' : (winner === 'X' ? state.playerIds[0] : state.playerIds[1]);
+      const winnerId = winner === 'draw' ? 'draw' : (winner === 'X' ? state.playerIds[0] : (state.playerIds[1] || 'guest'));
       return {
         ...state,
         board: newBoard,
@@ -66,7 +75,7 @@ export class TicTacToeLogicService {
       };
     }
 
-    const nextActivePlayer = isPlayer1 ? state.playerIds[1] : state.playerIds[0];
+    const nextActivePlayer = isP1 ? (state.playerIds[1] || 'guest') : (state.playerIds[0] || 'host');
 
     return {
       ...state,

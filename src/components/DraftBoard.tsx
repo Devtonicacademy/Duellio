@@ -1,5 +1,6 @@
 import React from 'react';
 import { DraftGameState, DraftPiece } from '../types';
+import { DraftLogicService } from '../services/draftLogic';
 
 interface DraftBoardProps {
   gameState: DraftGameState;
@@ -31,6 +32,7 @@ export const DraftBoard: React.FC<DraftBoardProps> = ({
             );
             
             const isSelected = piece && piece.id === selectedPieceId;
+            const isP1 = piece ? DraftLogicService.isPlayer1(piece, gameState) : false;
 
             return (
               <div
@@ -49,13 +51,13 @@ export const DraftBoard: React.FC<DraftBoardProps> = ({
                     }}
                     className={`
                       w-4/5 h-4/5 rounded-full shadow-md cursor-pointer transition-transform
-                      ${piece.playerId === gameState.playerIds[0] ? 'bg-white border-2 border-gray-300' : 'bg-black border-2 border-gray-800'}
+                      ${isP1 ? 'bg-white border-2 border-gray-300' : 'bg-black border-2 border-gray-800'}
                       ${isSelected ? 'ring-4 ring-yellow-400 scale-110' : 'hover:scale-105'}
                       ${piece.isKing ? 'flex items-center justify-center' : ''}
                     `}
                   >
                     {piece.isKing && (
-                      <span className={`text-xl ${piece.playerId === gameState.playerIds[0] ? 'text-black' : 'text-white'}`}>
+                      <span className={`text-xl ${isP1 ? 'text-black' : 'text-white'}`}>
                         ♔
                       </span>
                     )}

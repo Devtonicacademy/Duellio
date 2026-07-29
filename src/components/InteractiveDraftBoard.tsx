@@ -56,9 +56,11 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   const [viewMode, setViewMode] = useState<'2D' | '3D'>('3D');
 
   // Active player turn checking
+  const activeIsP1 = DraftLogicService.isPlayer1({ id: '', playerId: gameState.activePlayerId, isKing: false, position: { row: 0, col: 0 } }, gameState);
+  const myIsP1 = isBot ? true : isHost;
   const isPlayerTurn = isBot
     ? gameState.activePlayerId === player1Id
-    : gameState.activePlayerId === myId;
+    : activeIsP1 === myIsP1;
 
   // Sync live state from Firestore snapshot
   useEffect(() => {
@@ -126,8 +128,8 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
       }> = [];
 
       botPieces.forEach(piece => {
-        const isPlayer1 = piece.playerId === gameState.playerIds[0];
-        const forwardDir = isPlayer1 ? 1 : -1;
+        const isP1 = DraftLogicService.isPlayer1(piece, gameState);
+        const forwardDir = isP1 ? 1 : -1;
         const directions = piece.isKing
           ? [[1, 1], [1, -1], [-1, 1], [-1, -1]]
           : [[forwardDir, 1], [forwardDir, -1]];
@@ -177,7 +179,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
         chosenMove.targetCol
       );
 
-      const playerPiecesCount = nextState.pieces.filter(p => p.playerId === player1Id).length;
+      const playerPiecesCount = nextState.pieces.filter(p => DraftLogicService.isPlayer1(p, nextState)).length;
       if (playerPiecesCount === 0 || !DraftLogicService.hasValidMoves(nextState, player1Id)) {
         setGameState(nextState);
         setGameResult('bot_won');
@@ -221,7 +223,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
     const nextState = DraftLogicService.executeMove(gameState, selectedPieceId, row, col);
 
     // Check if opponent has any pieces left or valid moves left
-    const opponentPiecesCount = nextState.pieces.filter(p => p.playerId === player2Id).length;
+    const opponentPiecesCount = nextState.pieces.filter(p => DraftLogicService.isPlayer1(p, nextState) !== myIsP1).length;
     if (opponentPiecesCount === 0 || !DraftLogicService.hasValidMoves(nextState, player2Id)) {
       nextState.status = 'completed';
       nextState.winnerId = myId;
@@ -259,8 +261,10 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
     const clickedPiece = gameState.pieces.find(p => p.id === pieceId);
     if (!clickedPiece) return;
 
+    const clickedPieceIsP1 = DraftLogicService.isPlayer1(clickedPiece, gameState);
+
     // If clicking own piece, select it
-    if (clickedPiece.playerId === myId) {
+    if (clickedPieceIsP1 === myIsP1) {
       setInvalidMoveMessage(null);
       setSelectedPieceId(pieceId);
       return;
@@ -270,7 +274,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
     // Check if jumping over this opponent piece to the square beyond it is a valid move!
     if (selectedPieceId) {
       const selectedPiece = gameState.pieces.find(p => p.id === selectedPieceId);
-      if (selectedPiece && selectedPiece.playerId === myId) {
+      if (selectedPiece && DraftLogicService.isPlayer1(selectedPiece, gameState) === myIsP1) {
         const rDir = clickedPiece.position.row > selectedPiece.position.row ? 1 : (clickedPiece.position.row < selectedPiece.position.row ? -1 : 0);
         const cDir = clickedPiece.position.col > selectedPiece.position.col ? 1 : (clickedPiece.position.col < selectedPiece.position.col ? -1 : 0);
         const jumpTargetRow = selectedPiece.position.row + rDir * 2;
@@ -309,8 +313,8 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
 
   // Render a polished checkers piece
   const renderCheckersPiece = (piece: DraftPiece, isSelected: boolean) => {
-    const isPlayer = piece.playerId === player1Id;
-    const schemas = isPlayer ? {
+    const isP1 = DraftLogicService.isPlayer1(piece, gameState);
+    const schemas = isP1 ? {
       glow: 'shadow-[0_0_15px_rgba(6,182,212,0.8)] border-cyan-400',
       bg: 'from-cyan-500 to-cyan-700/60',
       text: 'text-cyan-100 font-black'
