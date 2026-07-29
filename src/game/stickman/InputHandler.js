@@ -1,4 +1,4 @@
-﻿export class InputHandler {
+export class InputHandler {
   constructor() {
     this.keys = {};
     
@@ -55,8 +55,33 @@
       pickup: ['Numpad4', 'Digit4']
     };
 
+    this.remoteP2Inputs = null;
     this.keyListeners = [];
     this.initKeyboardListeners();
+  }
+
+  setRemoteP2Input(inputs) {
+    if (inputs && typeof inputs === 'object') {
+      this.remoteP2Inputs = inputs;
+    }
+  }
+
+  getActiveInputs(playerNumber = 1) {
+    if (playerNumber === 2) {
+      return {
+        left: this.isKeyMatched(this.p1Keys.left) || this.isKeyMatched(this.p2Keys.left) || this.mobileInputs[2].left,
+        right: this.isKeyMatched(this.p1Keys.right) || this.isKeyMatched(this.p2Keys.right) || this.mobileInputs[2].right,
+        jump: this.isKeyMatched(this.p1Keys.up) || this.isKeyMatched(this.p2Keys.up) || this.mobileInputs[2].jump,
+        crouch: this.isKeyMatched(this.p1Keys.down) || this.isKeyMatched(this.p2Keys.down) || this.mobileInputs[2].crouch,
+        block: this.isKeyMatched(this.p1Keys.down) || this.isKeyMatched(this.p2Keys.down) || this.mobileInputs[2].block,
+        punch: this.isKeyMatched(this.p1Keys.punch) || this.isKeyMatched(this.p2Keys.punch) || this.mobileInputs[2].punch,
+        kick: this.isKeyMatched(this.p1Keys.kick) || this.isKeyMatched(this.p2Keys.kick) || this.mobileInputs[2].kick,
+        sweep: this.isKeyMatched(this.p1Keys.sweep) || this.isKeyMatched(this.p2Keys.sweep) || this.mobileInputs[2].sweep,
+        special: this.isKeyMatched(this.p1Keys.special) || this.isKeyMatched(this.p2Keys.special) || this.mobileInputs[2].special,
+        pickup: this.isKeyMatched(this.p1Keys.pickup) || this.isKeyMatched(this.p2Keys.pickup) || this.mobileInputs[2].pickup
+      };
+    }
+    return this.getP1Inputs();
   }
 
   initKeyboardListeners() {
@@ -118,6 +143,9 @@
   }
 
   getP2Inputs() {
+    if (this.remoteP2Inputs) {
+      return this.remoteP2Inputs;
+    }
     return {
       left: this.isKeyMatched(this.p2Keys.left) || this.mobileInputs[2].left,
       right: this.isKeyMatched(this.p2Keys.right) || this.mobileInputs[2].right,

@@ -139,6 +139,35 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
     }
   }, [liveGameState, isBot, isHost, onGameOver]);
 
+  // Host syncs P2 remote input from Guest Firestore updates
+  useEffect(() => {
+    if (!isBot && isHost && liveGameState?.p2Input) {
+      if ((window as any).gameEngine?.input?.setRemoteP2Input) {
+        (window as any).gameEngine.input.setRemoteP2Input(liveGameState.p2Input);
+      }
+    }
+  }, [liveGameState, isBot, isHost]);
+
+  // Guest polls local inputs and transmits P2 control inputs to Host via Firestore
+  const lastGuestInputStrRef = useRef<string>('');
+  useEffect(() => {
+    if (isBot || isHost || !onUpdateLiveState) return;
+
+    const interval = setInterval(() => {
+      const engine = (window as any).gameEngine;
+      if (engine?.input?.getActiveInputs) {
+        const inputs = engine.input.getActiveInputs(2);
+        const inputStr = JSON.stringify(inputs);
+        if (inputStr !== lastGuestInputStrRef.current) {
+          lastGuestInputStrRef.current = inputStr;
+          onUpdateLiveState({ p2Input: inputs });
+        }
+      }
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [isBot, isHost, onUpdateLiveState]);
+
   const handleUIUpdate = useCallback((state: any) => {
     setUiState(state);
 
