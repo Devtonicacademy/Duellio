@@ -514,36 +514,10 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       {/* VIEWPORT HEADER CONTROLS */}
       <div className="flex flex-wrap justify-between items-center px-4 pt-3 pb-2 gap-2 z-10">
         <div className="flex items-center gap-2">
-          {/* MODE SELECTOR TOGGLE */}
-          <div className="flex items-center gap-1 bg-[#160d07]/90 p-1 rounded-xl border border-amber-500/30 shadow-md">
-            <button
-              onClick={() => {
-                setPlayerMode('2-player');
-                onAddLog('[MODE SELECT] Switched to 2-Player Match (You: Red & Yellow | Opponent: Green & Blue)');
-              }}
-              className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-extrabold transition-all flex items-center gap-1.5 ${
-                playerMode === '2-player'
-                  ? 'bg-amber-400 text-black shadow-[0_0_10px_rgba(245,158,11,0.5)]'
-                  : 'text-amber-200/70 hover:text-white'
-              }`}
-            >
-              <UserCheck className="w-3.5 h-3.5" />
-              <span>2-Player (2 Quadrants)</span>
-            </button>
-            <button
-              onClick={() => {
-                setPlayerMode('4-player');
-                onAddLog('[MODE SELECT] Switched to 4-Player Match (1 Quadrant per player)');
-              }}
-              className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-extrabold transition-all flex items-center gap-1.5 ${
-                playerMode === '4-player'
-                  ? 'bg-cyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.5)]'
-                  : 'text-amber-200/70 hover:text-white'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>4-Player (1 Quadrant)</span>
-            </button>
+          {/* STATIC MATCH MODE BADGE */}
+          <div className="p-1 px-2.5 bg-[#160d07]/90 rounded-lg border border-amber-500/30 flex items-center gap-1.5 text-[9px] font-mono text-amber-300 tracking-wider shadow-[0_0_12px_rgba(245,158,11,0.2)] font-bold uppercase">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>{playerMode === '2-player' ? '2-PLAYER MATCH (2 QUADRANTS)' : '4-PLAYER BATTLE ROYALE'}</span>
           </div>
         </div>
 
