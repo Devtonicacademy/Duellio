@@ -40,12 +40,16 @@ export class TicTacToeLogicService {
   }
 
   static isPlayer1(playerId: string, state: TicTacToeGameState): boolean {
-    if (!playerId || !state.playerIds || state.playerIds.length === 0) return true;
-    return (
-      playerId === state.playerIds[0] ||
-      playerId === 'host' ||
-      playerId === 'player-user'
-    );
+    if (!playerId) return true;
+    if (playerId === 'host' || playerId === 'player-user') return true;
+    if (playerId === 'guest' || playerId === 'bot-user') return false;
+
+    if (state.playerIds && state.playerIds.length > 0) {
+      if (playerId === state.playerIds[0]) return true;
+      if (state.playerIds.length > 1 && playerId === state.playerIds[1]) return false;
+    }
+
+    return true;
   }
 
   static executeMove(state: TicTacToeGameState, index: number): TicTacToeGameState {

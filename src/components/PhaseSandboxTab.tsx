@@ -313,9 +313,9 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
           let initialSession: any = null;
           if (friendChallenge.gameType === 'TicTacToe') {
-            initialSession = TicTacToeLogicService.initializeBoard(sessionId, 'host', 'guest');
+            initialSession = TicTacToeLogicService.initializeBoard(sessionId, userProfile.uid, 'guest');
           } else if (friendChallenge.gameType === 'Draft') {
-            initialSession = DraftLogicService.initializeBoard(sessionId, 'host', 'guest');
+            initialSession = DraftLogicService.initializeBoard(sessionId, userProfile.uid, 'guest');
           } else if (friendChallenge.gameType === 'Whot') {
             initialSession = {
               sessionId: sessionId,
