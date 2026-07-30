@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Swords, ShieldCheck, Timer, Award, HelpCircle, Trophy, Sparkles, X as XIcon, Circle, AlertCircle, RotateCcw, ArrowRight, SkipBack, SkipForward, Play } from 'lucide-react';
 import { TicTacToeLogicService } from '../services/ticTacToeLogic';
 import { TicTacToeGameState } from '../types';
+import { soundEngine } from '../services/soundEngine';
+import { SoundControls } from './SoundControls';
 
 interface InteractiveTicTacToeBoardProps {
   entryFee: number;
@@ -58,6 +60,14 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
   const [botIsThinking, setBotIsThinking] = useState<boolean>(false);
   const [showHelperRules, setShowHelperRules] = useState<boolean>(false);
   const [scores, setScores] = useState<{ player: number; bot: number; draws: number }>({ player: 0, bot: 0, draws: 0 });
+
+  // Start TicTacToe BGM on mount
+  useEffect(() => {
+    soundEngine.startBgm('TicTacToe');
+    return () => {
+      soundEngine.stopBgm();
+    };
+  }, []);
 
   const activeIsP1 = TicTacToeLogicService.isPlayer1(gameState.activePlayerId, gameState);
   const isPlayerTurn = activeIsP1 === amIPlayer1;
@@ -133,6 +143,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
       if (botMoveIndex !== -1) {
         const nextState = TicTacToeLogicService.executeMove(gameState, botMoveIndex);
 
+        soundEngine.playTicTacToeO();
         setGameState(nextState);
         setBoardHistory(prev => [...prev, nextState.board]);
 
@@ -145,14 +156,17 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
           if (nextState.winnerId === player1Id) {
             setGameResult('player_won');
             setScores(s => ({ ...s, player: s.player + 1 }));
+            soundEngine.playTicTacToeWin();
             onAddLog(`[GAME OVER] VICTORY! You defeated ${opponentName}.`);
           } else if (nextState.winnerId === player2Id) {
             setGameResult('bot_won');
             setScores(s => ({ ...s, bot: s.bot + 1 }));
+            soundEngine.playDefeatCadence();
             onAddLog(`[GAME OVER] DEFEAT. ${opponentName} won the match.`);
           } else {
             setGameResult('draw');
             setScores(s => ({ ...s, draws: s.draws + 1 }));
+            soundEngine.playTicTacToeDraw();
             onAddLog(`[GAME OVER] DRAW! No winner in this round.`);
           }
         }
@@ -168,6 +182,9 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
   const handleCellClick = (index: number) => {
     if (gameResult !== 'playing' || !isPlayerTurn || botIsThinking) return;
     if (!TicTacToeLogicService.isValidMove(gameState.board, index)) return;
+
+    if (myMarker === 'X') soundEngine.playTicTacToeX();
+    else soundEngine.playTicTacToeO();
 
     const nextState = TicTacToeLogicService.executeMove(gameState, index);
     setGameState(nextState);
@@ -187,14 +204,17 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
       if (nextState.winnerId === 'draw') {
         setGameResult('draw');
         setScores(s => ({ ...s, draws: s.draws + 1 }));
+        soundEngine.playTicTacToeDraw();
         onAddLog(`[GAME OVER] DRAW! Tactical standoff.`);
       } else if (winnerIsP1 === amIPlayer1) {
         setGameResult('player_won');
         setScores(s => ({ ...s, player: s.player + 1 }));
+        soundEngine.playTicTacToeWin();
         onAddLog(`[GAME OVER] VICTORY! You defeated ${opponentName}.`);
       } else {
         setGameResult('bot_won');
         setScores(s => ({ ...s, bot: s.bot + 1 }));
+        soundEngine.playDefeatCadence();
         onAddLog(`[GAME OVER] DEFEAT. ${opponentName} won the match.`);
       }
     }
@@ -258,6 +278,8 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
         </div>
 
         <div className="flex items-center gap-2">
+          <SoundControls />
+
           <button
             onClick={() => setShowHelperRules(!showHelperRules)}
             className="p-2 bg-neutral-900/80 hover:bg-neutral-800 border border-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"

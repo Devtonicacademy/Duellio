@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Swords, ShieldCheck, Timer, Award, AlertTriangle, Play, Eye, EyeOff, HelpCircle, Trophy, RotateCcw, ArrowRight, SkipBack, SkipForward } from 'lucide-react';
 import { Chess3DScene } from './Chess3DScene';
 import { ChessRulesService, CastlingRights, INITIAL_CASTLING_RIGHTS, normalizeBoard, Color, PieceType } from '../services/chessRulesService';
+import { soundEngine } from '../services/soundEngine';
+import { SoundControls } from './SoundControls';
 
 interface InteractiveChessBoardProps {
   entryFee: number;
@@ -138,6 +140,14 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
     setBotIsThinking(false);
     onAddLog(`[REMATCH] Game re-initialized! Stakes locked for next round.`);
   };
+
+  // Start Chess BGM on mount
+  useEffect(() => {
+    soundEngine.startBgm('Chess');
+    return () => {
+      soundEngine.stopBgm();
+    };
+  }, []);
 
   // Sync live state from Firestore snapshot
   useEffect(() => {
@@ -386,10 +396,26 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
       });
     }
 
+    // Sound Effects Trigger
+    if (capturedPiece) {
+      soundEngine.playChessCapture();
+    } else {
+      soundEngine.playChessMove();
+    }
+
+    if (checkState) {
+      soundEngine.playChessCheck();
+    }
+
     if (outcome === 'checkmate') {
       const winnerState = isWhite ? 'white_won' : 'black_won';
       setGameResult(winnerState);
       onAddLog(`[CHECKMATE] ${isWhite ? 'White' : 'Black'} has delivered CHECKMATE! Match concluded.`);
+      if (isWhite === (myColor === 'w')) {
+        soundEngine.playChessVictory();
+      } else {
+        soundEngine.playChessDefeat();
+      }
       setTimeout(() => onGameOver(isWhite === (myColor === 'w')), 2500);
       return;
     } else if (outcome === 'stalemate') {
@@ -549,6 +575,8 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <SoundControls />
+
           <button
             onClick={() => setShowHelperRules(!showHelperRules)}
             className="p-1.5 bg-[#090F1B]/90 hover:bg-neutral-900 border border-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors text-xs flex items-center gap-1 font-mono uppercase cursor-pointer"

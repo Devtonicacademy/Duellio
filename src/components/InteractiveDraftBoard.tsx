@@ -3,12 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Swords, ShieldCheck, Timer, Award, AlertTriangle, RotateCcw, HelpCircle, Trophy, Box, Grid } from 'lucide-react';
 import { DraftLogicService } from '../services/draftLogic';
 import { DraftGameState, DraftPiece, UserProfile } from '../types';
 import { Draft3DScene } from './Draft3DScene';
+import { soundEngine } from '../services/soundEngine';
+import { SoundControls } from './SoundControls';
 
 interface InteractiveDraftBoardProps {
   entryFee: number;
@@ -47,6 +49,14 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   const player2Id = gameState?.playerIds?.[1] || (isBot ? 'bot-user' : 'guest');
   const myId = isBot ? player1Id : (isHost ? player1Id : player2Id);
 
+  // Start Draft BGM on mount
+  useEffect(() => {
+    soundEngine.startBgm('Draft');
+    return () => {
+      soundEngine.stopBgm();
+    };
+  }, []);
+
   const handlePlayAgain = () => {
     if (onReMatch) {
       onReMatch();
@@ -76,6 +86,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   const [gameResult, setGameResult] = useState<'playing' | 'player_won' | 'bot_won'>('playing');
   const [moveAttemptLogs, setMoveAttemptLogs] = useState<string[]>([]);
   const [botIsThinking, setBotIsThinking] = useState<boolean>(false);
+  const botExecutingRef = useRef<boolean>(false);
   const [invalidMoveMessage, setInvalidMoveMessage] = useState<string | null>(null);
   const [showHelperRules, setShowHelperRules] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'2D' | '3D'>('3D');
@@ -204,10 +215,20 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
         chosenMove.targetCol
       );
 
+      const movedPiece = nextState.pieces.find(p => p.id === chosenMove.pieceId);
+      if (movedPiece && !originalPiece.isKing && movedPiece.isKing) {
+        soundEngine.playDraftKing();
+      } else if (chosenMove.isCapture) {
+        soundEngine.playDraftCapture();
+      } else {
+        soundEngine.playDraftMove();
+      }
+
       const playerPiecesCount = nextState.pieces.filter(p => DraftLogicService.isPlayer1(p, nextState)).length;
       if (playerPiecesCount === 0 || !DraftLogicService.hasValidMoves(nextState, player1Id)) {
         setGameState(nextState);
         setGameResult('bot_won');
+        soundEngine.playDefeatCadence();
         onAddLog(`[CRITICAL] All your pieces were captured or trapped! Match lost.`);
         setTimeout(() => onGameOver(false), 2500);
         return;
@@ -247,6 +268,16 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
 
     const nextState = DraftLogicService.executeMove(gameState, selectedPieceId, row, col);
 
+    const isCapture = rowDiff > 1;
+    const movedPieceInNext = nextState.pieces.find(p => p.id === selectedPieceId);
+    if (movedPieceInNext && !piece.isKing && movedPieceInNext.isKing) {
+      soundEngine.playDraftKing();
+    } else if (isCapture) {
+      soundEngine.playDraftCapture();
+    } else {
+      soundEngine.playDraftMove();
+    }
+
     // Check if opponent has any pieces left or valid moves left
     const opponentPiecesCount = nextState.pieces.filter(p => DraftLogicService.isPlayer1(p, nextState) !== myIsP1).length;
     if (opponentPiecesCount === 0 || !DraftLogicService.hasValidMoves(nextState, player2Id)) {
@@ -254,6 +285,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
       nextState.winnerId = myId;
       setGameState(nextState);
       setGameResult('player_won');
+      soundEngine.playDraftVictory();
       onAddLog(`[CELEBRATION] Victory! Opponent has no remaining pieces or legal moves!`);
       if (!isBot && onUpdateLiveState) onUpdateLiveState(nextState);
       setTimeout(() => onGameOver(true), 2500);
@@ -399,6 +431,8 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <SoundControls />
+
           {/* Viewport 2D / 3D Selector Toggle */}
           <div className="flex items-center p-0.5 bg-[#070D18] border border-cyan-500/30 rounded-xl">
             <button

@@ -21,6 +21,8 @@ import {
 } from '../utils/ludoEngine';
 
 import { Ludo3DCanvas } from './Ludo3DCanvas';
+import { soundEngine } from '../services/soundEngine';
+import { SoundControls } from './SoundControls';
 
 interface InteractiveLudoBoardProps {
   entryFee: number;
@@ -77,6 +79,14 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     setBotIsThinking(false);
     onAddLog(`[REMATCH] Ludo Board re-initialized! Stakes locked for next round.`);
   };
+
+  // Start Ludo BGM on mount
+  useEffect(() => {
+    soundEngine.startBgm('Ludo');
+    return () => {
+      soundEngine.stopBgm();
+    };
+  }, []);
 
   const [secondDiceValue, setSecondDiceValue] = useState<number>(3);
   const [isRolling, setIsRolling] = useState<boolean>(false);
@@ -137,6 +147,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     if (isRolling || hasRolled || engineState.gameStatus !== 'playing' || !isUserTurn(activePlayer) || botIsThinking) return;
 
     setIsRolling(true);
+    soundEngine.playLudoDiceRoll();
     
     setTimeout(() => {
       const outcome1 = rollDie();
@@ -166,6 +177,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   const triggerBotMove = (colorToPlay: PlayerColor) => {
     setBotIsThinking(true);
     setIsRolling(true);
+    soundEngine.playLudoDiceRoll();
     
     setTimeout(() => {
       const outcome1 = rollDie();
@@ -200,7 +212,16 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           const movedState = executeMove(rolledState, selectedMove.tokenId, outcome1);
           setEngineState(movedState);
 
+          if (selectedMove.isCapture) {
+            soundEngine.playLudoKnockout();
+          } else if (selectedMove.isHomeFinish) {
+            soundEngine.playLudoGoal();
+          } else {
+            soundEngine.playLudoPieceStep();
+          }
+
           if (movedState.winner) {
+            soundEngine.playLudoVictory();
             const isMeWin = movedState.winner === 'red' || (playerMode === '2-player' && movedState.winner === 'gold');
             onGameOver(isMeWin);
           }
@@ -235,11 +256,23 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     if (!isTokenPlayable(token) || engineState.currentDiceValue === null) return;
 
     try {
+      const legalMoves = getLegalMoves(engineState, token.color, engineState.currentDiceValue);
+      const chosenMove = legalMoves.find(m => m.tokenId === token.id);
+
       const nextState = executeMove(engineState, token.id, engineState.currentDiceValue);
       setEngineState(nextState);
       setHasRolled(false);
 
+      if (chosenMove?.isCapture) {
+        soundEngine.playLudoKnockout();
+      } else if (chosenMove?.isHomeFinish) {
+        soundEngine.playLudoGoal();
+      } else {
+        soundEngine.playLudoPieceStep();
+      }
+
       if (nextState.winner) {
+        soundEngine.playLudoVictory();
         const isMeWin = nextState.winner === 'red' || (playerMode === '2-player' && nextState.winner === 'gold');
         onGameOver(isMeWin);
       }
@@ -271,6 +304,8 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <SoundControls />
+
           <button
             onClick={() => setShowHelperRules(!showHelperRules)}
             className="p-1.5 bg-[#180f08]/90 hover:bg-[#26170d] border border-amber-900/60 text-amber-200/80 hover:text-white rounded-lg transition-colors text-xs flex items-center gap-1 font-mono uppercase"

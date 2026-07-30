@@ -62,7 +62,7 @@ export class InputHandler {
 
   setRemoteP2Input(inputs) {
     if (inputs && typeof inputs === 'object') {
-      this.remoteP2Inputs = inputs;
+      this.remoteP2Inputs = { ...inputs };
     }
   }
 

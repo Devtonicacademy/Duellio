@@ -25,6 +25,8 @@ import {
   X,
   ArrowRight
 } from 'lucide-react';
+import { soundEngine } from '../services/soundEngine';
+import { SoundControls } from './SoundControls';
 
 interface InteractiveStickmanBoardProps {
   entryFee: number;
@@ -58,6 +60,14 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
   onUpdateLiveState
 }) => {
   const isPractice = opponentName.toUpperCase().includes('PRACTICE') || entryFee === 0;
+
+  // Start Stickman BGM on mount
+  useEffect(() => {
+    soundEngine.startBgm('Stickman');
+    return () => {
+      soundEngine.stopBgm();
+    };
+  }, []);
 
   // Game configuration
   const [mode, setMode] = useState<'p1_vs_cpu' | 'p1_vs_p2' | 'practice' | 'survival'>(
@@ -260,13 +270,7 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
             <HelpCircle className="w-4 h-4 text-cyan-400" />
           </button>
 
-          <button
-            onClick={toggleSound}
-            className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 transition-colors"
-            title="Toggle Sound"
-          >
-            {isSoundOn ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-zinc-500" />}
-          </button>
+          <SoundControls />
 
           <button
             onClick={() => setIsPaused(!isPaused)}

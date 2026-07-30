@@ -335,7 +335,7 @@ export class GameEngine {
         this.p1.pos.x = state.p1Pos.x;
         this.p1.pos.y = state.p1Pos.y;
       }
-      if (state.p1State) this.p1.state = state.p1State;
+      if (state.p1State && this.p1.state !== state.p1State) this.p1.setState(state.p1State);
       if (typeof state.p1FacingRight === 'boolean') this.p1.facingRight = state.p1FacingRight;
       if (typeof state.p1Health === 'number') {
         const maxH = this.p1.maxHealth || 150;
@@ -350,7 +350,7 @@ export class GameEngine {
         this.p2.pos.x = state.p2Pos.x;
         this.p2.pos.y = state.p2Pos.y;
       }
-      if (state.p2State) this.p2.state = state.p2State;
+      if (state.p2State && this.p2.state !== state.p2State) this.p2.setState(state.p2State);
       if (typeof state.p2FacingRight === 'boolean') this.p2.facingRight = state.p2FacingRight;
       if (typeof state.p2Health === 'number') {
         const maxH = this.p2.maxHealth || 150;
@@ -460,12 +460,15 @@ export class GameEngine {
 
       // Consume one-shot action inputs for remote P2
       if (this.input.remoteP2Inputs) {
-        this.input.remoteP2Inputs.punch = false;
-        this.input.remoteP2Inputs.kick = false;
-        this.input.remoteP2Inputs.sweep = false;
-        this.input.remoteP2Inputs.special = false;
-        this.input.remoteP2Inputs.jump = false;
-        this.input.remoteP2Inputs.pickup = false;
+        this.input.remoteP2Inputs = {
+          ...this.input.remoteP2Inputs,
+          punch: false,
+          kick: false,
+          sweep: false,
+          special: false,
+          jump: false,
+          pickup: false
+        };
       }
 
       // Practice: keep health/chi at max

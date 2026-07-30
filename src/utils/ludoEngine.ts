@@ -114,7 +114,7 @@ export function createInitialGameState(
     }
   });
 
-  const players = mode === '2-player' ? ['red', 'blue'] : activeColors;
+  const players: PlayerColor[] = mode === '2-player' ? (['red', 'blue'] as PlayerColor[]) : activeColors;
 
   return {
     mode,

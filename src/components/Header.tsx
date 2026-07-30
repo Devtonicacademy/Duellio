@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { DuellioLogo } from './DuellioLogo';
 import { UserProfile, NotificationItem } from '../types';
+import { SoundControls } from './SoundControls';
 
 interface HeaderProps {
   activeTab: 'discover' | 'tournaments' | 'lobbies' | 'profile' | 'play-arena' | 'spectate' | 'chat' | 'admin';
@@ -457,6 +458,8 @@ export function Header({
 
           {/* Wallet action, faucet, notifications and profile image link on right - Desktop Only */}
           <div className="hidden lg:flex items-center gap-2.5 shrink-0">
+            <SoundControls />
+
             <button 
               onClick={toggleTheme}
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}

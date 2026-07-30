@@ -528,7 +528,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 <img 
                   alt="Game Thumb" 
                   className="w-full h-full object-cover" 
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuh4k4YaaHDo-emcWDI9rXFXWmnvK5JCEyzVWbBn8MU7aR-rPktMC-qvELjfVlujdinWpDMBFuH7YSR4mHKkq_Dk-mt5CSozenTCcUefYaYtO6qO9elvoHUaktjE61nUNUGrawQojY8u1Ox_405lggrPqq9LtWnNwwF_sAwhHb7nCkma9RyqHDA1f1GsHXoaSjOWQarwetSzycIFzHBQrODhp0fMgx6G42e7cdD8UnIQLnSBMoW5U0U9LFJqS-qqoyX9ev-c0efQ"
+                  src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=150&q=80"
                 />
               </div>
               <div className="flex-1">
@@ -547,7 +547,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 <img 
                   alt="Game Thumb" 
                   className="w-full h-full object-cover" 
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDr_L_wuUhbPV36na3DOU3RaGFgYb_1e19qS1LuchnlZPWHbTv5P_OPdHtI7Gr7qj6A_GOmz7lFVCSzvd2wXlQ2BCLZbOjzDG7KHcFV4l0y-l1ZCZy2YhuDw5gPMXoyYAcuj264Elw7SA_LdHTLg1DmjAE0hgJ4PErF7eTu7fJA_EcGV6znvpxPtSvQUcbplWXL8IgtevLBVWw98Ge1KYsAOlMo3DRsXXZzwijexzarDwzFJrCuYhCWf5DgXWhJ0GFiicHxA3KOcw"
+                  src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80"
                 />
               </div>
               <div className="flex-1">
@@ -566,7 +566,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 <img 
                   alt="Game Thumb" 
                   className="w-full h-full object-cover" 
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXSen2w7OQY6mkqKeOIDwKoeazb-jJYfFEhyMDGcvhxBQ3e2bCqXnbGWK0UydaqQebcqoAmmuckLDLGsufFo_cBdxPfpfzEt9EHzRMkDwf9ZD2mUFJknqwUsep9eep3yxKyejUwsbsFIz4foNAAg02IE7kr3BeiGYTghzfJjvBrfJ6OwCEcMIM6Q7EXJt5ywabtNaKLb8FTCUjSDXsXteXNDEM9iT3dvopRycKET56g5YRBtF6kPkUoJ79K1Kq82d91zZSJ2rcnw"
+                  src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=150&q=80"
                 />
               </div>
               <div className="flex-1">

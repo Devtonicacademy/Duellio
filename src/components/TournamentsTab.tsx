@@ -61,7 +61,7 @@ export const TournamentsTab: React.FC = () => {
           <div className="aspect-video w-full relative">
             <img 
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103 opacity-75" 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuA45JAzFVR_zn4Ah2q-hLgDD9ETeOc1lsw_0gFa8JdJYE9YB1WlU3j6qbDQzanrm0uu0WgaB3zmIVnoJWK6u4cXo3yDn2DI6wBBssJguaFTGyGEd5d2_A3k9OyYISlDkH2rjPGO6421Y29bKDGkDkOV5JlgmZpWBkZw2yojPa79qGbOr147_p2Seek7yIhaE5e3x4T-mMBZqy9EFhn5YFNz3KqXZ92MmDwbTS0YtOQR5g18dqWsjc5rqct8VnT4sGQWF9ig4YNpAA"
+              src="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80"
               alt="Futuristic cyber stage stream view"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-neutral-955 via-neutral-955/20 to-transparent"></div>
@@ -78,7 +78,7 @@ export const TournamentsTab: React.FC = () => {
                 <img 
                   alt="Player Avatar" 
                   className="w-full h-full object-cover" 
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBeKN4vOEFJtQA1Kt1dsNZQUd5eyY9XivLTDt3L8S-ncIkmpvo9TNnkBNCVsG4VwHytv9Y-5ISc499B0z7u1vJj-1piIsWmPMyVNpL-Jvn1SumSvUaTSGdGJTIAaoHykcl1mQ4MDJM3Ex9OvjduJtBa4NhaFFeShUKBrEx3pWe3jWgs32RPIKz3M-pqK0YZf7ijIo2QT2E515VeuwijOCBT4R2zP1UDJLlsR75noPSesAmVb9rgADYsZ1J3mu8ZErOwJvP62DUiA"
+                  src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"
                 />
               </div>
               <div>
@@ -107,7 +107,7 @@ export const TournamentsTab: React.FC = () => {
                 <div className="w-12 h-12 rounded-lg bg-neutral-900 overflow-hidden shrink-0">
                   <img 
                     className="w-full h-full object-cover brightness-90 group-hover:scale-105 transition-all" 
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCV5ks2rVypCjWfqvs963gPFcJkK3Ck8qT0Un8Jb9dBmQlC6VaN7bRu137W5hneT-fejkHtJvjTXGjXhk0YA2wuWjbVuB5D5GwvcTeYYb4_Honi_p7qOhb05O_Or1fdJDoj7HJgS3RbFGwLC7ENlNPrkvaTpOPbSY5heKNpbNr8ztaqDD05g5uHubCJwvH1yrYf9CuMDWzxgthyPYCOVaxP8hPKIFx8FXwK2rW4pZBfWVDPEMfTNu0ug7tkFjzY5CsruW4ZExXLwg" 
+                    src="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=150&q=80" 
                     alt="Cyber Event"
                   />
                 </div>
@@ -126,7 +126,7 @@ export const TournamentsTab: React.FC = () => {
                 <div className="w-12 h-12 rounded-lg bg-neutral-900 overflow-hidden shrink-0">
                   <img 
                     className="w-full h-full object-cover brightness-90 group-hover:scale-105 transition-all" 
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAP2dgTSjGdXjA9nN46MIvuYiO7_fOjLHTT5kk6owTppIFfZ9JrdNHKAdSRScoSkcoh47lSgh57kHF5aJIJAecf7JOGW_PmJHvnmHM8xO3kFiOpawnEinPHNKBWHdIHuKHe9xerOfmJ_5t1FzN48CGk_omfAq5zzz5_t5MAe0VpJpSeGewvRbZVhbKU81zQByDeMO6Q9se2BG61rAKND8HVDMWZ1zalrES121WFYg_uQNydqD8oxMCKYq11z95FMNkDCL7kaUDPdQ" 
+                    src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=150&q=80" 
                     alt="Team Event"
                   />
                 </div>

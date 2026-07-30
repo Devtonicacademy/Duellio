@@ -167,7 +167,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
         <div className="absolute inset-0 -z-10">
           <img 
             className="w-full h-full object-cover opacity-35 transition-transform duration-700 group-hover:scale-103" 
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMWIrsVoSN1aRgOYQ8rmIpYeqm1gw3wVa2wJ-r8EDXSbXCrmgK231P7K_eGKPxnZsw60g9Ug5dW0LGWqWlo1vSjZNXRHvXOnwXWcgM1Mg00A1D4JLob6TX3X76HXYDZOpj8E9cB0kvGMTLi-D2HElYyHfzVtsuIfFulqRYlfdhpbNK5XPZI8T7LinabYA-I7K75rKeh5R-G_NH2T8ZgafxGP_qJ3qPQLC6XsPhihgQl_1gLGA5lNTuLRkW7JMqRstTxPs2CGum1A"
+            src="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80"
             alt="Grandmaster Arena"
             referrerPolicy="no-referrer"
           />
@@ -390,7 +390,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
       {/* Embedded horizontal tournament campaign */}
       <section className="group relative rounded-3xl overflow-hidden glass-bento glass-bento-hover flex flex-col md:flex-row border border-white/10">
         <div className="md:w-2/5 relative overflow-hidden min-h-[180px]">
-          <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGBaHQnAnHJ4qvQVBK8Q0R9TWU0-oaeINoVKpwMjx8YJnhqUon3lgwo6icPFMaxhGuVv1kZ_jXiLUrkrfwaud6wiTRwWqrhaRxNfyfiODBjnxguOOSKMoErBjdmt1pyT-H8TvnZbNu-fLOLdf2VsFyQcmFp19rrdFykOKta4qwdihOUHzM98_tGLGMy_K-01KsPgPPr5OZa8LnUht9oNDO7JBBn9vNebheRwG0yGyLe2gkjoloxnrk1rf_hrc7auInJQHpmeCAxQ" className="w-full h-full object-cover transition-transform duration-750 group-hover:scale-102" alt="Chess Master" referrerPolicy="no-referrer" />
+          <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=800&q=80" className="w-full h-full object-cover transition-transform duration-750 group-hover:scale-102" alt="Chess Master" referrerPolicy="no-referrer" />
           <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#0F0F13] hidden md:block"></div>
         </div>
         <div className="p-6 md:p-8 flex-1 flex flex-col justify-center space-y-4">

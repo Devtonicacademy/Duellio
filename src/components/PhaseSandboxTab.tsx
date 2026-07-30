@@ -33,6 +33,8 @@ import { InteractiveChessBoard } from './InteractiveChessBoard';
 import { InteractiveDraftBoard } from './InteractiveDraftBoard';
 import { InteractiveTicTacToeBoard } from './InteractiveTicTacToeBoard';
 import { InteractiveStickmanBoard } from './InteractiveStickmanBoard';
+import { soundEngine } from '../services/soundEngine';
+import { SoundControls } from './SoundControls';
 import { TicTacToeLogicService } from '../services/ticTacToeLogic';
 import { DraftLogicService } from '../services/draftLogic';
 import { ChessRulesService } from '../services/chessRulesService';
@@ -1062,6 +1064,25 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       };
       setTransactions(prev => [stakeTx, ...prev]);
     }
+
+    if (activeChallenge) {
+      let resetState: any = null;
+      const sessionId = activeChallenge.id;
+      if (activeChallenge.gameType === 'TicTacToe') resetState = TicTacToeLogicService.initializeBoard(sessionId, 'host', 'guest');
+      else if (activeChallenge.gameType === 'Draft') resetState = DraftLogicService.initializeBoard(sessionId, 'host', 'guest');
+      else if (activeChallenge.gameType === 'Chess') resetState = { sessionId, activeColor: 'w', status: 'playing' };
+      else if (activeChallenge.gameType === 'Ludo') resetState = { sessionId, activePlayer: 'red', status: 'playing' };
+      else resetState = { sessionId, status: 'playing' };
+
+      setLiveGameState(resetState);
+      if (activeChallenge.opponentType === 'player' && sessionId) {
+        updateDoc(doc(db, 'gameSessions', sessionId), sanitizeFirestoreData({
+          gameState: resetState,
+          status: 'playing',
+          updatedAt: Date.now()
+        })).catch(console.error);
+      }
+    }
     return true;
   };
 
@@ -1537,6 +1558,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     
     whotDeckRef.current = fullDeck;
     setWhotGameState(initialSession);
+    soundEngine.startBgm('Whot');
   };
 
   // Safe Draw Engine for players
@@ -1577,6 +1599,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const handleHumanDrawCard = () => {
     if (!whotGameState || whotGameState.status !== 'playing') return;
     if (whotGameState.activePlayerId !== userProfile.uid) return;
+
+    soundEngine.playWhotCardDraw();
 
     const penaltyActive = whotGameState.penaltyCount > 0;
     const targetOpponentId = opponentId || (activeChallenge?.opponentType === 'player' 
@@ -1675,6 +1699,20 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     const playerHand = whotGameState?.playerHands?.[userProfile.uid] || [];
     const nextPlayerHand = playerHand.filter(c => c.id !== card.id);
     const isWinner = nextPlayerHand.length === 0;
+
+    if (card.value === 1 || card.value === 2 || card.value === 5 || card.value === 8 || card.value === 14 || card.suit === 'Whot') {
+      soundEngine.playWhotSpecialCard();
+    } else {
+      soundEngine.playWhotCardPlay();
+    }
+
+    if (nextPlayerHand.length === 1) {
+      soundEngine.playWhotLastCard();
+    }
+
+    if (isWinner) {
+      soundEngine.playWhotVictory();
+    }
 
     let nextPlayer = targetOpponentId;
     let nextPenalty = whotGameState.penaltyCount;
