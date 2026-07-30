@@ -106,58 +106,61 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
     return () => clearInterval(interval);
   }, [isPlayerTurn, gameResult, botIsThinking, opponentName, onAddLog, onGameOver]);
 
+  const botExecutingRef = React.useRef(false);
+
   // Bot AI Turn execution
   useEffect(() => {
-    if (!isBot || gameResult !== 'playing' || isPlayerTurn || botIsThinking) return;
+    if (!isBot || gameResult !== 'playing' || isPlayerTurn || botExecutingRef.current) return;
 
+    botExecutingRef.current = true;
     setBotIsThinking(true);
 
     const delay = Math.floor(Math.random() * 60) + 80; // Instant 80-140ms bot response delay
 
     const timer = setTimeout(() => {
+      const currentBoard = gameState.board;
       const botMoveIndex = TicTacToeLogicService.getBotMove(
-        gameState.board,
+        currentBoard,
         'O',
         (botDifficulty || 'medium') as 'easy' | 'medium' | 'hard'
       );
 
-      if (botMoveIndex === -1) {
-        setBotIsThinking(false);
-        return;
-      }
+      if (botMoveIndex !== -1) {
+        const nextState = TicTacToeLogicService.executeMove(gameState, botMoveIndex);
 
-      const nextState = TicTacToeLogicService.executeMove(gameState, botMoveIndex);
+        setGameState(nextState);
 
-      setGameState(nextState);
-      setBotIsThinking(false);
+        if (nextState.lastMoveMessage) {
+          onAddLog(`[AI MOVE] ${opponentName} ${nextState.lastMoveMessage}`);
+          setMoveAttemptLogs(prev => [`[${opponentName}] Cell ${botMoveIndex + 1}`, ...prev.slice(0, 7)]);
+        }
 
-      if (nextState.lastMoveMessage) {
-        onAddLog(`[AI MOVE] ${opponentName} ${nextState.lastMoveMessage}`);
-        setMoveAttemptLogs(prev => [`[${opponentName}] Cell ${botMoveIndex + 1}`, ...prev.slice(0, 7)]);
-      }
-
-      if (nextState.status === 'completed') {
-        if (nextState.winnerId === player1Id) {
-          setGameResult('player_won');
-          setScores(s => ({ ...s, player: s.player + 1 }));
-          onAddLog(`[GAME OVER] VICTORY! You defeated ${opponentName}.`);
-          setTimeout(() => onGameOver(true), 2500);
-        } else if (nextState.winnerId === player2Id) {
-          setGameResult('bot_won');
-          setScores(s => ({ ...s, bot: s.bot + 1 }));
-          onAddLog(`[GAME OVER] DEFEAT. ${opponentName} won the match.`);
-          setTimeout(() => onGameOver(false), 2500);
-        } else {
-          setGameResult('draw');
-          setScores(s => ({ ...s, draws: s.draws + 1 }));
-          onAddLog(`[GAME OVER] DRAW! No winner in this round.`);
-          setTimeout(() => onGameOver(false), 2500);
+        if (nextState.status === 'completed') {
+          if (nextState.winnerId === player1Id) {
+            setGameResult('player_won');
+            setScores(s => ({ ...s, player: s.player + 1 }));
+            onAddLog(`[GAME OVER] VICTORY! You defeated ${opponentName}.`);
+            setTimeout(() => onGameOver(true), 2500);
+          } else if (nextState.winnerId === player2Id) {
+            setGameResult('bot_won');
+            setScores(s => ({ ...s, bot: s.bot + 1 }));
+            onAddLog(`[GAME OVER] DEFEAT. ${opponentName} won the match.`);
+            setTimeout(() => onGameOver(false), 2500);
+          } else {
+            setGameResult('draw');
+            setScores(s => ({ ...s, draws: s.draws + 1 }));
+            onAddLog(`[GAME OVER] DRAW! No winner in this round.`);
+            setTimeout(() => onGameOver(false), 2500);
+          }
         }
       }
+
+      botExecutingRef.current = false;
+      setBotIsThinking(false);
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [gameState, isPlayerTurn, gameResult, botIsThinking, botDifficulty, opponentName, onAddLog, onGameOver, player1Id, player2Id, isBot]);
+  }, [gameState, isPlayerTurn, gameResult, botDifficulty, opponentName, onAddLog, onGameOver, player1Id, player2Id, isBot]);
 
   const handleCellClick = (index: number) => {
     if (gameResult !== 'playing' || !isPlayerTurn || botIsThinking) return;
