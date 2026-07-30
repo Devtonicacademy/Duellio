@@ -1,318 +1,78 @@
 {
   "timeline": [
     {
-      "timestamp": "2026-07-30T06:07:08.466Z",
-      "timeMs": 1785391628468,
+      "timestamp": "2026-07-30T06:08:37.475Z",
+      "timeMs": 1785391717476,
       "actor": "Host",
       "category": "Navigation",
       "event": "Navigating to home page",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:12.483Z",
-      "timeMs": 1785391632483,
-      "actor": "Host",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocLztsoDMlxXON-UbVgcWil10p1rPMZwfQH7Gpc6BdlrOUTvZQ=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:13.016Z",
-      "timeMs": 1785391633016,
+      "timestamp": "2026-07-30T06:08:41.367Z",
+      "timeMs": 1785391721367,
       "actor": "Host",
       "category": "Auth",
       "event": "Logging in Host user",
       "details": {
-        "uid": "qa_host_1785391633016",
+        "uid": "qa_host_1785391721367",
         "username": "Master_Host"
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:14.290Z",
-      "timeMs": 1785391634290,
-      "actor": "Host",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocLztsoDMlxXON-UbVgcWil10p1rPMZwfQH7Gpc6BdlrOUTvZQ=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:14.682Z",
-      "timeMs": 1785391634682,
+      "timestamp": "2026-07-30T06:08:42.632Z",
+      "timeMs": 1785391722633,
       "actor": "Guest",
       "category": "Navigation",
       "event": "Navigating to home page",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:16.985Z",
-      "timeMs": 1785391636985,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocLztsoDMlxXON-UbVgcWil10p1rPMZwfQH7Gpc6BdlrOUTvZQ=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:16.988Z",
-      "timeMs": 1785391636988,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocLJXRkJ1dQCdezSN7acPeXcNoC77Sw54iBwKLr75Xestfdyxub8=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:16.992Z",
-      "timeMs": 1785391636992,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocKLDZYnc0lWYJeidZT3a3JF-5NyQQHGVhMULHSskeIPdIB4kQ=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:16.993Z",
-      "timeMs": 1785391636993,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocKnEQSXszYii3nUaovB6JUKkczsF6wGThxMaZRIoChFnVlnTA=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:16.994Z",
-      "timeMs": 1785391636994,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocJXdxQzxy9nIt66ezJaH4H-wNNq2t_3BwEuBW-4xtic6Z2in1Cr=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:16.995Z",
-      "timeMs": 1785391636995,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocKFbFbF4MyVsqKFAWU1HtaZBHFffPm7w9AXmWwLkDiuDB5IroVG=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:17.181Z",
-      "timeMs": 1785391637181,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocJ1BH2nl6lr19Mtc3exVGvQpq_yJ5L7DoCK8dXRwNLfB2DxNIw=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:17.187Z",
-      "timeMs": 1785391637187,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocL6Gw1lu5mvA5XBQPwlbwUyRZHjkmCH5OditLZXmy9iM-2xSoST=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:17.188Z",
-      "timeMs": 1785391637188,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocKA4oPByVmZNiuU3sAdlVcqSwsO5ydC8FwkMYHlslvkJoUIRkM=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:17.716Z",
-      "timeMs": 1785391637716,
+      "timestamp": "2026-07-30T06:08:45.573Z",
+      "timeMs": 1785391725573,
       "actor": "Guest",
       "category": "Auth",
       "event": "Logging in Guest user",
       "details": {
-        "uid": "qa_guest_1785391637716",
+        "uid": "qa_guest_1785391725573",
         "username": "Challenger_Guest"
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:18.895Z",
-      "timeMs": 1785391638895,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocKnEQSXszYii3nUaovB6JUKkczsF6wGThxMaZRIoChFnVlnTA=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:18.898Z",
-      "timeMs": 1785391638898,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocLztsoDMlxXON-UbVgcWil10p1rPMZwfQH7Gpc6BdlrOUTvZQ=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:18.898Z",
-      "timeMs": 1785391638898,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocKLDZYnc0lWYJeidZT3a3JF-5NyQQHGVhMULHSskeIPdIB4kQ=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:18.899Z",
-      "timeMs": 1785391638899,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocLJXRkJ1dQCdezSN7acPeXcNoC77Sw54iBwKLr75Xestfdyxub8=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:18.909Z",
-      "timeMs": 1785391638909,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocJ1BH2nl6lr19Mtc3exVGvQpq_yJ5L7DoCK8dXRwNLfB2DxNIw=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:18.913Z",
-      "timeMs": 1785391638913,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocJXdxQzxy9nIt66ezJaH4H-wNNq2t_3BwEuBW-4xtic6Z2in1Cr=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:18.913Z",
-      "timeMs": 1785391638913,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocKA4oPByVmZNiuU3sAdlVcqSwsO5ydC8FwkMYHlslvkJoUIRkM=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:18.913Z",
-      "timeMs": 1785391638913,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocL6Gw1lu5mvA5XBQPwlbwUyRZHjkmCH5OditLZXmy9iM-2xSoST=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:18.913Z",
-      "timeMs": 1785391638913,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocKFbFbF4MyVsqKFAWU1HtaZBHFffPm7w9AXmWwLkDiuDB5IroVG=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:19.598Z",
-      "timeMs": 1785391639598,
+      "timestamp": "2026-07-30T06:08:47.973Z",
+      "timeMs": 1785391727973,
       "actor": "Host",
       "category": "Matchmaking",
-      "event": "Host loading session invite URL: stickman_qa_match_1785391639598",
+      "event": "Host loading session invite URL: stickman_qa_match_1785391727973",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:20.791Z",
-      "timeMs": 1785391640791,
-      "actor": "Host",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocLztsoDMlxXON-UbVgcWil10p1rPMZwfQH7Gpc6BdlrOUTvZQ=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:22.648Z",
-      "timeMs": 1785391642648,
+      "timestamp": "2026-07-30T06:08:50.289Z",
+      "timeMs": 1785391730289,
       "actor": "Host",
       "category": "Matchmaking",
       "event": "Host clicking Accept Stakes & Duel Now button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:25.152Z",
-      "timeMs": 1785391645152,
+      "timestamp": "2026-07-30T06:08:52.792Z",
+      "timeMs": 1785391732792,
       "actor": "Guest",
       "category": "Matchmaking",
-      "event": "Guest loading session invite URL: stickman_qa_match_1785391639598",
+      "event": "Guest loading session invite URL: stickman_qa_match_1785391727973",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:26.053Z",
-      "timeMs": 1785391646053,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocLztsoDMlxXON-UbVgcWil10p1rPMZwfQH7Gpc6BdlrOUTvZQ=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:26.064Z",
-      "timeMs": 1785391646064,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocJXdxQzxy9nIt66ezJaH4H-wNNq2t_3BwEuBW-4xtic6Z2in1Cr=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:26.070Z",
-      "timeMs": 1785391646070,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocKnEQSXszYii3nUaovB6JUKkczsF6wGThxMaZRIoChFnVlnTA=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:26.070Z",
-      "timeMs": 1785391646070,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocKFbFbF4MyVsqKFAWU1HtaZBHFffPm7w9AXmWwLkDiuDB5IroVG=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:26.070Z",
-      "timeMs": 1785391646070,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocKLDZYnc0lWYJeidZT3a3JF-5NyQQHGVhMULHSskeIPdIB4kQ=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:26.071Z",
-      "timeMs": 1785391646071,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocKA4oPByVmZNiuU3sAdlVcqSwsO5ydC8FwkMYHlslvkJoUIRkM=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:26.077Z",
-      "timeMs": 1785391646077,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocL6Gw1lu5mvA5XBQPwlbwUyRZHjkmCH5OditLZXmy9iM-2xSoST=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:26.079Z",
-      "timeMs": 1785391646079,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocJ1BH2nl6lr19Mtc3exVGvQpq_yJ5L7DoCK8dXRwNLfB2DxNIw=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:26.171Z",
-      "timeMs": 1785391646171,
-      "actor": "Guest",
-      "category": "FailedResource",
-      "event": "404/Failed: https://lh3.googleusercontent.com/a/ACg8ocLJXRkJ1dQCdezSN7acPeXcNoC77Sw54iBwKLr75Xestfdyxub8=s96-c",
-      "details": {}
-    },
-    {
-      "timestamp": "2026-07-30T06:07:28.113Z",
-      "timeMs": 1785391648113,
+      "timestamp": "2026-07-30T06:08:55.504Z",
+      "timeMs": 1785391735504,
       "actor": "Guest",
       "category": "Matchmaking",
       "event": "Guest clicking Accept Stakes & Duel Now button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:31.620Z",
-      "timeMs": 1785391651620,
+      "timestamp": "2026-07-30T06:08:59.007Z",
+      "timeMs": 1785391739007,
       "actor": "System",
       "category": "GameInit",
       "event": "Game Engine Status Check",
@@ -330,16 +90,16 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:31.620Z",
-      "timeMs": 1785391651620,
+      "timestamp": "2026-07-30T06:08:59.007Z",
+      "timeMs": 1785391739007,
       "actor": "System",
       "category": "Gameplay",
       "event": ">>> STARTING MULTIPLAYER MATCH ROUND 1/5 <<<",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:31.623Z",
-      "timeMs": 1785391651623,
+      "timestamp": "2026-07-30T06:08:59.009Z",
+      "timeMs": 1785391739009,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 1 - Initial Countdown/Fight]",
@@ -357,24 +117,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:31.623Z",
-      "timeMs": 1785391651623,
+      "timestamp": "2026-07-30T06:08:59.009Z",
+      "timeMs": 1785391739009,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyD (move right) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:31.882Z",
-      "timeMs": 1785391651882,
+      "timestamp": "2026-07-30T06:08:59.265Z",
+      "timeMs": 1785391739265,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyA (move left) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:32.741Z",
-      "timeMs": 1785391652741,
+      "timestamp": "2026-07-30T06:09:00.141Z",
+      "timeMs": 1785391740141,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 1 - After Movement & Punch]",
@@ -392,24 +152,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:32.741Z",
-      "timeMs": 1785391652741,
+      "timestamp": "2026-07-30T06:09:00.141Z",
+      "timeMs": 1785391740141,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyW (jump) & KeyI (special)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:32.748Z",
-      "timeMs": 1785391652748,
+      "timestamp": "2026-07-30T06:09:00.145Z",
+      "timeMs": 1785391740145,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyK (kick) & KeyW (jump)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:33.955Z",
-      "timeMs": 1785391653955,
+      "timestamp": "2026-07-30T06:09:01.350Z",
+      "timeMs": 1785391741350,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 1 - After Special & Kick]",
@@ -427,16 +187,16 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:33.956Z",
-      "timeMs": 1785391653956,
+      "timestamp": "2026-07-30T06:09:01.351Z",
+      "timeMs": 1785391741351,
       "actor": "Host",
       "category": "GameLogic",
       "event": "Setting P2 health to 0 to trigger KO & victory",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:35.458Z",
-      "timeMs": 1785391655458,
+      "timestamp": "2026-07-30T06:09:02.855Z",
+      "timeMs": 1785391742855,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 1 - Match Game Over]",
@@ -454,32 +214,32 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:35.459Z",
-      "timeMs": 1785391655459,
+      "timestamp": "2026-07-30T06:09:02.855Z",
+      "timeMs": 1785391742855,
       "actor": "Host",
       "category": "Rematch",
       "event": "Host clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:35.460Z",
-      "timeMs": 1785391655460,
+      "timestamp": "2026-07-30T06:09:02.856Z",
+      "timeMs": 1785391742856,
       "actor": "Guest",
       "category": "Rematch",
       "event": "Guest clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:36.964Z",
-      "timeMs": 1785391656964,
+      "timestamp": "2026-07-30T06:09:04.357Z",
+      "timeMs": 1785391744357,
       "actor": "System",
       "category": "Gameplay",
       "event": ">>> STARTING MULTIPLAYER MATCH ROUND 2/5 <<<",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:36.967Z",
-      "timeMs": 1785391656967,
+      "timestamp": "2026-07-30T06:09:04.359Z",
+      "timeMs": 1785391744359,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 2 - Initial Countdown/Fight]",
@@ -497,24 +257,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:36.967Z",
-      "timeMs": 1785391656967,
+      "timestamp": "2026-07-30T06:09:04.359Z",
+      "timeMs": 1785391744359,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyD (move right) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:37.222Z",
-      "timeMs": 1785391657222,
+      "timestamp": "2026-07-30T06:09:04.612Z",
+      "timeMs": 1785391744612,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyA (move left) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:38.081Z",
-      "timeMs": 1785391658081,
+      "timestamp": "2026-07-30T06:09:05.470Z",
+      "timeMs": 1785391745470,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 2 - After Movement & Punch]",
@@ -532,24 +292,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:38.081Z",
-      "timeMs": 1785391658081,
+      "timestamp": "2026-07-30T06:09:05.470Z",
+      "timeMs": 1785391745470,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyW (jump) & KeyI (special)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:38.085Z",
-      "timeMs": 1785391658085,
+      "timestamp": "2026-07-30T06:09:05.474Z",
+      "timeMs": 1785391745474,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyK (kick) & KeyW (jump)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:39.296Z",
-      "timeMs": 1785391659296,
+      "timestamp": "2026-07-30T06:09:06.679Z",
+      "timeMs": 1785391746679,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 2 - After Special & Kick]",
@@ -567,16 +327,16 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:39.296Z",
-      "timeMs": 1785391659296,
+      "timestamp": "2026-07-30T06:09:06.679Z",
+      "timeMs": 1785391746679,
       "actor": "Host",
       "category": "GameLogic",
       "event": "Setting P2 health to 0 to trigger KO & victory",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:40.800Z",
-      "timeMs": 1785391660800,
+      "timestamp": "2026-07-30T06:09:08.184Z",
+      "timeMs": 1785391748184,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 2 - Match Game Over]",
@@ -594,32 +354,32 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:40.800Z",
-      "timeMs": 1785391660800,
+      "timestamp": "2026-07-30T06:09:08.184Z",
+      "timeMs": 1785391748184,
       "actor": "Host",
       "category": "Rematch",
       "event": "Host clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:40.801Z",
-      "timeMs": 1785391660801,
+      "timestamp": "2026-07-30T06:09:08.186Z",
+      "timeMs": 1785391748186,
       "actor": "Guest",
       "category": "Rematch",
       "event": "Guest clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:42.303Z",
-      "timeMs": 1785391662303,
+      "timestamp": "2026-07-30T06:09:09.687Z",
+      "timeMs": 1785391749687,
       "actor": "System",
       "category": "Gameplay",
       "event": ">>> STARTING MULTIPLAYER MATCH ROUND 3/5 <<<",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:42.305Z",
-      "timeMs": 1785391662305,
+      "timestamp": "2026-07-30T06:09:09.689Z",
+      "timeMs": 1785391749689,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 3 - Initial Countdown/Fight]",
@@ -637,24 +397,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:42.305Z",
-      "timeMs": 1785391662305,
+      "timestamp": "2026-07-30T06:09:09.689Z",
+      "timeMs": 1785391749689,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyD (move right) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:42.561Z",
-      "timeMs": 1785391662561,
+      "timestamp": "2026-07-30T06:09:09.944Z",
+      "timeMs": 1785391749944,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyA (move left) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:43.419Z",
-      "timeMs": 1785391663419,
+      "timestamp": "2026-07-30T06:09:10.802Z",
+      "timeMs": 1785391750802,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 3 - After Movement & Punch]",
@@ -672,24 +432,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:43.419Z",
-      "timeMs": 1785391663419,
+      "timestamp": "2026-07-30T06:09:10.802Z",
+      "timeMs": 1785391750802,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyW (jump) & KeyI (special)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:43.423Z",
-      "timeMs": 1785391663423,
+      "timestamp": "2026-07-30T06:09:10.806Z",
+      "timeMs": 1785391750806,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyK (kick) & KeyW (jump)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:44.638Z",
-      "timeMs": 1785391664638,
+      "timestamp": "2026-07-30T06:09:12.011Z",
+      "timeMs": 1785391752011,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 3 - After Special & Kick]",
@@ -707,16 +467,16 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:44.638Z",
-      "timeMs": 1785391664638,
+      "timestamp": "2026-07-30T06:09:12.011Z",
+      "timeMs": 1785391752011,
       "actor": "Host",
       "category": "GameLogic",
       "event": "Setting P2 health to 0 to trigger KO & victory",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:46.143Z",
-      "timeMs": 1785391666143,
+      "timestamp": "2026-07-30T06:09:13.516Z",
+      "timeMs": 1785391753517,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 3 - Match Game Over]",
@@ -734,32 +494,32 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:46.143Z",
-      "timeMs": 1785391666143,
+      "timestamp": "2026-07-30T06:09:13.517Z",
+      "timeMs": 1785391753517,
       "actor": "Host",
       "category": "Rematch",
       "event": "Host clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:46.145Z",
-      "timeMs": 1785391666145,
+      "timestamp": "2026-07-30T06:09:13.518Z",
+      "timeMs": 1785391753518,
       "actor": "Guest",
       "category": "Rematch",
       "event": "Guest clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:47.647Z",
-      "timeMs": 1785391667647,
+      "timestamp": "2026-07-30T06:09:15.021Z",
+      "timeMs": 1785391755021,
       "actor": "System",
       "category": "Gameplay",
       "event": ">>> STARTING MULTIPLAYER MATCH ROUND 4/5 <<<",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:47.649Z",
-      "timeMs": 1785391667649,
+      "timestamp": "2026-07-30T06:09:15.022Z",
+      "timeMs": 1785391755022,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 4 - Initial Countdown/Fight]",
@@ -777,24 +537,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:47.649Z",
-      "timeMs": 1785391667649,
+      "timestamp": "2026-07-30T06:09:15.022Z",
+      "timeMs": 1785391755022,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyD (move right) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:47.904Z",
-      "timeMs": 1785391667904,
+      "timestamp": "2026-07-30T06:09:15.276Z",
+      "timeMs": 1785391755276,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyA (move left) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:48.765Z",
-      "timeMs": 1785391668765,
+      "timestamp": "2026-07-30T06:09:16.134Z",
+      "timeMs": 1785391756134,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 4 - After Movement & Punch]",
@@ -812,24 +572,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:48.765Z",
-      "timeMs": 1785391668765,
+      "timestamp": "2026-07-30T06:09:16.135Z",
+      "timeMs": 1785391756135,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyW (jump) & KeyI (special)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:48.768Z",
-      "timeMs": 1785391668768,
+      "timestamp": "2026-07-30T06:09:16.138Z",
+      "timeMs": 1785391756138,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyK (kick) & KeyW (jump)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:49.977Z",
-      "timeMs": 1785391669977,
+      "timestamp": "2026-07-30T06:09:17.344Z",
+      "timeMs": 1785391757344,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 4 - After Special & Kick]",
@@ -847,16 +607,16 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:49.977Z",
-      "timeMs": 1785391669977,
+      "timestamp": "2026-07-30T06:09:17.344Z",
+      "timeMs": 1785391757344,
       "actor": "Host",
       "category": "GameLogic",
       "event": "Setting P2 health to 0 to trigger KO & victory",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:51.481Z",
-      "timeMs": 1785391671481,
+      "timestamp": "2026-07-30T06:09:18.849Z",
+      "timeMs": 1785391758849,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 4 - Match Game Over]",
@@ -874,32 +634,32 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:51.481Z",
-      "timeMs": 1785391671481,
+      "timestamp": "2026-07-30T06:09:18.849Z",
+      "timeMs": 1785391758849,
       "actor": "Host",
       "category": "Rematch",
       "event": "Host clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:51.482Z",
-      "timeMs": 1785391671482,
+      "timestamp": "2026-07-30T06:09:18.851Z",
+      "timeMs": 1785391758851,
       "actor": "Guest",
       "category": "Rematch",
       "event": "Guest clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:52.984Z",
-      "timeMs": 1785391672984,
+      "timestamp": "2026-07-30T06:09:20.352Z",
+      "timeMs": 1785391760352,
       "actor": "System",
       "category": "Gameplay",
       "event": ">>> STARTING MULTIPLAYER MATCH ROUND 5/5 <<<",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:52.990Z",
-      "timeMs": 1785391672990,
+      "timestamp": "2026-07-30T06:09:20.354Z",
+      "timeMs": 1785391760354,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 5 - Initial Countdown/Fight]",
@@ -917,24 +677,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:52.990Z",
-      "timeMs": 1785391672990,
+      "timestamp": "2026-07-30T06:09:20.354Z",
+      "timeMs": 1785391760354,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyD (move right) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:53.246Z",
-      "timeMs": 1785391673246,
+      "timestamp": "2026-07-30T06:09:20.608Z",
+      "timeMs": 1785391760608,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyA (move left) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:54.107Z",
-      "timeMs": 1785391674107,
+      "timestamp": "2026-07-30T06:09:21.467Z",
+      "timeMs": 1785391761467,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 5 - After Movement & Punch]",
@@ -952,24 +712,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:54.107Z",
-      "timeMs": 1785391674107,
+      "timestamp": "2026-07-30T06:09:21.467Z",
+      "timeMs": 1785391761467,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyW (jump) & KeyI (special)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:54.112Z",
-      "timeMs": 1785391674112,
+      "timestamp": "2026-07-30T06:09:21.470Z",
+      "timeMs": 1785391761470,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyK (kick) & KeyW (jump)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:55.319Z",
-      "timeMs": 1785391675319,
+      "timestamp": "2026-07-30T06:09:22.675Z",
+      "timeMs": 1785391762675,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 5 - After Special & Kick]",
@@ -987,16 +747,16 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:55.319Z",
-      "timeMs": 1785391675319,
+      "timestamp": "2026-07-30T06:09:22.675Z",
+      "timeMs": 1785391762675,
       "actor": "Host",
       "category": "GameLogic",
       "event": "Setting P2 health to 0 to trigger KO & victory",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:07:56.826Z",
-      "timeMs": 1785391676826,
+      "timestamp": "2026-07-30T06:09:24.179Z",
+      "timeMs": 1785391764179,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 5 - Match Game Over]",
@@ -1014,8 +774,8 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:07:56.826Z",
-      "timeMs": 1785391676826,
+      "timestamp": "2026-07-30T06:09:24.179Z",
+      "timeMs": 1785391764179,
       "actor": "System",
       "category": "Complete",
       "event": "All 5 test iterations executed.",
@@ -1123,7 +883,7 @@
         "type": "verbose",
         "text": "[DOM] Input elements should have autocomplete attributes (suggested: \"current-password\"): (More info: https://goo.gl/9p2vKq) %o",
         "location": {
-          "url": "http://localhost:3000/?friendInvite=true&game=Stickman&stake=300&sender=Master_Host&sessionId=stickman_qa_match_1785391639598"
+          "url": "http://localhost:3000/?friendInvite=true&game=Stickman&stake=300&sender=Master_Host&sessionId=stickman_qa_match_1785391727973"
         }
       }
     ],
@@ -1227,136 +987,14 @@
         "type": "verbose",
         "text": "[DOM] Input elements should have autocomplete attributes (suggested: \"current-password\"): (More info: https://goo.gl/9p2vKq) %o",
         "location": {
-          "url": "http://localhost:3000/?friendInvite=true&game=Stickman&stake=300&sender=Master_Host&sessionId=stickman_qa_match_1785391639598"
+          "url": "http://localhost:3000/?friendInvite=true&game=Stickman&stake=300&sender=Master_Host&sessionId=stickman_qa_match_1785391727973"
         }
       }
     ]
   },
   "failedResources": {
-    "host": [
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocLztsoDMlxXON-UbVgcWil10p1rPMZwfQH7Gpc6BdlrOUTvZQ=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocLztsoDMlxXON-UbVgcWil10p1rPMZwfQH7Gpc6BdlrOUTvZQ=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocLztsoDMlxXON-UbVgcWil10p1rPMZwfQH7Gpc6BdlrOUTvZQ=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      }
-    ],
-    "guest": [
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocLztsoDMlxXON-UbVgcWil10p1rPMZwfQH7Gpc6BdlrOUTvZQ=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocLJXRkJ1dQCdezSN7acPeXcNoC77Sw54iBwKLr75Xestfdyxub8=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocKLDZYnc0lWYJeidZT3a3JF-5NyQQHGVhMULHSskeIPdIB4kQ=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocKnEQSXszYii3nUaovB6JUKkczsF6wGThxMaZRIoChFnVlnTA=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocJXdxQzxy9nIt66ezJaH4H-wNNq2t_3BwEuBW-4xtic6Z2in1Cr=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocKFbFbF4MyVsqKFAWU1HtaZBHFffPm7w9AXmWwLkDiuDB5IroVG=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocJ1BH2nl6lr19Mtc3exVGvQpq_yJ5L7DoCK8dXRwNLfB2DxNIw=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocL6Gw1lu5mvA5XBQPwlbwUyRZHjkmCH5OditLZXmy9iM-2xSoST=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocKA4oPByVmZNiuU3sAdlVcqSwsO5ydC8FwkMYHlslvkJoUIRkM=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocKnEQSXszYii3nUaovB6JUKkczsF6wGThxMaZRIoChFnVlnTA=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocLztsoDMlxXON-UbVgcWil10p1rPMZwfQH7Gpc6BdlrOUTvZQ=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocKLDZYnc0lWYJeidZT3a3JF-5NyQQHGVhMULHSskeIPdIB4kQ=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocLJXRkJ1dQCdezSN7acPeXcNoC77Sw54iBwKLr75Xestfdyxub8=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocJ1BH2nl6lr19Mtc3exVGvQpq_yJ5L7DoCK8dXRwNLfB2DxNIw=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocJXdxQzxy9nIt66ezJaH4H-wNNq2t_3BwEuBW-4xtic6Z2in1Cr=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocKA4oPByVmZNiuU3sAdlVcqSwsO5ydC8FwkMYHlslvkJoUIRkM=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocL6Gw1lu5mvA5XBQPwlbwUyRZHjkmCH5OditLZXmy9iM-2xSoST=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocKFbFbF4MyVsqKFAWU1HtaZBHFffPm7w9AXmWwLkDiuDB5IroVG=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocLztsoDMlxXON-UbVgcWil10p1rPMZwfQH7Gpc6BdlrOUTvZQ=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocJXdxQzxy9nIt66ezJaH4H-wNNq2t_3BwEuBW-4xtic6Z2in1Cr=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocKnEQSXszYii3nUaovB6JUKkczsF6wGThxMaZRIoChFnVlnTA=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocKFbFbF4MyVsqKFAWU1HtaZBHFffPm7w9AXmWwLkDiuDB5IroVG=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocKLDZYnc0lWYJeidZT3a3JF-5NyQQHGVhMULHSskeIPdIB4kQ=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocKA4oPByVmZNiuU3sAdlVcqSwsO5ydC8FwkMYHlslvkJoUIRkM=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocL6Gw1lu5mvA5XBQPwlbwUyRZHjkmCH5OditLZXmy9iM-2xSoST=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocJ1BH2nl6lr19Mtc3exVGvQpq_yJ5L7DoCK8dXRwNLfB2DxNIw=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      },
-      {
-        "url": "https://lh3.googleusercontent.com/a/ACg8ocLJXRkJ1dQCdezSN7acPeXcNoC77Sw54iBwKLr75Xestfdyxub8=s96-c",
-        "error": "net::ERR_BLOCKED_BY_ORB"
-      }
-    ]
+    "host": [],
+    "guest": []
   },
   "networkLogsSummary": {
     "hostRequests": 6,

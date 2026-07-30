@@ -25,6 +25,9 @@ export function useProfiles() {
       snapshot.forEach((docSnap) => {
         const profile = docSnap.data() as UserProfile;
         if (!profile.uid || !profile.uid.startsWith('bot_')) {
+          if (profile.avatar && profile.avatar.includes('googleusercontent.com')) {
+            profile.avatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
+          }
           profilesList.push(profile);
         }
       });
@@ -67,6 +70,10 @@ export function useProfiles() {
             activeProfile = snap.data() as UserProfile;
           }
 
+          if (activeProfile.avatar && activeProfile.avatar.includes('googleusercontent.com')) {
+            activeProfile.avatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
+          }
+
           const jsonStr = JSON.stringify(activeProfile);
           lastSyncedProfileJsonRef.current = jsonStr;
           setUserProfile(activeProfile);
@@ -75,6 +82,9 @@ export function useProfiles() {
           unsubscribeUserDoc = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
               const data = docSnap.data() as UserProfile;
+              if (data.avatar && data.avatar.includes('googleusercontent.com')) {
+                data.avatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
+              }
               const newJson = JSON.stringify(data);
               if (newJson !== lastSyncedProfileJsonRef.current) {
                 lastSyncedProfileJsonRef.current = newJson;
