@@ -784,22 +784,22 @@ const SemiTranslucentWhiteDice: React.FC<{ value: number, isRolling: boolean }> 
         className="relative w-full h-full transition-transform duration-700" 
         style={{ ...style, transformStyle: 'preserve-3d' }}
       >
-        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.4),0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-center backface-hidden" style={{ transform: 'translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(5)}
         </div>
-        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.4),0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(180deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(180deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(2)}
         </div>
-        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.4),0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateX(90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateX(90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(3)}
         </div>
-        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.4),0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateX(-90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateX(-90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(4)}
         </div>
-        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.4),0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(-90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(-90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(1)}
         </div>
-        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.4),0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
           {renderDots(6)}
         </div>
       </div>

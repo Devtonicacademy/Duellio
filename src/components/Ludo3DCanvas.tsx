@@ -278,11 +278,11 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
       const diceMat = new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0.92,
-        roughness: 0.1,
+        opacity: 0.98,
+        roughness: 0.08,
         metalness: 0.05,
-        transmission: 0.85,
-        thickness: 0.6,
+        transmission: 0.45,
+        thickness: 0.8,
         clearcoat: 1.0
       });
       const diceBody = new THREE.Mesh(diceGeo, diceMat);
