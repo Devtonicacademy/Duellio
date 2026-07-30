@@ -114,9 +114,11 @@ export function createInitialGameState(
     }
   });
 
+  const players = mode === '2-player' ? ['red', 'blue'] : activeColors;
+
   return {
     mode,
-    players: activeColors,
+    players,
     tokens: initialTokens,
     activePlayerIndex: 0,
     currentDiceValue: null,
@@ -125,7 +127,7 @@ export function createInitialGameState(
     turnStartState: null,
     gameStatus: 'playing',
     winner: null,
-    logs: [`[ENGINE INIT] Official Ludo Game Engine initialized (${mode.toUpperCase()}) with players: ${activeColors.join(', ').toUpperCase()}`],
+    logs: [`[ENGINE INIT] Official Ludo Game Engine initialized (${mode.toUpperCase()}) with players: ${players.join(', ').toUpperCase()}`],
     startRolls: { red: 0, blue: 0, green: 0, gold: 0 },
     startTiedPlayers: []
   };
@@ -474,7 +476,7 @@ export function handleDiceRoll(state: LudoGameState, dieValue: number): LudoGame
 
     return {
       ...state,
-      currentDiceValue: dieValue,
+      currentDiceValue: null,
       activePlayerIndex: nextPlayerIndex,
       consecutiveSixes: nextConsecutiveSixes,
       turnStartState: nextTurnStartState,
