@@ -58,7 +58,6 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
   const touchStartDistRef = useRef<number | null>(null);
 
   const [zoomLevel, setZoomLevel] = useState<number>(21);
-  const isRollingRef = useRef<boolean>(isRolling);
   const diceRollValueRef = useRef<number>(diceRollValue);
   const secondDiceValueRef = useRef<number>(secondDiceValue);
 
