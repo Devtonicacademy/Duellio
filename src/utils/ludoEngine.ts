@@ -10,6 +10,7 @@
 
 export type PlayerColor = 'red' | 'blue' | 'green' | 'gold';
 export type TokenStatus = 'home' | 'board' | 'finished';
+export type MatchMode = '2-player' | '4-player';
 
 export interface LudoTokenState {
   id: string;
@@ -33,6 +34,7 @@ export interface LegalMove {
 }
 
 export interface LudoGameState {
+  mode: MatchMode;
   players: PlayerColor[];
   tokens: LudoTokenState[];
   activePlayerIndex: number;
@@ -41,7 +43,7 @@ export interface LudoGameState {
   consecutiveSixes: number;
   turnStartState: TurnSnapshot | null;
   gameStatus: 'setup' | 'rolling_for_start' | 'playing' | 'completed';
-  winner: PlayerColor | null;
+  winner: PlayerColor | 'team1' | 'team2' | null;
   logs: string[];
   startRolls: Record<PlayerColor, number>;
   startTiedPlayers: PlayerColor[];
@@ -95,7 +97,10 @@ export const START_INDEX_MAP: Record<PlayerColor, number> = {
 };
 
 // Module 1: Board State Manager & Initializer
-export function createInitialGameState(activeColors: PlayerColor[] = ['red', 'blue', 'green', 'gold']): LudoGameState {
+export function createInitialGameState(
+  activeColors: PlayerColor[] = ['red', 'blue', 'green', 'gold'],
+  mode: MatchMode = '2-player'
+): LudoGameState {
   const initialTokens: LudoTokenState[] = [];
 
   activeColors.forEach(color => {
@@ -110,6 +115,7 @@ export function createInitialGameState(activeColors: PlayerColor[] = ['red', 'bl
   });
 
   return {
+    mode,
     players: activeColors,
     tokens: initialTokens,
     activePlayerIndex: 0,
@@ -119,10 +125,19 @@ export function createInitialGameState(activeColors: PlayerColor[] = ['red', 'bl
     turnStartState: null,
     gameStatus: 'playing',
     winner: null,
-    logs: [`[ENGINE INIT] Official Ludo Game Engine initialized with players: ${activeColors.join(', ').toUpperCase()}`],
+    logs: [`[ENGINE INIT] Official Ludo Game Engine initialized (${mode.toUpperCase()}) with players: ${activeColors.join(', ').toUpperCase()}`],
     startRolls: { red: 0, blue: 0, green: 0, gold: 0 },
     startTiedPlayers: []
   };
+}
+
+// Determine Team / Friendly Colors in 2-Player mode
+export function getFriendlyColors(color: PlayerColor, mode: MatchMode): PlayerColor[] {
+  if (mode === '2-player') {
+    if (color === 'red' || color === 'gold') return ['red', 'gold'];
+    return ['blue', 'green'];
+  }
+  return [color];
 }
 
 // Map token to 15x15 grid [row, col]
@@ -204,10 +219,11 @@ export function rollDie(): number {
 export function getLegalMoves(state: LudoGameState, playerColor: PlayerColor, dieValue: number): LegalMove[] {
   if (state.gameStatus !== 'playing' || state.winner !== null) return [];
 
-  const playerTokens = state.tokens.filter(t => t.color === playerColor);
+  const friendlyColors = getFriendlyColors(playerColor, state.mode);
+  const targetTokens = state.tokens.filter(t => friendlyColors.includes(t.color));
   const legalMoves: LegalMove[] = [];
 
-  playerTokens.forEach(token => {
+  targetTokens.forEach(token => {
     if (token.status === 'finished') return;
 
     if (token.status === 'home') {
@@ -237,7 +253,7 @@ export function getLegalMoves(state: LudoGameState, playerColor: PlayerColor, di
 
           if (!isSafe) {
             const collidedToken = state.tokens.find(t => {
-              if (t.id === token.id || t.color === playerColor || t.status !== 'board' || t.position >= 52) return false;
+              if (t.id === token.id || friendlyColors.includes(t.color) || t.status !== 'board' || t.position >= 52) return false;
               const cell = getTokenCell(t);
               return cell[0] === targetCell[0] && cell[1] === targetCell[1];
             });
@@ -283,6 +299,7 @@ export function executeMove(state: LudoGameState, tokenId: string, dieValue: num
   }
 
   let capturedTokenId: string | null = null;
+  const friendlyColors = getFriendlyColors(activeColor, state.mode);
 
   // Execute token movement
   const nextTokens = state.tokens.map(t => {
@@ -312,7 +329,7 @@ export function executeMove(state: LudoGameState, tokenId: string, dieValue: num
 
     if (!isSafe) {
       nextTokens.forEach(t => {
-        if (t.id === tokenId || t.color === movedToken.color || t.status !== 'board' || t.position >= 52) return;
+        if (t.id === tokenId || friendlyColors.includes(t.color) || t.status !== 'board' || t.position >= 52) return;
         const cell = getTokenCell(t);
         if (cell[0] === targetCell[0] && cell[1] === targetCell[1]) {
           t.position = -1;
@@ -324,8 +341,27 @@ export function executeMove(state: LudoGameState, tokenId: string, dieValue: num
   }
 
   // Module 6: Win Detection
-  const colorTokens = nextTokens.filter(t => t.color === activeColor);
-  const isWinner = colorTokens.every(t => t.status === 'finished');
+  let winner: PlayerColor | 'team1' | 'team2' | null = null;
+  if (state.mode === '2-player') {
+    const team1Finished = nextTokens.filter(t => (t.color === 'red' || t.color === 'gold') && t.status === 'finished').length;
+    const team2Finished = nextTokens.filter(t => (t.color === 'blue' || t.color === 'green') && t.status === 'finished').length;
+
+    const red4 = nextTokens.filter(t => t.color === 'red' && t.status === 'finished').length === 4;
+    const gold4 = nextTokens.filter(t => t.color === 'gold' && t.status === 'finished').length === 4;
+    const blue4 = nextTokens.filter(t => t.color === 'blue' && t.status === 'finished').length === 4;
+    const green4 = nextTokens.filter(t => t.color === 'green' && t.status === 'finished').length === 4;
+
+    if (red4 || gold4 || team1Finished === 8) {
+      winner = 'red';
+    } else if (blue4 || green4 || team2Finished === 8) {
+      winner = 'blue';
+    }
+  } else {
+    const colorTokens = nextTokens.filter(t => t.color === activeColor);
+    if (colorTokens.every(t => t.status === 'finished')) {
+      winner = activeColor;
+    }
+  }
 
   const logs = [...state.logs];
   if (targetMove.isLeavingBase) {
@@ -338,13 +374,13 @@ export function executeMove(state: LudoGameState, tokenId: string, dieValue: num
     logs.unshift(`[CAPTURE] ${activeColor.toUpperCase()} captured token ${capturedTokenId.toUpperCase()}! Returned to base yard.`);
   }
 
-  if (isWinner) {
-    logs.unshift(`[VICTORY] ${activeColor.toUpperCase()} moved all 4 tokens home and won the match!`);
+  if (winner) {
+    logs.unshift(`[VICTORY] ${String(winner).toUpperCase()} moved all required tokens home and won the match!`);
     return {
       ...state,
       tokens: nextTokens,
       gameStatus: 'completed',
-      winner: activeColor,
+      winner,
       currentDiceValue: null,
       turnStartState: null,
       logs
