@@ -45,6 +45,12 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
   const dice2Ref = useRef<THREE.Group | null>(null);
   const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
   const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2());
+  const isRollingRef = useRef<boolean>(isRolling);
+
+  // Sync isRolling prop to mutable ref so animation loop sees real-time value
+  useEffect(() => {
+    isRollingRef.current = isRolling;
+  }, [isRolling]);
 
   // Convert 15x15 board cell [row, col] to 3D scene world coordinates [x, y, z]
   const cellToWorld = (row: number, col: number, heightOffset = 0.35): [number, number, number] => {
@@ -61,6 +67,7 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
     return cellToWorld(row, col, 0.4);
   };
 
+  // INITIALIZE THREE.JS SCENE, CAMERA, LIGHTING & ANIMATION LOOP
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -168,19 +175,15 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
         const x = c * tileSize - boardOffset;
         const z = r * tileSize - boardOffset;
 
-        // Skip center 3x3 box (rendered as center home pyramid)
         if (r >= 6 && r <= 8 && c >= 6 && c <= 8) continue;
 
         let mat = creamMat;
         let yPos = 0.28;
 
-        // Base Yards
         if (r <= 5 && c <= 5) mat = redMat;
         else if (r <= 5 && c >= 9) mat = blueMat;
         else if (r >= 9 && c >= 9) mat = greenMat;
         else if (r >= 9 && c <= 5) mat = yellowMat;
-
-        // Home Runways
         else if (r === 7 && c >= 1 && c <= 5) { mat = redMat; yPos = 0.31; }
         else if (c === 7 && r >= 1 && r <= 5) { mat = blueMat; yPos = 0.31; }
         else if (r === 7 && c >= 9 && c <= 13) { mat = greenMat; yPos = 0.31; }
@@ -221,11 +224,9 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
       diceBody.receiveShadow = true;
       group.add(diceBody);
 
-      // Pips
       const pipGeo = new THREE.SphereGeometry(0.07, 12, 12);
       const pipMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
 
-      // Top face (1 pip)
       const p1 = new THREE.Mesh(pipGeo, pipMat);
       p1.position.set(0, 0.38, 0);
       group.add(p1);
@@ -241,14 +242,7 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
     dice1Ref.current = d1;
     dice2Ref.current = d2;
 
-  const isRollingRef = useRef(isRolling);
-
-  useEffect(() => {
-    isRollingRef.current = isRolling;
-  }, [isRolling]);
-
-  // 10. ANIMATION LOOP
-  useEffect(() => {
+    // 10. ANIMATION LOOP
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
@@ -293,12 +287,6 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
 
     animate();
 
-    return () => {
-      cancelAnimationFrame(animId);
-    };
-  }, [view3D]);
-
-    // Resize handler
     const handleResize = () => {
       if (!containerRef.current || !rendererRef.current || !cameraRef.current) return;
       const w = containerRef.current.clientWidth;
@@ -346,7 +334,6 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
         reflectivity: 0.9
       });
 
-      // 1. Pawn Base Skirt
       const baseGeo = new THREE.CylinderGeometry(0.16, 0.24, 0.22, 24);
       const baseMesh = new THREE.Mesh(baseGeo, pawnMat);
       baseMesh.position.y = 0.11;
@@ -354,14 +341,12 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
       baseMesh.receiveShadow = true;
       group.add(baseMesh);
 
-      // 2. Pawn Neck Ring
       const neckGeo = new THREE.CylinderGeometry(0.12, 0.14, 0.1, 24);
       const neckMesh = new THREE.Mesh(neckGeo, pawnMat);
       neckMesh.position.y = 0.25;
       neckMesh.castShadow = true;
       group.add(neckMesh);
 
-      // 3. Pawn Sphere Head
       const headGeo = new THREE.SphereGeometry(0.16, 24, 24);
       const headMesh = new THREE.Mesh(headGeo, pawnMat);
       headMesh.position.y = 0.4;
@@ -382,10 +367,8 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
         existingMap.set(token.id, pawnGroup);
       }
 
-      // Smooth Position Interpolation
       pawnGroup.position.set(tx, ty, tz);
 
-      // Highlight Playable Tokens
       const isPlayable = playableTokenIds.includes(token.id);
       if (isPlayable) {
         pawnGroup.scale.set(1.25, 1.25, 1.25);
