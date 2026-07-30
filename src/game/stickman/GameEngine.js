@@ -370,15 +370,17 @@ export class GameEngine {
   }
 
   update() {
-    // If remote client (guest), smoothly interpolate positions towards host authoritative targets
+    // If remote client (guest), smoothly interpolate positions towards host authoritative targets and advance animation timers
     if (this.isRemoteClient) {
       if (this.p1 && this.targetP1Pos) {
         this.p1.pos.x += (this.targetP1Pos.x - this.p1.pos.x) * 0.45;
         this.p1.pos.y += (this.targetP1Pos.y - this.p1.pos.y) * 0.45;
+        this.p1.updateState(this.p2, this.effects);
       }
       if (this.p2 && this.targetP2Pos) {
         this.p2.pos.x += (this.targetP2Pos.x - this.p2.pos.x) * 0.45;
         this.p2.pos.y += (this.targetP2Pos.y - this.p2.pos.y) * 0.45;
+        this.p2.updateState(this.p1, this.effects);
       }
       this.effects.update();
       this.notifyUI();
@@ -446,6 +448,16 @@ export class GameEngine {
     if (this.gameState === 'fight') {
       this.applyInputs(this.p1, p1Inputs);
       this.applyInputs(this.p2, p2Inputs);
+
+      // Consume one-shot action inputs for remote P2
+      if (this.input.remoteP2Inputs) {
+        this.input.remoteP2Inputs.punch = false;
+        this.input.remoteP2Inputs.kick = false;
+        this.input.remoteP2Inputs.sweep = false;
+        this.input.remoteP2Inputs.special = false;
+        this.input.remoteP2Inputs.jump = false;
+        this.input.remoteP2Inputs.pickup = false;
+      }
 
       // Practice: keep health/chi at max
       if (this.mode === 'practice') {
