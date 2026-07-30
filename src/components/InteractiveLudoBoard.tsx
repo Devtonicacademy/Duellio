@@ -467,6 +467,12 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                 );
               })}
             </div>
+
+            {/* 2D VIEW ACRYLIC GLASS DICE */}
+            <div className="absolute bottom-3 right-3 z-40 flex items-center gap-2 pointer-events-none drop-shadow-xl">
+              <SemiTranslucentWhiteDice value={diceRollValue} isRolling={isRolling} />
+              <SemiTranslucentWhiteDice value={secondDiceValue} isRolling={isRolling} />
+            </div>
           </div>
         )}
       </div>

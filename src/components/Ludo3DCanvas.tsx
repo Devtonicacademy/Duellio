@@ -241,25 +241,40 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
     dice1Ref.current = d1;
     dice2Ref.current = d2;
 
-    // 10. ANIMATION LOOP
+  const isRollingRef = useRef(isRolling);
+
+  useEffect(() => {
+    isRollingRef.current = isRolling;
+  }, [isRolling]);
+
+  // 10. ANIMATION LOOP
+  useEffect(() => {
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
 
-      if (isRolling) {
+      if (isRollingRef.current) {
         if (dice1Ref.current) {
           dice1Ref.current.rotation.x += 0.25;
           dice1Ref.current.rotation.y += 0.35;
-          dice1Ref.current.position.y = 0.7 + Math.abs(Math.sin(Date.now() * 0.015)) * 0.6;
+          dice1Ref.current.rotation.z += 0.15;
+          dice1Ref.current.position.y = 0.7 + Math.abs(Math.sin(Date.now() * 0.02)) * 0.8;
         }
         if (dice2Ref.current) {
           dice2Ref.current.rotation.x += 0.3;
-          dice2Ref.current.rotation.z += 0.2;
-          dice2Ref.current.position.y = 0.7 + Math.abs(Math.cos(Date.now() * 0.015)) * 0.6;
+          dice2Ref.current.rotation.y += 0.2;
+          dice2Ref.current.rotation.z += 0.25;
+          dice2Ref.current.position.y = 0.7 + Math.abs(Math.cos(Date.now() * 0.02)) * 0.8;
         }
       } else {
-        if (dice1Ref.current) dice1Ref.current.position.y = 0.7;
-        if (dice2Ref.current) dice2Ref.current.position.y = 0.7;
+        if (dice1Ref.current) {
+          dice1Ref.current.position.y = 0.7;
+          dice1Ref.current.rotation.set(0, 0, 0);
+        }
+        if (dice2Ref.current) {
+          dice2Ref.current.position.y = 0.7;
+          dice2Ref.current.rotation.set(0, 0, 0);
+        }
       }
 
       // Smoothly update camera perspective
@@ -271,10 +286,17 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
         cameraRef.current.lookAt(0, 0, view3D ? 0.5 : 0);
       }
 
-      renderer.render(scene, camera);
+      if (rendererRef.current && sceneRef.current && cameraRef.current) {
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+      }
     };
 
     animate();
+
+    return () => {
+      cancelAnimationFrame(animId);
+    };
+  }, [view3D]);
 
     // Resize handler
     const handleResize = () => {
