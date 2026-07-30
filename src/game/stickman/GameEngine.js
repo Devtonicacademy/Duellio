@@ -294,7 +294,12 @@ export class GameEngine {
       p1State: this.p1 ? this.p1.state : 'IDLE',
       p2State: this.p2 ? this.p2.state : 'IDLE',
       p1FacingRight: this.p1 ? this.p1.facingRight : true,
-      p2FacingRight: this.p2 ? this.p2.facingRight : false
+      p2FacingRight: this.p2 ? this.p2.facingRight : false,
+      groundWeapons: this.weapons ? this.weapons.filter(w => !w.isEquipped).map(w => ({
+        type: w.type,
+        x: Math.round(w.pos ? w.pos.x : w.x || 0),
+        y: Math.round(w.pos ? w.pos.y : w.y || 0)
+      })) : []
     };
 
     if (!this._lastUIState) {
@@ -362,6 +367,10 @@ export class GameEngine {
 
     if (this.p1 && state.p1Weapon !== undefined) this.p1.weapon = state.p1Weapon;
     if (this.p2 && state.p2Weapon !== undefined) this.p2.weapon = state.p2Weapon;
+
+    if (state.groundWeapons && Array.isArray(state.groundWeapons)) {
+      this.weapons = state.groundWeapons.map(gw => new Weapon(gw.x, gw.y, gw.type));
+    }
   }
 
   logInput(label) {

@@ -80,6 +80,7 @@ export default function GameCanvas({ config, onUIUpdate, isPaused, isRestartTrig
       p1Name: config.p1Name,
       p2Name: config.p2Name,
       weaponSpawnEnabled: config.weaponSpawnEnabled,
+      isRemoteClient: config.isRemoteClient,
       onUIEvent: (state) => {
         if (onUIUpdateRef.current) {
           onUIUpdateRef.current(state);
