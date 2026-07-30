@@ -353,6 +353,13 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
       headMesh.castShadow = true;
       group.add(headMesh);
 
+      // Invisible enlarged touch target for ultra-responsive 3D tapping
+      const hitGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.7, 16);
+      const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+      const hitMesh = new THREE.Mesh(hitGeo, hitMat);
+      hitMesh.position.y = 0.35;
+      group.add(hitMesh);
+
       return group;
     };
 
@@ -363,6 +370,9 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
       if (!pawnGroup) {
         pawnGroup = createPawnGroup(token.color);
         pawnGroup.name = token.id;
+        pawnGroup.children.forEach(child => {
+          child.name = token.id;
+        });
         scene.add(pawnGroup);
         existingMap.set(token.id, pawnGroup);
       }
@@ -371,7 +381,7 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
 
       const isPlayable = playableTokenIds.includes(token.id);
       if (isPlayable) {
-        pawnGroup.scale.set(1.25, 1.25, 1.25);
+        pawnGroup.scale.set(1.3, 1.3, 1.3);
       } else {
         pawnGroup.scale.set(1.0, 1.0, 1.0);
       }
@@ -392,12 +402,10 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
 
     for (const hit of intersects) {
       let curr: THREE.Object3D | null = hit.object;
-      while (curr && curr.parent && curr.parent !== sceneRef.current) {
-        if (pawnsMapRef.current.has(curr.name)) {
+      while (curr && curr !== sceneRef.current) {
+        if (curr.name && pawnsMapRef.current.has(curr.name)) {
           const tokenId = curr.name;
-          if (playableTokenIds.includes(tokenId)) {
-            onSelectToken(tokenId);
-          }
+          onSelectToken(tokenId);
           return;
         }
         curr = curr.parent;
