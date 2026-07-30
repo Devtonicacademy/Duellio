@@ -295,24 +295,180 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         )}
       </AnimatePresence>
 
-      {/* CORE 3D ARENA VIEWPORT FRAME */}
+      {/* CORE ARENA VIEWPORT FRAME (3D WebGL vs 2D Crisp Grid) */}
       <div className="relative w-full flex-1 flex items-center justify-center py-2 transition-all duration-700">
-        <div className="relative w-full max-w-[580px] flex items-center justify-center">
-          <Ludo3DCanvas
-            tokens={engineState.tokens}
-            activePlayer={activePlayer}
-            diceRollValue={diceRollValue}
-            secondDiceValue={secondDiceValue}
-            isRolling={isRolling}
-            isUserTurn={isUserTurn(activePlayer)}
-            playableTokenIds={playableTokenIds}
-            onSelectToken={(tokenId) => {
-              const tok = engineState.tokens.find(t => t.id === tokenId);
-              if (tok) handleSelectToken(tok);
-            }}
-            view3D={view3D}
-          />
-        </div>
+        {view3D ? (
+          <div className="relative w-full max-w-[580px] flex items-center justify-center">
+            <Ludo3DCanvas
+              tokens={engineState.tokens}
+              activePlayer={activePlayer}
+              diceRollValue={diceRollValue}
+              secondDiceValue={secondDiceValue}
+              isRolling={isRolling}
+              isUserTurn={isUserTurn(activePlayer)}
+              playableTokenIds={playableTokenIds}
+              onSelectToken={(tokenId) => {
+                const tok = engineState.tokens.find(t => t.id === tokenId);
+                if (tok) handleSelectToken(tok);
+              }}
+              view3D={true}
+            />
+          </div>
+        ) : (
+          /* 2D CRISP GRID BOARD VIEW (100% VISIBLE PAWNS) */
+          <div className="relative w-[340px] h-[340px] sm:w-[435px] sm:h-[435px] bg-[#1a212d] rounded-[32px] border-[4px] border-[#0f141e] p-[3px] shadow-2xl ludo-board-container-2d">
+            <div className="grid grid-cols-15 grid-rows-15 w-full h-full bg-black gap-[1px] rounded-2xl overflow-hidden">
+              {Array.from({ length: 15 }).map((_, r) =>
+                Array.from({ length: 15 }).map((_, c) => {
+                  // Center 3x3 Home Box (rows 6..8, cols 6..8)
+                  if (r >= 6 && r <= 8 && c >= 6 && c <= 8) {
+                    if (r === 6 && c === 6) {
+                      return (
+                        <div
+                          key="center-home"
+                          className="relative overflow-hidden bg-white border border-black"
+                          style={{ gridRow: '7 / span 3', gridColumn: '7 / span 3' }}
+                        >
+                          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <polygon points="0,0 50,50 0,100" fill="#E52521" stroke="#000000" strokeWidth="1.5" />
+                            <polygon points="0,0 50,50 100,0" fill="#1B4EAB" stroke="#000000" strokeWidth="1.5" />
+                            <polygon points="100,0 50,50 100,100" fill="#009A44" stroke="#000000" strokeWidth="1.5" />
+                            <polygon points="0,100 50,50 100,100" fill="#FFCC00" stroke="#000000" strokeWidth="1.5" />
+                          </svg>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }
+
+                  // Top-Left Yard (Red)
+                  if (r <= 5 && c <= 5) {
+                    if (r >= 1 && r <= 4 && c >= 1 && c <= 4) {
+                      const isCircle = (r === 1 && c === 1) || (r === 1 && c === 3) || (r === 3 && c === 1) || (r === 3 && c === 3);
+                      return (
+                        <div key={`${r}-${c}`} className="relative bg-[#E52521] border border-[#A01010] flex items-center justify-center shadow-inner" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#E52521] border-2 border-[#A01010] shadow-md" />}
+                        </div>
+                      );
+                    }
+                    return <div key={`${r}-${c}`} className="bg-[#E52521] border border-[#A01010]" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                  }
+
+                  // Top-Right Yard (Blue)
+                  if (r <= 5 && c >= 9) {
+                    if (r >= 1 && r <= 4 && c >= 10 && c <= 13) {
+                      const isCircle = (r === 1 && c === 10) || (r === 1 && c === 12) || (r === 3 && c === 10) || (r === 3 && c === 12);
+                      return (
+                        <div key={`${r}-${c}`} className="relative bg-[#1B4EAB] border border-[#0F357A] flex items-center justify-center shadow-inner" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#1B4EAB] border-2 border-[#0F357A] shadow-md" />}
+                        </div>
+                      );
+                    }
+                    return <div key={`${r}-${c}`} className="bg-[#1B4EAB] border border-[#0F357A]" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                  }
+
+                  // Bottom-Right Yard (Green)
+                  if (r >= 9 && c >= 9) {
+                    if (r >= 10 && r <= 13 && c >= 10 && c <= 13) {
+                      const isCircle = (r === 10 && c === 10) || (r === 10 && c === 12) || (r === 3 && c === 10) || (r === 3 && c === 12);
+                      return (
+                        <div key={`${r}-${c}`} className="relative bg-[#009A44] border border-[#00612B] flex items-center justify-center shadow-inner" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#009A44] border-2 border-[#00612B] shadow-md" />}
+                        </div>
+                      );
+                    }
+                    return <div key={`${r}-${c}`} className="bg-[#009A44] border border-[#00612B]" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                  }
+
+                  // Bottom-Left Yard (Yellow)
+                  if (r >= 9 && c <= 5) {
+                    if (r >= 10 && r <= 13 && c >= 1 && c <= 4) {
+                      const isCircle = (r === 10 && c === 1) || (r === 10 && c === 3) || (r === 12 && c === 1) || (r === 12 && c === 3);
+                      return (
+                        <div key={`${r}-${c}`} className="relative bg-[#FFCC00] border border-[#C79F00] flex items-center justify-center shadow-inner" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#FFCC00] border-2 border-[#C79F00] shadow-md" />}
+                        </div>
+                      );
+                    }
+                    return <div key={`${r}-${c}`} className="bg-[#FFCC00] border border-[#C79F00]" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                  }
+
+                  // Path Arms
+                  if (r <= 5 && c >= 6 && c <= 8) {
+                    const isBluePath = (c === 7 && r >= 1) || (r === 0 && (c === 7 || c === 8));
+                    const isBlueStart = r === 0 && c === 8;
+                    const isBlueStar = r === 1 && c === 6;
+                    return (
+                      <div key={`${r}-${c}`} className={`border border-black relative flex items-center justify-center ${isBluePath ? 'bg-[#1B4EAB]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                        {isBlueStart && <span className="text-[8px] font-black text-white">⬇</span>}
+                        {isBlueStar && <Star className="w-3 h-3 text-[#1B4EAB] fill-[#1B4EAB]" />}
+                      </div>
+                    );
+                  }
+
+                  if (r >= 6 && r <= 8 && c >= 9) {
+                    const isGreenPath = (r === 7) || (r === 8 && c === 14);
+                    const isGreenStart = r === 8 && c === 14;
+                    const isGreenStar = r === 6 && c === 13;
+                    return (
+                      <div key={`${r}-${c}`} className={`border border-black relative flex items-center justify-center ${isGreenPath ? 'bg-[#009A44]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                        {isGreenStart && <span className="text-[8px] font-black text-white">⬅</span>}
+                        {isGreenStar && <Star className="w-3 h-3 text-[#009A44] fill-[#009A44]" />}
+                      </div>
+                    );
+                  }
+
+                  if (r >= 9 && c >= 6 && c <= 8) {
+                    const isYellowPath = (c === 7 && r >= 9) || (r === 14 && c === 6);
+                    const isYellowStart = r === 14 && c === 6;
+                    const isYellowStar = r === 13 && c === 8;
+                    return (
+                      <div key={`${r}-${c}`} className={`border border-black relative flex items-center justify-center ${isYellowPath ? 'bg-[#FFCC00]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                        {isYellowStart && <span className="text-[8px] font-black text-black">⬆</span>}
+                        {isYellowStar && <Star className="w-3 h-3 text-[#D9A300] fill-[#D9A300]" />}
+                      </div>
+                    );
+                  }
+
+                  if (r >= 6 && r <= 8 && c <= 5) {
+                    const isRedPath = (r === 7) || (r === 6 && c === 0);
+                    const isRedStart = r === 6 && c === 0;
+                    const isRedStar = r === 8 && c === 1;
+                    return (
+                      <div key={`${r}-${c}`} className={`border border-black relative flex items-center justify-center ${isRedPath ? 'bg-[#E52521]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                        {isRedStart && <span className="text-[8px] font-black text-white">➔</span>}
+                        {isRedStar && <Star className="w-3 h-3 text-[#E52521] fill-[#E52521]" />}
+                      </div>
+                    );
+                  }
+
+                  return <div key={`${r}-${c}`} className="bg-white border border-black" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                })
+              )}
+
+              {/* Render 2D Visible Pawns */}
+              {engineState.tokens.map((token) => {
+                const [r, c] = getTokenCell(token);
+                const isPlayable = playableTokenIds.includes(token.id);
+
+                return (
+                  <div
+                    key={token.id}
+                    onClick={() => handleSelectToken(token)}
+                    className="relative z-30 flex items-center justify-center w-full h-full pointer-events-auto cursor-pointer"
+                    style={{ gridRow: r + 1, gridColumn: c + 1 }}
+                  >
+                    <LudoPawn3D
+                      color={token.color}
+                      isPlayable={isPlayable}
+                      view3D={false}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ACTION CONTROLS & HUD */}
