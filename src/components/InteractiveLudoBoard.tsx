@@ -97,10 +97,10 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 
   // Auto Bot Trigger
   useEffect(() => {
-    if (isBot && !isUserTurn(activePlayer) && engineState.gameStatus === 'playing' && !botIsThinking && hasRolled) {
+    if (isBot && !isUserTurn(activePlayer) && engineState.gameStatus === 'playing' && !botIsThinking && !isRolling) {
       triggerBotMove(activePlayer);
     }
-  }, [activePlayer, isBot, playerMode, engineState.gameStatus, botIsThinking, hasRolled]);
+  }, [activePlayer, isBot, playerMode, engineState.gameStatus, botIsThinking, isRolling]);
 
   const rollDice = () => {
     if (isRolling || hasRolled || engineState.gameStatus !== 'playing' || !isUserTurn(activePlayer) || botIsThinking) return;
@@ -134,11 +134,13 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 
   const triggerBotMove = (colorToPlay: PlayerColor) => {
     setBotIsThinking(true);
+    setIsRolling(true);
     
     setTimeout(() => {
       const outcome1 = rollDie();
       const outcome2 = rollDie();
       setSecondDiceValue(outcome2);
+      setIsRolling(false);
 
       const rolledState = handleDiceRoll(engineState, outcome1);
       setEngineState(rolledState);
@@ -177,9 +179,9 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 
         setHasRolled(false);
         setBotIsThinking(false);
-      }, 350);
+      }, 500);
 
-    }, 300);
+    }, 600);
   };
 
   const isTokenPlayable = (token: LudoTokenState): boolean => {
