@@ -359,6 +359,9 @@ export class GameEngine {
     if (state.gameState) this.gameState = state.gameState;
     if (typeof state.winner === 'number') this.winner = state.winner;
     if (state.fightText !== undefined) this.fightText = state.fightText;
+
+    if (this.p1 && state.p1Weapon !== undefined) this.p1.weapon = state.p1Weapon;
+    if (this.p2 && state.p2Weapon !== undefined) this.p2.weapon = state.p2Weapon;
   }
 
   logInput(label) {

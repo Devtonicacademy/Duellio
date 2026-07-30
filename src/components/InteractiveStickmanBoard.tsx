@@ -22,7 +22,8 @@ import {
   Flame, 
   ShieldAlert,
   HelpCircle,
-  X
+  X,
+  ArrowRight
 } from 'lucide-react';
 
 interface InteractiveStickmanBoardProps {
@@ -32,6 +33,7 @@ interface InteractiveStickmanBoardProps {
   userName?: string;
   onGameOver: (winnerIsMe: boolean) => void;
   onAddLog: (log: string) => void;
+  onReMatch?: () => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
   isBot?: boolean;
   sessionId?: string;
@@ -47,6 +49,7 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
   userName,
   onGameOver,
   onAddLog,
+  onReMatch,
   botDifficulty = 'medium',
   isBot = true,
   sessionId,
@@ -401,10 +404,21 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
               
               <div className="flex flex-col gap-2 pt-4">
                 <button
-                  onClick={triggerRestart}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-pink-500 hover:from-cyan-400 hover:to-pink-400 text-black font-black uppercase text-xs py-3 rounded-lg shadow-lg transition-all"
+                  onClick={() => {
+                    if (onReMatch) onReMatch();
+                    triggerRestart();
+                  }}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-pink-500 hover:from-cyan-400 hover:to-pink-400 text-black font-black uppercase text-xs py-3 rounded-lg shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                 >
-                  Rematch
+                  <RotateCcw className="w-4 h-4" />
+                  Play Again ({entryFee > 0 ? `Restake ${entryFee} Coins` : 'Free'})
+                </button>
+                <button
+                  onClick={() => onGameOver(uiState.winner === 1)}
+                  className="w-full bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white font-bold uppercase text-xs py-3 rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                  Exit Arena
                 </button>
               </div>
             </div>

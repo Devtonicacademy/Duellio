@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Swords, ShieldCheck, Timer, Award, AlertTriangle, Play, Eye, EyeOff, HelpCircle, Trophy } from 'lucide-react';
+import { Swords, ShieldCheck, Timer, Award, AlertTriangle, Play, Eye, EyeOff, HelpCircle, Trophy, RotateCcw, ArrowRight, SkipBack, SkipForward } from 'lucide-react';
 import { Chess3DScene } from './Chess3DScene';
 import { ChessRulesService, CastlingRights, INITIAL_CASTLING_RIGHTS, normalizeBoard, Color, PieceType } from '../services/chessRulesService';
 
@@ -15,6 +15,7 @@ interface InteractiveChessBoardProps {
   opponentAvatar: string;
   onGameOver: (winnerIsMe: boolean) => void;
   onAddLog: (log: string) => void;
+  onReMatch?: () => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
   isBot?: boolean;
   sessionId?: string;
@@ -93,6 +94,7 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
   opponentAvatar,
   onGameOver,
   onAddLog,
+  onReMatch,
   botDifficulty = 'medium',
   isBot = true,
   sessionId,
@@ -118,6 +120,24 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
   const [selectedPieceTips, setSelectedPieceTips] = useState<string | null>(null);
 
   const myColor: Color = isBot ? 'w' : (isHost ? 'w' : 'b');
+
+  const handlePlayAgain = () => {
+    if (onReMatch) {
+      onReMatch();
+    }
+    setBoard(INITIAL_BOARD);
+    setActiveColor('w');
+    setSelectedSquare(null);
+    setCastlingRights({ ...INITIAL_CASTLING_RIGHTS });
+    setEnPassantTarget(null);
+    setIsCheck(false);
+    setWhiteTimer(300);
+    setBlackTimer(300);
+    setGameResult('playing');
+    setMoveAttemptLogs([]);
+    setBotIsThinking(false);
+    onAddLog(`[REMATCH] Game re-initialized! Stakes locked for next round.`);
+  };
 
   // Sync live state from Firestore snapshot
   useEffect(() => {
@@ -844,6 +864,70 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
           ))}
         </div>
       </div>
+
+      {/* Game Over Banner Overlay */}
+      <AnimatePresence>
+        {gameResult !== 'playing' && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="absolute inset-0 bg-black/85 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center p-6 text-center z-50"
+          >
+            <div className="p-4 bg-gradient-to-tr from-cyan-500/20 to-amber-500/20 rounded-3xl border border-cyan-500/30 mb-4 shadow-[0_0_40px_rgba(6,182,212,0.3)]">
+              {gameResult === 'white_won' ? (
+                <Trophy className="w-16 h-16 text-yellow-400 animate-bounce" />
+              ) : gameResult === 'black_won' ? (
+                <AlertTriangle className="w-16 h-16 text-rose-400 animate-pulse" />
+              ) : (
+                <Award className="w-16 h-16 text-amber-400" />
+              )}
+            </div>
+
+            <h3 className="text-2xl md:text-3xl font-black uppercase font-display tracking-tight text-white mb-2">
+              {gameResult === 'white_won' ? (
+                <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+                  VICTORY ACHIEVED!
+                </span>
+              ) : gameResult === 'black_won' ? (
+                <span className="bg-gradient-to-r from-rose-500 to-amber-400 bg-clip-text text-transparent">
+                  DEFEAT IN ARENA
+                </span>
+              ) : (
+                <span className="bg-gradient-to-r from-amber-400 to-yellow-300 bg-clip-text text-transparent">
+                  TACTICAL DRAW
+                </span>
+              )}
+            </h3>
+
+            <p className="text-sm text-slate-300 max-w-md mb-6">
+              {gameResult === 'white_won'
+                ? `Outstanding strategy! You defeated ${opponentName} and secured ${entryFee * 2} Coins.`
+                : gameResult === 'black_won'
+                ? `${opponentName} outmaneuvered the board vector matrix. Good try!`
+                : `Both commanders reached a tactical stalemate.`}
+            </p>
+
+            {/* Rematch & Exit Action Buttons */}
+            <div className="flex flex-wrap items-center justify-center gap-3 w-full max-w-md">
+              <button
+                onClick={handlePlayAgain}
+                className="flex-1 py-3 px-5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-black uppercase tracking-wider rounded-xl text-xs flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(6,182,212,0.4)] transition-all cursor-pointer active:scale-95"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Play Again ({entryFee > 0 ? `Restake ${entryFee} Coins` : 'Free'})
+              </button>
+              <button
+                onClick={() => onGameOver(gameResult === 'white_won')}
+                className="py-3 px-5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-white font-bold uppercase tracking-wider rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+              >
+                <ArrowRight className="w-4 h-4" />
+                Exit Arena
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

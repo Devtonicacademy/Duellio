@@ -16,6 +16,7 @@ interface InteractiveDraftBoardProps {
   opponentAvatar: string;
   onGameOver: (winnerIsMe: boolean) => void;
   onAddLog: (log: string) => void;
+  onReMatch?: () => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
   isBot?: boolean;
   sessionId?: string;
@@ -30,6 +31,7 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   opponentAvatar,
   onGameOver,
   onAddLog,
+  onReMatch,
   botDifficulty,
   isBot = true,
   sessionId,
@@ -44,6 +46,29 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
   const player1Id = gameState?.playerIds?.[0] || (isBot ? 'player-user' : 'host');
   const player2Id = gameState?.playerIds?.[1] || (isBot ? 'bot-user' : 'guest');
   const myId = isBot ? player1Id : (isHost ? player1Id : player2Id);
+
+  const handlePlayAgain = () => {
+    if (onReMatch) {
+      onReMatch();
+    }
+    const freshBoard = DraftLogicService.initializeBoard(
+      sessionId || `draft_${Date.now()}`,
+      player1Id,
+      player2Id
+    );
+    setGameState(freshBoard);
+    if (!isBot && onUpdateLiveState) {
+      onUpdateLiveState(freshBoard);
+    }
+    setGameResult('playing');
+    setPlayerTimer(300);
+    setBotTimer(300);
+    setSelectedPieceId(null);
+    setMoveAttemptLogs([]);
+    botExecutingRef.current = false;
+    setBotIsThinking(false);
+    onAddLog(`[REMATCH] Game re-initialized! Stakes locked for next round.`);
+  };
 
   const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null);
   const [playerTimer, setPlayerTimer] = useState<number>(300); // 5 minutes standard
@@ -693,15 +718,22 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
                 </div>
               </div>
 
-              <button
-                onClick={() => {
-                  // Resolve immediately
-                  onGameOver(gameResult === 'player_won');
-                }}
-                className="w-full py-3.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md hover:scale-[1.02]"
-              >
-                Close Arena Gate
-              </button>
+              {/* Rematch & Exit Action Buttons */}
+              <div className="flex flex-wrap items-center justify-center gap-3 w-full">
+                <button
+                  onClick={handlePlayAgain}
+                  className="flex-1 py-3.5 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-black uppercase tracking-wider rounded-xl text-xs flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(245,158,11,0.4)] transition-all cursor-pointer active:scale-95"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Play Again ({entryFee > 0 ? `Restake ${entryFee} Coins` : 'Free'})
+                </button>
+                <button
+                  onClick={() => onGameOver(gameResult === 'player_won')}
+                  className="py-3.5 px-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-white font-bold uppercase tracking-wider rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+                >
+                  Exit Arena
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

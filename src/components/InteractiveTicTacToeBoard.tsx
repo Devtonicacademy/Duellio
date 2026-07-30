@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Swords, ShieldCheck, Timer, Award, HelpCircle, Trophy, Sparkles, X as XIcon, Circle, AlertCircle, RotateCcw, ArrowRight } from 'lucide-react';
+import { Swords, ShieldCheck, Timer, Award, HelpCircle, Trophy, Sparkles, X as XIcon, Circle, AlertCircle, RotateCcw, ArrowRight, SkipBack, SkipForward, Play } from 'lucide-react';
 import { TicTacToeLogicService } from '../services/ticTacToeLogic';
 import { TicTacToeGameState } from '../types';
 
@@ -45,6 +45,11 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
   const [gameState, setGameState] = useState<TicTacToeGameState>(() =>
     liveGameState || TicTacToeLogicService.initializeBoard(sessionId || 'tictactoe-session', player1Id, player2Id)
   );
+
+  const [boardHistory, setBoardHistory] = useState<Array<Array<'X' | 'O' | null>>>(() => [
+    liveGameState?.board || TicTacToeLogicService.initializeBoard(sessionId || 'tictactoe-session', player1Id, player2Id).board
+  ]);
+  const [replayIndex, setReplayIndex] = useState<number | null>(null);
 
   const [playerTimer, setPlayerTimer] = useState<number>(180); // 3 minutes standard
   const [botTimer, setBotTimer] = useState<number>(180);
@@ -129,6 +134,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
         const nextState = TicTacToeLogicService.executeMove(gameState, botMoveIndex);
 
         setGameState(nextState);
+        setBoardHistory(prev => [...prev, nextState.board]);
 
         if (nextState.lastMoveMessage) {
           onAddLog(`[AI MOVE] ${opponentName} ${nextState.lastMoveMessage}`);
@@ -165,6 +171,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
 
     const nextState = TicTacToeLogicService.executeMove(gameState, index);
     setGameState(nextState);
+    setBoardHistory(prev => [...prev, nextState.board]);
 
     if (!isBot && onUpdateLiveState) {
       onUpdateLiveState(nextState);
@@ -203,6 +210,8 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
       player2Id
     );
     setGameState(freshBoard);
+    setBoardHistory([freshBoard.board]);
+    setReplayIndex(null);
     if (!isBot && onUpdateLiveState) {
       onUpdateLiveState(freshBoard);
     }
@@ -357,7 +366,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
         <div className="md:col-span-2 flex flex-col items-center justify-center">
           <div className="relative p-3 bg-neutral-950/80 border border-cyan-500/30 rounded-3xl shadow-[0_0_30px_rgba(6,182,212,0.15)] backdrop-blur-md">
             <div className="grid grid-cols-3 gap-2.5 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96">
-              {gameState.board.map((cell, idx) => {
+              {(replayIndex !== null ? boardHistory[replayIndex] : gameState.board).map((cell, idx) => {
                 const isWinningSquare = gameState.winningLine?.includes(idx);
 
                 return (
@@ -366,7 +375,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
                     whileHover={{ scale: cell === null && isPlayerTurn && gameResult === 'playing' ? 1.05 : 1 }}
                     whileTap={{ scale: cell === null && isPlayerTurn && gameResult === 'playing' ? 0.95 : 1 }}
                     onClick={() => handleCellClick(idx)}
-                    disabled={cell !== null || !isPlayerTurn || gameResult !== 'playing' || botIsThinking}
+                    disabled={cell !== null || !isPlayerTurn || gameResult !== 'playing' || botIsThinking || replayIndex !== null}
                     className={`relative rounded-2xl flex items-center justify-center transition-all cursor-pointer select-none font-black text-3xl sm:text-4xl md:text-5xl border ${
                       isWinningSquare
                         ? 'bg-emerald-500/30 border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.5)] z-20'
@@ -428,6 +437,52 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
             </span>
             <span className="text-[10px] font-mono text-neutral-500">Live</span>
           </div>
+
+          {/* Move History Step Replay Controls */}
+          {boardHistory.length > 1 && (
+            <div className="bg-neutral-900/90 border border-cyan-500/30 rounded-xl p-2 mb-2 flex items-center justify-between text-xs">
+              <span className="text-[10px] font-mono text-cyan-300 font-bold uppercase">
+                Replay: {replayIndex !== null ? `Step ${replayIndex}` : 'Live'}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentIdx = replayIndex === null ? boardHistory.length - 1 : replayIndex;
+                    setReplayIndex(Math.max(0, currentIdx - 1));
+                  }}
+                  className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 cursor-pointer"
+                  title="Previous move"
+                >
+                  <SkipBack className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (replayIndex === null) return;
+                    if (replayIndex >= boardHistory.length - 1) {
+                      setReplayIndex(null);
+                    } else {
+                      setReplayIndex(replayIndex + 1);
+                    }
+                  }}
+                  className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 cursor-pointer"
+                  title="Next move"
+                >
+                  <SkipForward className="w-3.5 h-3.5" />
+                </button>
+                {replayIndex !== null && (
+                  <button
+                    type="button"
+                    onClick={() => setReplayIndex(null)}
+                    className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono text-[9px] font-bold border border-cyan-500/40 hover:bg-cyan-500/30 cursor-pointer"
+                  >
+                    Live
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="flex-1 overflow-y-auto space-y-2 pr-1 font-mono text-[11px]">
             {moveAttemptLogs.length === 0 ? (

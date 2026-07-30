@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, HelpCircle, Eye, EyeOff, Sparkles, Star, Users, UserCheck, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, HelpCircle, Eye, EyeOff, Sparkles, Star, Users, UserCheck, CheckCircle2, RotateCcw, ArrowRight, Trophy, AlertTriangle, Award } from 'lucide-react';
 import {
   createInitialGameState,
   handleDiceRoll,
@@ -28,6 +28,7 @@ interface InteractiveLudoBoardProps {
   opponentAvatar: string;
   onGameOver: (winnerIsMe: boolean) => void;
   onAddLog: (log: string) => void;
+  onReMatch?: () => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
   isBot?: boolean;
   sessionId?: string;
@@ -43,6 +44,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   opponentAvatar,
   onGameOver,
   onAddLog,
+  onReMatch,
   botDifficulty,
   isBot = true,
   sessionId,
@@ -60,6 +62,21 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     if (liveGameState?.engineState) return liveGameState.engineState;
     return createInitialGameState(['red', 'blue', 'green', 'gold']);
   });
+
+  const handlePlayAgain = () => {
+    if (onReMatch) {
+      onReMatch();
+    }
+    const freshEngine = createInitialGameState(['red', 'blue', 'green', 'gold']);
+    setEngineState(freshEngine);
+    if (!isBot && onUpdateLiveState) {
+      onUpdateLiveState({ engineState: freshEngine });
+    }
+    setHasRolled(false);
+    setIsRolling(false);
+    setBotIsThinking(false);
+    onAddLog(`[REMATCH] Ludo Board re-initialized! Stakes locked for next round.`);
+  };
 
   const [secondDiceValue, setSecondDiceValue] = useState<number>(3);
   const [isRolling, setIsRolling] = useState<boolean>(false);
@@ -578,6 +595,62 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Game Over Banner Overlay */}
+      <AnimatePresence>
+        {engineState.winner && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="absolute inset-0 bg-black/85 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center p-6 text-center z-50"
+          >
+            <div className="p-4 bg-gradient-to-tr from-emerald-500/20 to-amber-500/20 rounded-3xl border border-emerald-500/30 mb-4 shadow-[0_0_40px_rgba(16,185,129,0.3)]">
+              {(engineState.winner === 'red' || (playerMode === '2-player' && engineState.winner === 'gold')) ? (
+                <Trophy className="w-16 h-16 text-yellow-400 animate-bounce" />
+              ) : (
+                <AlertTriangle className="w-16 h-16 text-rose-400 animate-pulse" />
+              )}
+            </div>
+
+            <h3 className="text-2xl md:text-3xl font-black uppercase font-display tracking-tight text-white mb-2">
+              {(engineState.winner === 'red' || (playerMode === '2-player' && engineState.winner === 'gold')) ? (
+                <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+                  QUADRANT VICTORY!
+                </span>
+              ) : (
+                <span className="bg-gradient-to-r from-rose-500 to-amber-400 bg-clip-text text-transparent">
+                  LUDO DEFEAT
+                </span>
+              )}
+            </h3>
+
+            <p className="text-sm text-neutral-300 max-w-md mb-6">
+              {(engineState.winner === 'red' || (playerMode === '2-player' && engineState.winner === 'gold'))
+                ? `Sensational path tracking! You navigated all your tokens into the central matrix and won ${entryFee * 2} Coins.`
+                : `${opponentName} filled their home matrix first. Great effort!`}
+            </p>
+
+            {/* Rematch & Exit Action Buttons */}
+            <div className="flex flex-wrap items-center justify-center gap-3 w-full max-w-md">
+              <button
+                onClick={handlePlayAgain}
+                className="flex-1 py-3 px-5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-black font-black uppercase tracking-wider rounded-xl text-xs flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all cursor-pointer active:scale-95"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Play Again ({entryFee > 0 ? `Restake ${entryFee} Coins` : 'Free'})
+              </button>
+              <button
+                onClick={() => onGameOver(engineState.winner === 'red' || (playerMode === '2-player' && engineState.winner === 'gold'))}
+                className="py-3 px-5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-white font-bold uppercase tracking-wider rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+              >
+                <ArrowRight className="w-4 h-4" />
+                Exit Arena
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent pointer-events-none" />
     </div>

@@ -1039,10 +1039,31 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           `[GAME OVER - NO MOVES] ${message}`
         ]);
 
-        completeMatchWithOutcome(userWins);
       }
     }
   }, [whotGameState, gamePlayStatus, activeChallenge, selectedBot, opponentProfile]);
+
+  const handleGenericReMatch = (gameName: string) => {
+    if (activeChallenge && activeChallenge.entryFee > 0) {
+      if (userProfile.coins < activeChallenge.entryFee) {
+        alert("Insufficient coins to restake!");
+        return false;
+      }
+      setUserProfile(prev => ({
+        ...prev,
+        coins: Math.max(0, prev.coins - activeChallenge.entryFee)
+      }));
+      const stakeTx: WalletTransaction = {
+        id: `restake_${Date.now()}`,
+        type: 'stake_lock',
+        amount: activeChallenge.entryFee,
+        description: `Restake Lock: ${gameName} vs ${opponentProfile?.username || 'Bot'}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setTransactions(prev => [stakeTx, ...prev]);
+    }
+    return true;
+  };
 
   const handleRematch = () => {
     if (!activeChallenge) return;
@@ -1101,7 +1122,10 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         // Sync local game state
         if (data.gameState) {
           _setWhotGameState(data.gameState);
-          setLiveGameState(data.gameState);
+          setLiveGameState({
+            ...data.gameState,
+            ...(data.p2Input ? { p2Input: data.p2Input } : {})
+          });
         }
         if (data.deck) {
           whotDeckRef.current = data.deck;
@@ -3051,7 +3075,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 </div>
               )}
 
-            {activeChallenge?.gameType === 'Whot' && whotGameState ? (
+            {activeChallenge?.gameType === 'Whot' ? (
               /* Playable Whot card game table! */
               <LayoutGroup id="whot-game-group">
                 <div className={`rounded-3xl p-4 sm:p-6 shadow-2xl space-y-6 relative overflow-hidden whot-game-table select-none ${is3DMode ? 'mode-3d' : ''} ${getTensionClass()}`} id="whot-card-table-arena">
@@ -3562,6 +3586,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 opponentAvatar={opponentProfile?.avatar || ''}
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
+                onReMatch={() => handleGenericReMatch('Ludo')}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
                 isBot={activeChallenge?.opponentType === 'bot'}
                 sessionId={activeChallenge?.id}
@@ -3581,6 +3606,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 opponentAvatar={opponentProfile?.avatar || ''}
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
+                onReMatch={() => handleGenericReMatch('Draft')}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
                 isBot={activeChallenge?.opponentType === 'bot'}
                 sessionId={activeChallenge?.id}
@@ -3599,26 +3625,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 opponentAvatar={opponentProfile?.avatar || ''}
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
-                onReMatch={() => {
-                  if (activeChallenge && activeChallenge.entryFee > 0) {
-                    if (userProfile.coins < activeChallenge.entryFee) {
-                      alert("Insufficient coins to restake!");
-                      return;
-                    }
-                    setUserProfile(prev => ({
-                      ...prev,
-                      coins: Math.max(0, prev.coins - activeChallenge.entryFee)
-                    }));
-                    const stakeTx: WalletTransaction = {
-                      id: `restake_${Date.now()}`,
-                      type: 'stake_lock',
-                      amount: activeChallenge.entryFee,
-                      description: `Restake Lock: Tic-Tac-Toe vs ${opponentProfile?.username || 'Bot'}`,
-                      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    };
-                    setTransactions(prev => [stakeTx, ...prev]);
-                  }
-                }}
+                onReMatch={() => handleGenericReMatch('Tic-Tac-Toe')}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
                 isBot={activeChallenge?.opponentType === 'bot'}
                 sessionId={activeChallenge?.id}
@@ -3638,6 +3645,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 userName={userProfile.username}
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
+                onReMatch={() => handleGenericReMatch('Stickman')}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
                 isBot={activeChallenge?.opponentType === 'bot'}
                 sessionId={activeChallenge?.id}
@@ -3645,7 +3653,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 liveGameState={liveGameState}
                 onUpdateLiveState={(newState) => {
                   if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
-                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), sanitizeFirestoreData({ gameState: newState, updatedAt: Date.now() })).catch(console.error);
+                    const isP2InputPayload = Boolean(newState.p2Input && !newState.p1Health && !newState.gameState);
+                    const updatePayload = isP2InputPayload
+                      ? { p2Input: newState.p2Input, updatedAt: Date.now() }
+                      : { gameState: newState, ...(newState.p2Input ? { p2Input: newState.p2Input } : {}), updatedAt: Date.now() };
+                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), sanitizeFirestoreData(updatePayload)).catch(console.error);
                   }
                 }}
               />
@@ -3656,6 +3668,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 opponentAvatar={opponentProfile?.avatar || ''}
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
+                onReMatch={() => handleGenericReMatch('Chess')}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
                 isBot={activeChallenge?.opponentType === 'bot'}
                 sessionId={activeChallenge?.id}
