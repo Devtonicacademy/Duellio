@@ -58,11 +58,28 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
   const touchStartDistRef = useRef<number | null>(null);
 
   const [zoomLevel, setZoomLevel] = useState<number>(21);
+  const isRollingRef = useRef<boolean>(isRolling);
+  const diceRollValueRef = useRef<number>(diceRollValue);
+  const secondDiceValueRef = useRef<number>(secondDiceValue);
 
-  // Sync isRolling prop to mutable ref so animation loop sees real-time value
+  // Sync props to mutable refs for animation loop
   useEffect(() => {
     isRollingRef.current = isRolling;
-  }, [isRolling]);
+    diceRollValueRef.current = diceRollValue;
+    secondDiceValueRef.current = secondDiceValue;
+  }, [isRolling, diceRollValue, secondDiceValue]);
+
+  const getDiceRotation = (val: number): [number, number, number] => {
+    switch (val) {
+      case 1: return [0, 0, 0];
+      case 2: return [-Math.PI / 2, 0, 0];
+      case 3: return [0, 0, -Math.PI / 2];
+      case 4: return [0, 0, Math.PI / 2];
+      case 5: return [Math.PI / 2, 0, 0];
+      case 6: return [Math.PI, 0, 0];
+      default: return [0, 0, 0];
+    }
+  };
 
   // Convert 15x15 board cell [row, col] to 3D scene world coordinates [x, y, z]
   const cellToWorld = (row: number, col: number, heightOffset = 0.35): [number, number, number] => {
@@ -255,8 +272,8 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
     centerMesh.receiveShadow = true;
     scene.add(centerMesh);
 
-    // 9. CREATE TRANSLUCENT ACRYLIC GLASS DICE
-    const createDiceMesh = (x: number, z: number): THREE.Group => {
+    // 9. CREATE TRANSLUCENT ACRYLIC GLASS DICE WITH ALL 6 FACES
+    const createSixSidedDiceMesh = (x: number, z: number): THREE.Group => {
       const group = new THREE.Group();
       const diceGeo = new THREE.BoxGeometry(0.75, 0.75, 0.75);
       const diceMat = new THREE.MeshPhysicalMaterial({
@@ -274,19 +291,45 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
       diceBody.receiveShadow = true;
       group.add(diceBody);
 
-      const pipGeo = new THREE.SphereGeometry(0.07, 12, 12);
+      const pipGeo = new THREE.SphereGeometry(0.065, 12, 12);
       const pipMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
 
-      const p1 = new THREE.Mesh(pipGeo, pipMat);
-      p1.position.set(0, 0.38, 0);
-      group.add(p1);
+      const addPip = (px: number, py: number, pz: number) => {
+        const pip = new THREE.Mesh(pipGeo, pipMat);
+        pip.position.set(px, py, pz);
+        group.add(pip);
+      };
+
+      const S = 0.38; // Face surface distance
+      const O = 0.18; // Pip offset on face
+
+      // Face 1 (+Y Top Face): 1 center pip
+      addPip(0, S, 0);
+
+      // Face 6 (-Y Bottom Face): 6 pips (2 rows of 3)
+      addPip(-O, -S, -O); addPip(0, -S, -O); addPip(O, -S, -O);
+      addPip(-O, -S, O);  addPip(0, -S, O);  addPip(O, -S, O);
+
+      // Face 2 (+Z Front Face): 2 diagonal pips
+      addPip(-O, O, S);   addPip(O, -O, S);
+
+      // Face 5 (-Z Back Face): 5 pips (4 corners + center)
+      addPip(-O, O, -S);  addPip(O, O, -S);  addPip(0, 0, -S);
+      addPip(-O, -O, -S); addPip(O, -O, -S);
+
+      // Face 3 (-X Left Face): 3 diagonal pips
+      addPip(-S, O, -O);  addPip(-S, 0, 0);  addPip(-S, -O, O);
+
+      // Face 4 (+X Right Face): 4 corner pips
+      addPip(S, O, -O);   addPip(S, O, O);
+      addPip(S, -O, -O);  addPip(S, -O, O);
 
       group.position.set(x, 0.7, z);
       return group;
     };
 
-    const d1 = createDiceMesh(1.4, 1.4);
-    const d2 = createDiceMesh(2.2, 0.8);
+    const d1 = createSixSidedDiceMesh(1.4, 1.4);
+    const d2 = createSixSidedDiceMesh(2.2, 0.8);
     scene.add(d1);
     scene.add(d2);
     dice1Ref.current = d1;
@@ -313,11 +356,13 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
       } else {
         if (dice1Ref.current) {
           dice1Ref.current.position.y = 0.7;
-          dice1Ref.current.rotation.set(0, 0, 0);
+          const [rx, ry, rz] = getDiceRotation(diceRollValueRef.current);
+          dice1Ref.current.rotation.set(rx, ry, rz);
         }
         if (dice2Ref.current) {
           dice2Ref.current.position.y = 0.7;
-          dice2Ref.current.rotation.set(0, 0, 0);
+          const [rx, ry, rz] = getDiceRotation(secondDiceValueRef.current);
+          dice2Ref.current.rotation.set(rx, ry, rz);
         }
       }
 
