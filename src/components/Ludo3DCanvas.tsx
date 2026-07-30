@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { RotateCcw, Eye, ZoomIn, ZoomOut, Compass } from 'lucide-react';
 import {
   LudoTokenState,
   PlayerColor,
@@ -47,6 +48,17 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
   const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2());
   const isRollingRef = useRef<boolean>(isRolling);
 
+  // 3D Camera Orbit & Pan State
+  const cameraAngleRef = useRef({ theta: 0, phi: Math.PI / 3.4, radius: 21 });
+  const targetLookAtRef = useRef(new THREE.Vector3(0, 0.3, 0.5));
+  const isDraggingRef = useRef(false);
+  const isPanningRef = useRef(false);
+  const dragStartPosRef = useRef({ x: 0, y: 0 });
+  const previousMousePositionRef = useRef({ x: 0, y: 0 });
+  const touchStartDistRef = useRef<number | null>(null);
+
+  const [zoomLevel, setZoomLevel] = useState<number>(21);
+
   // Sync isRolling prop to mutable ref so animation loop sees real-time value
   useEffect(() => {
     isRollingRef.current = isRolling;
@@ -67,6 +79,50 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
     return cellToWorld(row, col, 0.4);
   };
 
+  // Update 3D Camera Spherical Orbit & Pan Position
+  const updateCameraPosition = () => {
+    if (!cameraRef.current) return;
+    const { theta, phi, radius } = cameraAngleRef.current;
+
+    // Clamp vertical angle to prevent flipping under table or over top
+    const clampedPhi = Math.max(0.12, Math.min(Math.PI / 2 - 0.04, phi));
+    cameraAngleRef.current.phi = clampedPhi;
+
+    const y = targetLookAtRef.current.y + radius * Math.cos(clampedPhi);
+    const horizontalRadius = radius * Math.sin(clampedPhi);
+    const x = targetLookAtRef.current.x + horizontalRadius * Math.sin(theta);
+    const z = targetLookAtRef.current.z + horizontalRadius * Math.cos(theta);
+
+    cameraRef.current.position.set(x, y, z);
+    cameraRef.current.lookAt(targetLookAtRef.current);
+    setZoomLevel(Math.round(radius));
+  };
+
+  // Reset Camera View to Default Isometric Angle
+  const handleResetCamera = () => {
+    cameraAngleRef.current = { theta: 0, phi: Math.PI / 3.4, radius: 21 };
+    targetLookAtRef.current.set(0, 0.3, 0.5);
+    updateCameraPosition();
+  };
+
+  // Top-Down Camera View
+  const handleTopDownCamera = () => {
+    cameraAngleRef.current = { theta: 0, phi: Math.PI / 2.02, radius: 19.5 };
+    targetLookAtRef.current.set(0, 0.3, 0);
+    updateCameraPosition();
+  };
+
+  // Zoom In / Zoom Out Increments
+  const handleZoomIn = () => {
+    cameraAngleRef.current.radius = Math.max(8.0, cameraAngleRef.current.radius - 3.0);
+    updateCameraPosition();
+  };
+
+  const handleZoomOut = () => {
+    cameraAngleRef.current.radius = Math.min(34.0, cameraAngleRef.current.radius + 3.0);
+    updateCameraPosition();
+  };
+
   // INITIALIZE THREE.JS SCENE, CAMERA, LIGHTING & ANIMATION LOOP
   useEffect(() => {
     if (!containerRef.current) return;
@@ -80,16 +136,10 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
     scene.background = new THREE.Color(0x180d07);
     sceneRef.current = scene;
 
-    // 2. CAMERA SETUP (Fixed Isometric Perspective)
+    // 2. CAMERA SETUP
     const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
-    if (view3D) {
-      camera.position.set(0, 16, 14);
-      camera.lookAt(0, 0, 0.5);
-    } else {
-      camera.position.set(0, 20, 0.01);
-      camera.lookAt(0, 0, 0);
-    }
     cameraRef.current = camera;
+    updateCameraPosition();
 
     // 3. RENDERER SETUP
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
@@ -271,21 +321,23 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
         }
       }
 
-      // Smoothly update camera perspective
-      if (cameraRef.current) {
-        const targetY = view3D ? 16 : 20;
-        const targetZ = view3D ? 14 : 0.01;
-        cameraRef.current.position.y += (targetY - cameraRef.current.position.y) * 0.05;
-        cameraRef.current.position.z += (targetZ - cameraRef.current.position.z) * 0.05;
-        cameraRef.current.lookAt(0, 0, view3D ? 0.5 : 0);
-      }
-
       if (rendererRef.current && sceneRef.current && cameraRef.current) {
         rendererRef.current.render(sceneRef.current, cameraRef.current);
       }
     };
 
     animate();
+
+    // 11. WHEEL (ZOOM) & EVENT LISTENERS
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      cameraAngleRef.current.radius += e.deltaY * 0.012;
+      cameraAngleRef.current.radius = Math.max(8.0, Math.min(34.0, cameraAngleRef.current.radius));
+      updateCameraPosition();
+    };
+
+    const domElement = renderer.domElement;
+    domElement.addEventListener('wheel', handleWheel, { passive: false });
 
     const handleResize = () => {
       if (!containerRef.current || !rendererRef.current || !cameraRef.current) return;
@@ -298,6 +350,7 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
     window.addEventListener('resize', handleResize);
 
     return () => {
+      domElement.removeEventListener('wheel', handleWheel);
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animId);
       if (rendererRef.current && rendererRef.current.domElement) {
@@ -389,35 +442,155 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
 
   }, [tokens, playableTokenIds]);
 
-  // RAYCASTING FOR DIRECT 3D PAWN CLICK DETECTION
+  // MOUSE & TOUCH POINTER DRAG (ORBIT / PAN / ZOOM) & TAP SELECTION HANDLERS
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!containerRef.current || !cameraRef.current || !sceneRef.current) return;
+    isDraggingRef.current = false;
+    dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+    previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
 
-    const rect = containerRef.current.getBoundingClientRect();
-    mouseRef.current.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    mouseRef.current.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    if (e.button === 2) {
+      isPanningRef.current = true;
+    }
+  };
 
-    raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
-    const intersects = raycasterRef.current.intersectObjects(sceneRef.current.children, true);
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const deltaX = e.clientX - previousMousePositionRef.current.x;
+    const deltaY = e.clientY - previousMousePositionRef.current.y;
 
-    for (const hit of intersects) {
-      let curr: THREE.Object3D | null = hit.object;
-      while (curr && curr !== sceneRef.current) {
-        if (curr.name && pawnsMapRef.current.has(curr.name)) {
-          const tokenId = curr.name;
-          onSelectToken(tokenId);
-          return;
+    const totalDist = Math.hypot(
+      e.clientX - dragStartPosRef.current.x,
+      e.clientY - dragStartPosRef.current.y
+    );
+
+    if (totalDist > 5) {
+      isDraggingRef.current = true;
+    }
+
+    if (e.buttons === 1 && !isPanningRef.current) {
+      // Left-Click Drag / Single-Touch Drag -> Orbit Rotate
+      cameraAngleRef.current.theta -= deltaX * 0.007;
+      cameraAngleRef.current.phi -= deltaY * 0.007;
+      updateCameraPosition();
+    } else if (e.buttons === 2 || isPanningRef.current) {
+      // Right-Click Drag -> Pan Target
+      const panFactor = cameraAngleRef.current.radius * 0.0008;
+      targetLookAtRef.current.x -= deltaX * panFactor;
+      targetLookAtRef.current.z += deltaY * panFactor;
+      updateCameraPosition();
+    }
+
+    previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    isPanningRef.current = false;
+
+    // If pointer moved less than 5px, execute pawn tap selection!
+    if (!isDraggingRef.current) {
+      if (!containerRef.current || !cameraRef.current || !sceneRef.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      mouseRef.current.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouseRef.current.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
+      const intersects = raycasterRef.current.intersectObjects(sceneRef.current.children, true);
+
+      for (const hit of intersects) {
+        let curr: THREE.Object3D | null = hit.object;
+        while (curr && curr !== sceneRef.current) {
+          if (curr.name && pawnsMapRef.current.has(curr.name)) {
+            const tokenId = curr.name;
+            onSelectToken(tokenId);
+            return;
+          }
+          curr = curr.parent;
         }
-        curr = curr.parent;
       }
     }
   };
 
+  // TOUCH PINCH-TO-ZOOM HANDLERS
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+
+      if (touchStartDistRef.current !== null) {
+        const deltaDist = dist - touchStartDistRef.current;
+        cameraAngleRef.current.radius -= deltaDist * 0.04;
+        cameraAngleRef.current.radius = Math.max(8.0, Math.min(34.0, cameraAngleRef.current.radius));
+        updateCameraPosition();
+      }
+
+      touchStartDistRef.current = dist;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchStartDistRef.current = null;
+  };
+
   return (
-    <div
-      ref={containerRef}
-      onPointerDown={handlePointerDown}
-      className="w-full h-[380px] sm:h-[480px] relative cursor-pointer overflow-hidden rounded-3xl"
-    />
+    <div className="relative w-full h-[380px] sm:h-[480px] overflow-hidden rounded-3xl group">
+      {/* 3D WEBGL CONTAINER */}
+      <div
+        ref={containerRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onContextMenu={(e) => e.preventDefault()}
+        className="w-full h-full cursor-grab active:cursor-grabbing"
+      />
+
+      {/* FLOATING 3D CAMERA CONTROL TOOLBAR */}
+      <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5 p-1.5 bg-[#180e08]/90 backdrop-blur-md rounded-xl border border-amber-500/30 shadow-[0_10px_25px_rgba(0,0,0,0.6)]">
+        <button
+          onClick={handleZoomIn}
+          title="Zoom In (+)"
+          className="p-1.5 hover:bg-amber-950/80 text-amber-200/90 hover:text-white rounded-lg transition-colors"
+        >
+          <ZoomIn className="w-4 h-4" />
+        </button>
+
+        <button
+          onClick={handleZoomOut}
+          title="Zoom Out (-)"
+          className="p-1.5 hover:bg-amber-950/80 text-amber-200/90 hover:text-white rounded-lg transition-colors"
+        >
+          <ZoomOut className="w-4 h-4" />
+        </button>
+
+        <div className="w-[1px] h-4 bg-amber-500/20 my-auto" />
+
+        <button
+          onClick={handleResetCamera}
+          title="Reset Camera Angle"
+          className="p-1.5 hover:bg-amber-950/80 text-amber-200/90 hover:text-white rounded-lg transition-colors"
+        >
+          <RotateCcw className="w-4 h-4" />
+        </button>
+
+        <button
+          onClick={handleTopDownCamera}
+          title="Top-Down View"
+          className="p-1.5 hover:bg-amber-950/80 text-amber-200/90 hover:text-white rounded-lg transition-colors"
+        >
+          <Eye className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* FLOATING GESTURE HINT BADGE */}
+      <div className="absolute bottom-3 left-3 z-30 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
+        <div className="px-2.5 py-1 bg-[#160d07]/90 backdrop-blur-md rounded-lg border border-amber-500/20 flex items-center gap-1.5 text-[9px] font-mono text-amber-300/90 shadow-lg">
+          <Compass className="w-3 h-3 text-amber-400 animate-spin-slow" />
+          <span>DRAG TO ORBIT • SCROLL/PINCH TO ZOOM • 2-FINGER PAN</span>
+        </div>
+      </div>
+    </div>
   );
 };
