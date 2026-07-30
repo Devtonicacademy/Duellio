@@ -6,6 +6,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShieldCheck, HelpCircle, Eye, EyeOff, Sparkles, Star, Users, UserCheck, CheckCircle2 } from 'lucide-react';
+import {
+  createInitialGameState,
+  handleDiceRoll,
+  executeMove,
+  getLegalMoves,
+  rollDie,
+  getTokenCell,
+  SAFE_COORDS,
+  PATH_COORDINATES,
+  LudoGameState,
+  LudoTokenState,
+  PlayerColor
+} from '../utils/ludoEngine';
 
 interface InteractiveLudoBoardProps {
   entryFee: number;
@@ -22,61 +35,6 @@ interface InteractiveLudoBoardProps {
   initialMode?: '2-player' | '4-player';
 }
 
-interface LudoToken {
-  id: string;
-  color: 'red' | 'green' | 'blue' | 'gold';
-  position: number; // -1 means home base yard, 0 to 51 is common path, 52-57 is home runway
-  status: 'home' | 'board' | 'finished';
-}
-
-// 15x15 grid coordinates mapping for standard Ludo path cell indexes (0 to 51)
-const PATH_COORDINATES: Array<[number, number]> = [
-  // Left arm going right from Red Start [6,0] to [6,5]
-  [6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5],
-  // Top arm going up from [5,6] to [0,6]
-  [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6],
-  // Top arm top cross [0,7]
-  [0, 7],
-  // Top arm going down from Blue Start [0,8] to [5,8]
-  [0, 8], [1, 8], [2, 8], [3, 8], [4, 8], [5, 8],
-  // Right arm going right from [6,9] to [6,14]
-  [6, 9], [6, 10], [6, 11], [6, 12], [6, 13], [6, 14],
-  // Right arm right cross [7,14]
-  [7, 14],
-  // Right arm going left from Green Start [8,14] to [8,9]
-  [8, 14], [8, 13], [8, 12], [8, 11], [8, 10], [8, 9],
-  // Bottom arm going down from [9,8] to [14,8]
-  [9, 8], [10, 8], [11, 8], [12, 8], [13, 8], [14, 8],
-  // Bottom arm bottom cross [14,7]
-  [14, 7],
-  // Bottom arm going up from Yellow Start [14,6] to [9,6]
-  [14, 6], [13, 6], [12, 6], [11, 6], [10, 6], [9, 6],
-  // Left arm going left from [8,5] to [8,0]
-  [8, 5], [8, 4], [8, 3], [8, 2], [8, 1], [8, 0],
-  // Left arm left cross [7,0]
-  [7, 0]
-];
-
-// Standard Ludo Safe Spaces: 4 Start Squares + 4 Star Squares
-const SAFE_COORDS: Array<[number, number]> = [
-  [6, 0],  // Red Start
-  [0, 8],  // Blue Start
-  [8, 14], // Green Start
-  [14, 6], // Yellow Start
-  [8, 1],  // Red Star
-  [1, 6],  // Blue Star
-  [6, 13], // Green Star
-  [13, 8]  // Yellow Star
-];
-
-// Clockwise Player Color Turn Sequence
-const PLAYER_SEQUENCE: Array<'red' | 'blue' | 'green' | 'gold'> = ['red', 'blue', 'green', 'gold'];
-
-const getNextPlayerColor = (curr: 'red' | 'blue' | 'green' | 'gold'): 'red' | 'blue' | 'green' | 'gold' => {
-  const idx = PLAYER_SEQUENCE.indexOf(curr);
-  return PLAYER_SEQUENCE[(idx + 1) % 4];
-};
-
 export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   entryFee,
   opponentName,
@@ -92,415 +50,173 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   initialMode
 }) => {
   const [view3D, setView3D] = useState<boolean>(true);
-  
-  // Match Player Mode: 2-Player (2 Quadrants per player) vs 4-Player (1 Quadrant per player)
   const [playerMode, setPlayerMode] = useState<'2-player' | '4-player'>(initialMode || '2-player');
-
-  // Selected Quadrant Filter for 2-Player mode ('all' | 'red' | 'gold')
   const [userSelectedQuadrant, setUserSelectedQuadrant] = useState<'all' | 'red' | 'gold'>('all');
 
-  // 16 Active Tokens across all 4 Quadrants
-  const [tokens, setTokens] = useState<LudoToken[]>(() => liveGameState?.tokens || [
-    // Top-Left (Red)
-    { id: 'red_1', color: 'red', position: -1, status: 'home' },
-    { id: 'red_2', color: 'red', position: -1, status: 'home' },
-    { id: 'red_3', color: 'red', position: -1, status: 'home' },
-    { id: 'red_4', color: 'red', position: -1, status: 'home' },
-    // Top-Right (Blue)
-    { id: 'blue_1', color: 'blue', position: -1, status: 'home' },
-    { id: 'blue_2', color: 'blue', position: -1, status: 'home' },
-    { id: 'blue_3', color: 'blue', position: -1, status: 'home' },
-    { id: 'blue_4', color: 'blue', position: -1, status: 'home' },
-    // Bottom-Right (Green)
-    { id: 'green_1', color: 'green', position: -1, status: 'home' },
-    { id: 'green_2', color: 'green', position: -1, status: 'home' },
-    { id: 'green_3', color: 'green', position: -1, status: 'home' },
-    { id: 'green_4', color: 'green', position: -1, status: 'home' },
-    // Bottom-Left (Yellow/Gold)
-    { id: 'gold_1', color: 'gold', position: -1, status: 'home' },
-    { id: 'gold_2', color: 'gold', position: -1, status: 'home' },
-    { id: 'gold_3', color: 'gold', position: -1, status: 'home' },
-    { id: 'gold_4', color: 'gold', position: -1, status: 'home' }
-  ]);
+  // Authoritative Ludo Game State
+  const [engineState, setEngineState] = useState<LudoGameState>(() => {
+    if (liveGameState?.engineState) return liveGameState.engineState;
+    return createInitialGameState(['red', 'blue', 'green', 'gold']);
+  });
 
-  const [activePlayer, setActivePlayer] = useState<'red' | 'blue' | 'green' | 'gold'>(() => liveGameState?.activePlayer || 'red');
-  const [diceRollValue, setDiceRollValue] = useState<number>(6);
   const [secondDiceValue, setSecondDiceValue] = useState<number>(3);
   const [isRolling, setIsRolling] = useState<boolean>(false);
   const [hasRolled, setHasRolled] = useState<boolean>(false);
-  const [consecutiveSixes, setConsecutiveSixes] = useState<number>(0);
-  const [gameResult, setGameResult] = useState<'playing' | 'red_won' | 'blue_won' | 'green_won' | 'gold_won'>('playing');
   const [botIsThinking, setBotIsThinking] = useState<boolean>(false);
   const [showHelperRules, setShowHelperRules] = useState<boolean>(false);
 
+  const activePlayer = engineState.players[engineState.activePlayerIndex];
+  const diceRollValue = engineState.currentDiceValue || 6;
+  const gameResult = engineState.winner ? `${engineState.winner}_won` : 'playing';
+
   // Determine whether current turn color belongs to the Human User
-  const isUserTurn = (color: 'red' | 'blue' | 'green' | 'gold'): boolean => {
+  const isUserTurn = (color: PlayerColor): boolean => {
     if (playerMode === '2-player') {
-      // User controls Red (Top-Left) and Yellow (Bottom-Left)
       return color === 'red' || color === 'gold';
     }
-    // 4-Player mode: User controls Red
     return color === 'red';
   };
 
-  // Sync live state from Firestore snapshot
+  // Sync logs back to parent container
   useEffect(() => {
-    if (!isBot && liveGameState) {
-      if (liveGameState.tokens) setTokens(liveGameState.tokens);
-      if (liveGameState.activePlayer) setActivePlayer(liveGameState.activePlayer);
-      if (liveGameState.diceRollValue) setDiceRollValue(liveGameState.diceRollValue);
-      if (liveGameState.secondDiceValue) setSecondDiceValue(liveGameState.secondDiceValue);
-      if (liveGameState.gameResult) {
-        setGameResult(liveGameState.gameResult);
-        if (liveGameState.gameResult === 'red_won' || (playerMode === '2-player' && liveGameState.gameResult === 'gold_won')) {
-          onGameOver(true);
-        } else if (liveGameState.gameResult !== 'playing') {
-          onGameOver(false);
-        }
+    if (engineState.logs.length > 0) {
+      onAddLog(engineState.logs[0]);
+    }
+  }, [engineState.logs, onAddLog]);
+
+  // Sync live state for Firestore / multiplayer
+  useEffect(() => {
+    if (!isBot && liveGameState?.engineState) {
+      setEngineState(liveGameState.engineState);
+      if (liveGameState.engineState.winner) {
+        const isWinner = liveGameState.engineState.winner === 'red' || (playerMode === '2-player' && liveGameState.engineState.winner === 'gold');
+        onGameOver(isWinner);
       }
     }
   }, [liveGameState, isBot, playerMode, onGameOver]);
 
-  // Auto Bot trigger if turn belongs to Bot
+  // Auto Bot Trigger
   useEffect(() => {
-    if (isBot && !isUserTurn(activePlayer) && gameResult === 'playing' && !botIsThinking) {
-      triggerBotTurnForColor(activePlayer);
+    if (isBot && !isUserTurn(activePlayer) && engineState.gameStatus === 'playing' && !botIsThinking && hasRolled) {
+      triggerBotMove(activePlayer);
     }
-  }, [activePlayer, isBot, playerMode, gameResult, botIsThinking]);
+  }, [activePlayer, isBot, playerMode, engineState.gameStatus, botIsThinking, hasRolled]);
 
   const rollDice = () => {
-    if (isRolling || hasRolled || gameResult !== 'playing' || !isUserTurn(activePlayer) || botIsThinking) return;
+    if (isRolling || hasRolled || engineState.gameStatus !== 'playing' || !isUserTurn(activePlayer) || botIsThinking) return;
 
     setIsRolling(true);
-    onAddLog(`[DICE SEED] Dispatching crypto-secure random integer from validation engine.`);
     
     setTimeout(() => {
-      const outcome1 = Math.floor(Math.random() * 6) + 1;
-      const outcome2 = Math.floor(Math.random() * 6) + 1;
-      setDiceRollValue(outcome1);
+      const outcome1 = rollDie();
+      const outcome2 = rollDie();
       setSecondDiceValue(outcome2);
       setIsRolling(false);
-      setHasRolled(true);
+
+      // Pass roll to Authoritative Game Engine
+      const nextState = handleDiceRoll(engineState, outcome1);
+      setEngineState(nextState);
+
+      const legalMoves = getLegalMoves(nextState, activePlayer, outcome1);
       
-      const totalSteps = outcome1;
-      onAddLog(`[DICE ROLL] You rolled: ${outcome1}`);
-
-      const nextPlayer = getNextPlayerColor(activePlayer);
-
-      // Check 3 consecutive sixes rule
-      if (totalSteps === 6) {
-        const nextSixes = consecutiveSixes + 1;
-        
-        if (nextSixes >= 3) {
-          setConsecutiveSixes(0);
-          setHasRolled(false);
-          setActivePlayer(nextPlayer);
-          onAddLog(`[SIXES PENALTY] 3 consecutive sixes rolled! Turn passed to ${nextPlayer.toUpperCase()}.`);
-          if (!isBot && onUpdateLiveState) {
-            onUpdateLiveState({ tokens, activePlayer: nextPlayer, diceRollValue: outcome1, secondDiceValue: outcome2, gameResult });
-          }
-          return;
-        } else {
-          setConsecutiveSixes(nextSixes);
-        }
+      if (legalMoves.length === 0 || nextState.consecutiveSixes === 0 && outcome1 === 6 && nextState.turnStartState === null) {
+        // Triple six penalty or no moves -> turn auto-resolved
+        setHasRolled(false);
       } else {
-        setConsecutiveSixes(0);
+        setHasRolled(true);
       }
 
-      // Check valid moves across all user-controlled quadrants
-      const playable = playerMode === '2-player' && isUserTurn(activePlayer)
-        ? tokens.filter(t => (t.color === 'red' || t.color === 'gold') && canMoveToken(t, totalSteps))
-        : tokens.filter(t => t.color === activePlayer && canMoveToken(t, totalSteps));
-
-      if (playable.length === 0) {
-        onAddLog(`[NO MOVES] No valid moves available for your pawns with roll ${totalSteps}. Passing turn.`);
-        setTimeout(() => {
-          setActivePlayer(nextPlayer);
-          setHasRolled(false);
-          if (!isBot && onUpdateLiveState) {
-            onUpdateLiveState({ tokens, activePlayer: nextPlayer, diceRollValue: outcome1, secondDiceValue: outcome2, gameResult });
-          }
-        }, 400);
-      } else {
-        const redMoves = tokens.filter(t => t.color === 'red' && canMoveToken(t, totalSteps)).length;
-        const goldMoves = tokens.filter(t => t.color === 'gold' && canMoveToken(t, totalSteps)).length;
-
-        if (playerMode === '2-player' && redMoves > 0 && goldMoves > 0) {
-          onAddLog(`[QUADRANT OPTION] Both Red 🔴 and Yellow 🟡 have valid moves! Tap any pawn or select your quadrant.`);
-        } else if (playerMode === '2-player' && redMoves > 0) {
-          onAddLog(`[QUADRANT READY] Red 🔴 has valid moves available for roll ${totalSteps}.`);
-        } else if (playerMode === '2-player' && goldMoves > 0) {
-          onAddLog(`[QUADRANT READY] Yellow 🟡 has valid moves available for roll ${totalSteps}.`);
-        }
-
-        if (!isBot && onUpdateLiveState) {
-          onUpdateLiveState({ tokens, activePlayer, diceRollValue: outcome1, secondDiceValue: outcome2, gameResult });
-        }
+      if (!isBot && onUpdateLiveState) {
+        onUpdateLiveState({ engineState: nextState });
       }
     }, 300);
   };
 
-  const triggerBotTurnForColor = (colorToPlay: 'red' | 'blue' | 'green' | 'gold') => {
+  const triggerBotMove = (colorToPlay: PlayerColor) => {
     setBotIsThinking(true);
-    onAddLog(`[BOT TURN] ${colorToPlay.toUpperCase()} Bot rolling dice.`);
     
     setTimeout(() => {
-      const outcome1 = Math.floor(Math.random() * 6) + 1;
-      const outcome2 = Math.floor(Math.random() * 6) + 1;
-      setDiceRollValue(outcome1);
+      const outcome1 = rollDie();
+      const outcome2 = rollDie();
       setSecondDiceValue(outcome2);
-      onAddLog(`[BOT ROLL] ${colorToPlay.toUpperCase()} rolled: ${outcome1}`);
 
-      const colorTokens = tokens.filter(t => t.color === colorToPlay);
-      const playable = colorTokens.filter(t => canMoveToken(t, outcome1));
+      const rolledState = handleDiceRoll(engineState, outcome1);
+      setEngineState(rolledState);
 
-      if (playable.length === 0) {
-        const nextP = getNextPlayerColor(colorToPlay);
-        onAddLog(`[BOT TURN] No valid moves for ${colorToPlay.toUpperCase()}. Turn passed to ${nextP.toUpperCase()}.`);
-        setTimeout(() => {
-          setActivePlayer(nextP);
-          setBotIsThinking(false);
-        }, 400);
+      const legalMoves = getLegalMoves(rolledState, colorToPlay, outcome1);
+
+      if (legalMoves.length === 0) {
+        setHasRolled(false);
+        setBotIsThinking(false);
         return;
       }
 
       const isHard = botDifficulty === 'hard' || entryFee > 0;
-      let selection: LudoToken;
+      let selectedMove = legalMoves[0];
 
       if (isHard) {
-        const opponentTokens = tokens.filter(t => t.color !== colorToPlay && t.status === 'board');
-        const captureMove = playable.find(t => {
-          if (t.status !== 'board') return false;
-          const nextPos = t.position + outcome1;
-          return opponentTokens.some(r => r.position === nextPos);
-        });
-        const exiting = playable.find(t => t.status === 'home');
-        const furthestOnBoard = [...playable.filter(t => t.status === 'board')].sort((a, b) => b.position - a.position)[0];
+        const captureMove = legalMoves.find(m => m.isCapture);
+        const homeFinishMove = legalMoves.find(m => m.isHomeFinish);
+        const exitBaseMove = legalMoves.find(m => m.isLeavingBase);
 
-        selection = captureMove || exiting || furthestOnBoard || playable[0];
-      } else {
-        const exiting = playable.find(t => t.status === 'home');
-        selection = exiting || playable[0];
+        selectedMove = captureMove || homeFinishMove || exitBaseMove || legalMoves[0];
       }
 
       setTimeout(() => {
-        onAddLog(`[BOT MOVE] ${colorToPlay.toUpperCase()} Bot moving token ${selection.id.toUpperCase()}`);
-        executeTokenMovement(selection.id, outcome1, colorToPlay);
+        try {
+          const movedState = executeMove(rolledState, selectedMove.tokenId, outcome1);
+          setEngineState(movedState);
+
+          if (movedState.winner) {
+            const isMeWin = movedState.winner === 'red' || (playerMode === '2-player' && movedState.winner === 'gold');
+            onGameOver(isMeWin);
+          }
+        } catch (e) {
+          console.error("Bot move execution error:", e);
+        }
+
+        setHasRolled(false);
         setBotIsThinking(false);
-      }, 300);
+      }, 350);
 
     }, 300);
   };
 
-  const canMoveToken = (token: LudoToken, roll: number): boolean => {
-    if (token.status === 'finished') return false;
-    if (token.status === 'home') {
-      return roll === 6 || roll === 5;
-    }
-    const currentPos = token.position;
-    if (currentPos + roll > 57) {
-      return false;
-    }
-    return true;
-  };
-
-  const isTokenPlayable = (token: LudoToken): boolean => {
-    if (!hasRolled || isRolling || gameResult !== 'playing' || botIsThinking) return false;
+  const isTokenPlayable = (token: LudoTokenState): boolean => {
+    if (!hasRolled || isRolling || engineState.gameStatus !== 'playing' || botIsThinking) return false;
     if (!isUserTurn(activePlayer)) return false;
 
     if (playerMode === '2-player') {
       if (token.color !== 'red' && token.color !== 'gold') return false;
       if (userSelectedQuadrant !== 'all' && token.color !== userSelectedQuadrant) return false;
-      return canMoveToken(token, diceRollValue);
     } else {
       if (token.color !== activePlayer) return false;
-      return canMoveToken(token, diceRollValue);
     }
+
+    if (engineState.currentDiceValue === null) return false;
+    const legalMoves = getLegalMoves(engineState, token.color, engineState.currentDiceValue);
+    return legalMoves.some(m => m.tokenId === token.id);
   };
 
-  const handleSelectToken = (token: LudoToken) => {
-    if (!isTokenPlayable(token)) return;
-    onAddLog(`[QUADRANT CHOICE] You selected ${token.color.toUpperCase()} pawn ${token.id.toUpperCase()} to move.`);
-    executeTokenMovement(token.id, diceRollValue, token.color);
-  };
+  const handleSelectToken = (token: LudoTokenState) => {
+    if (!isTokenPlayable(token) || engineState.currentDiceValue === null) return;
 
-  const executeTokenMovement = (tokenId: string, steps: number, playerColor: 'red' | 'blue' | 'green' | 'gold') => {
-    let nextResult = gameResult;
-    let nextTokens: LudoToken[] = [];
-    let isCaptured = false;
-    let isFinished = false;
-    
-    setTokens(prev => {
-      const updated = prev.map(t => {
-        if (t.id !== tokenId) return t;
+    try {
+      const nextState = executeMove(engineState, token.id, engineState.currentDiceValue);
+      setEngineState(nextState);
+      setHasRolled(false);
 
-        let nextPos = t.position;
-        let nextStatus = t.status;
-
-        if (t.status === 'home') {
-          nextPos = 0;
-          nextStatus = 'board' as const;
-        } else {
-          nextPos += steps;
-          if (nextPos === 57) {
-            nextStatus = 'finished' as const;
-            isFinished = true;
-            onAddLog(`[HOME REACHED] Pawn ${t.id.toUpperCase()} successfully finished its run!`);
-          }
-        }
-
-        return { ...t, position: nextPos, status: nextStatus };
-      });
-
-      // Collision Engine
-      const movingToken = updated.find(t => t.id === tokenId)!;
-      if (movingToken.status === 'board' && movingToken.position < 52) {
-        const targetCell = getTokenCell(movingToken);
-        const isSafeSpace = SAFE_COORDS.some(([r, c]) => r === targetCell[0] && c === targetCell[1]);
-
-        const collided = updated.find(t => {
-          if (t.id === tokenId || t.color === movingToken.color || t.status !== 'board' || t.position >= 52) return false;
-          const cell = getTokenCell(t);
-          return cell[0] === targetCell[0] && cell[1] === targetCell[1];
-        });
-
-        if (collided) {
-          if (isSafeSpace) {
-            onAddLog(`[SAFE SPACE] Safe zone immunity at tile (${targetCell[0]}, ${targetCell[1]}). No capture.`);
-          } else {
-            onAddLog(`[CAPTURE] ${movingToken.color.toUpperCase()} captured ${collided.id.toUpperCase()}! Returned to home base.`);
-            collided.position = -1;
-            collided.status = 'home';
-            isCaptured = true;
-          }
-        }
+      if (nextState.winner) {
+        const isMeWin = nextState.winner === 'red' || (playerMode === '2-player' && nextState.winner === 'gold');
+        onGameOver(isMeWin);
       }
 
-      // Win Checks
-      const redFinished = updated.filter(t => t.color === 'red' && t.status === 'finished').length;
-      const blueFinished = updated.filter(t => t.color === 'blue' && t.status === 'finished').length;
-      const greenFinished = updated.filter(t => t.color === 'green' && t.status === 'finished').length;
-      const goldFinished = updated.filter(t => t.color === 'gold' && t.status === 'finished').length;
-
-      if (redFinished === 4) {
-        nextResult = 'red_won';
-        setGameResult('red_won');
-        onAddLog(`[VICTORY] Red claims complete victory!`);
-        setTimeout(() => onGameOver(true), 3000);
-      } else if (blueFinished === 4) {
-        nextResult = 'blue_won';
-        setGameResult('blue_won');
-        onAddLog(`[VICTORY] Blue claims victory!`);
-        setTimeout(() => onGameOver(false), 3000);
-      } else if (greenFinished === 4) {
-        nextResult = 'green_won';
-        setGameResult('green_won');
-        onAddLog(`[VICTORY] Green claims victory!`);
-        setTimeout(() => onGameOver(false), 3000);
-      } else if (goldFinished === 4) {
-        nextResult = 'gold_won';
-        setGameResult('gold_won');
-        onAddLog(`[VICTORY] Yellow claims victory!`);
-        setTimeout(() => onGameOver(playerMode === '2-player'), 3000);
+      if (!isBot && onUpdateLiveState) {
+        onUpdateLiveState({ engineState: nextState });
       }
-
-      nextTokens = updated;
-      return updated;
-    });
-
-    setHasRolled(false);
-
-    // Standard Bonus Roll Rule
-    const getsBonusRoll = (steps === 6 || isCaptured || isFinished) && nextResult === 'playing';
-    const nextPlayer = getsBonusRoll ? playerColor : getNextPlayerColor(playerColor);
-
-    if (getsBonusRoll) {
-      if (steps === 6) onAddLog(`[BONUS ROLL] Rolled a 6! Roll again.`);
-      else if (isCaptured) onAddLog(`[BONUS ROLL] Captured opponent piece! Roll again.`);
-      else if (isFinished) onAddLog(`[BONUS ROLL] Reached Home center! Roll again.`);
-    } else {
-      setActivePlayer(nextPlayer);
+    } catch (e) {
+      console.error("Move execution error:", e);
     }
-
-    if (!isBot && onUpdateLiveState) {
-      onUpdateLiveState({
-        tokens: nextTokens,
-        activePlayer: nextPlayer,
-        diceRollValue: steps,
-        secondDiceValue,
-        gameResult: nextResult
-      });
-    }
-  };
-
-  // Maps token to 15x15 board cell [row, col]
-  const getTokenCell = (token: LudoToken): [number, number] => {
-    if (token.status === 'home') {
-      const idNum = token.id.split('_')[1];
-      if (token.color === 'red') {
-        if (idNum === '1') return [1, 1];
-        if (idNum === '2') return [1, 3];
-        if (idNum === '3') return [3, 1];
-        return [3, 3];
-      }
-      if (token.color === 'blue') {
-        if (idNum === '1') return [1, 10];
-        if (idNum === '2') return [1, 12];
-        if (idNum === '3') return [3, 10];
-        return [3, 12];
-      }
-      if (token.color === 'green') {
-        if (idNum === '1') return [10, 10];
-        if (idNum === '2') return [10, 12];
-        if (idNum === '3') return [12, 10];
-        return [12, 12];
-      }
-      // Gold / Yellow
-      if (idNum === '1') return [10, 1];
-      if (idNum === '2') return [10, 3];
-      if (idNum === '3') return [12, 1];
-      return [12, 3];
-    }
-
-    if (token.status === 'finished') {
-      if (token.color === 'red') return [7, 6];
-      if (token.color === 'blue') return [6, 7];
-      if (token.color === 'green') return [7, 8];
-      return [8, 7];
-    }
-
-    const pos = token.position;
-
-    if (token.color === 'red') {
-      if (pos >= 52) {
-        const redRunway: Array<[number, number]> = [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6]];
-        return redRunway[Math.min(pos - 52, 5)];
-      }
-      return PATH_COORDINATES[pos % 52];
-    }
-
-    if (token.color === 'blue') {
-      if (pos >= 52) {
-        const blueRunway: Array<[number, number]> = [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [6, 7]];
-        return blueRunway[Math.min(pos - 52, 5)];
-      }
-      return PATH_COORDINATES[(13 + pos) % 52];
-    }
-
-    if (token.color === 'green') {
-      if (pos >= 52) {
-        const greenRunway: Array<[number, number]> = [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9], [7, 8]];
-        return greenRunway[Math.min(pos - 52, 5)];
-      }
-      return PATH_COORDINATES[(26 + pos) % 52];
-    }
-
-    // Gold / Yellow
-    if (pos >= 52) {
-      const yellowRunway: Array<[number, number]> = [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7], [8, 7]];
-      return yellowRunway[Math.min(pos - 52, 5)];
-    }
-    return PATH_COORDINATES[(39 + pos) % 52];
   };
 
   return (
@@ -551,22 +267,20 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           >
             <h4 className="font-display font-black text-white uppercase text-sm tracking-wider flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Dynamic Quadrant Choice & Standard Rules</span>
+              <span>Official Authoritative Ludo Rules</span>
             </h4>
             <ul className="list-disc pl-4 space-y-1 text-amber-200/80 font-mono text-[11px]">
-              <li><span className="text-amber-300 font-bold">Dynamic Choice</span>: In 2-Player match, after rolling the dice you can choose to move a pawn from <strong className="text-rose-400">RED 🔴</strong> OR <strong className="text-yellow-300">YELLOW 🟡</strong>!</li>
-              <li><span className="text-cyan-300 font-bold">2-Player Match</span>: You command 2 quadrants (Red + Yellow | 8 pawns). Opponent commands 2 (Blue + Green).</li>
-              <li><span className="text-emerald-300 font-bold">Bonus Roll</span>: Rolling a 6, capturing an opponent pawn, or reaching Home center grants a bonus roll!</li>
+              <li><span className="text-amber-300 font-bold">Base Exit</span>: Token may ONLY leave base yard after rolling an exact <strong className="text-amber-400">6</strong>.</li>
+              <li><span className="text-rose-400 font-bold">3 Sixes Penalty</span>: Rolling 3 consecutive 6s forfeits turn and rolls back ALL turn movements!</li>
+              <li><span className="text-emerald-300 font-bold">Exact Finish</span>: Tokens require exact die value to enter center home (step 57).</li>
+              <li><span className="text-cyan-300 font-bold">Safe Squares</span>: Safe zones protect tokens from being captured.</li>
             </ul>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ========================================================== */}
       {/* CORE 3D ARENA VIEWPORT FRAME */}
-      {/* ========================================================== */}
       <div className="relative w-full flex-1 flex items-center justify-center py-6 transition-all duration-700">
-        
         <div 
           className="relative transition-all duration-1000 ease-out flex items-center justify-center"
           style={{
@@ -581,14 +295,11 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
             <div className="absolute inset-[-80px] bg-[linear-gradient(rgba(245,158,11,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(245,158,11,0.03)_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)] pointer-events-none" />
           )}
 
-          {/* ========================================================== */}
-          {/* MAHOGANY WOODEN BOARD SLAB & Glossy Plastic Trays */}
-          {/* ========================================================== */}
+          {/* MAHOGANY WOODEN BOARD SLAB & Trays */}
           <div 
             className="relative w-[340px] h-[340px] sm:w-[435px] sm:h-[435px] bg-[#1a212d] rounded-[36px] border-[4px] border-[#0f141e] p-[3px] shadow-[0_45px_100px_rgba(0,0,0,0.95),0_16px_0px_#090d14,0_20px_35px_rgba(0,0,0,0.85)] ludo-board-container"
             style={{ transform: view3D ? 'translateZ(14px)' : 'none', transformStyle: 'preserve-3d' }}
           >
-            {/* Polished ambient surface reflection */}
             <div className="absolute inset-0 rounded-[32px] bg-gradient-to-br from-white/15 via-transparent to-black/35 pointer-events-none z-10" />
 
             {/* 15x15 Grid Layout */}
@@ -605,13 +316,9 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                           style={{ gridRow: '7 / span 3', gridColumn: '7 / span 3' }}
                         >
                           <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            {/* Left triangle (Red) */}
                             <polygon points="0,0 50,50 0,100" fill="#E52521" stroke="#000000" strokeWidth="1.5" />
-                            {/* Top triangle (Blue) */}
                             <polygon points="0,0 50,50 100,0" fill="#1B4EAB" stroke="#000000" strokeWidth="1.5" />
-                            {/* Right triangle (Green) */}
                             <polygon points="100,0 50,50 100,100" fill="#009A44" stroke="#000000" strokeWidth="1.5" />
-                            {/* Bottom triangle (Yellow) */}
                             <polygon points="0,100 50,50 100,100" fill="#FFCC00" stroke="#000000" strokeWidth="1.5" />
                           </svg>
                         </div>
@@ -672,7 +379,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     return <div key={`${r}-${c}`} className="bg-[#FFCC00] border border-[#C79F00]" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
                   }
 
-                  // Top Arm (r 0..5, c 6..8) - Blue Path
+                  // Top Arm (Blue Path)
                   if (r <= 5 && c >= 6 && c <= 8) {
                     const isBluePath = (c === 7 && r >= 1) || (r === 0 && (c === 7 || c === 8));
                     const isBlueStart = r === 0 && c === 8;
@@ -692,7 +399,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     );
                   }
 
-                  // Right Arm (r 6..8, c 9..14) - Green Path
+                  // Right Arm (Green Path)
                   if (r >= 6 && r <= 8 && c >= 9) {
                     const isGreenPath = (r === 7) || (r === 8 && c === 14);
                     const isGreenStart = r === 8 && c === 14;
@@ -712,7 +419,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     );
                   }
 
-                  // Bottom Arm (r 9..14, c 6..8) - Yellow Path
+                  // Bottom Arm (Yellow Path)
                   if (r >= 9 && c >= 6 && c <= 8) {
                     const isYellowPath = (c === 7 && r >= 9) || (r === 14 && c === 6);
                     const isYellowStart = r === 14 && c === 6;
@@ -732,7 +439,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     );
                   }
 
-                  // Left Arm (r 6..8, c 0..5) - Red Path
+                  // Left Arm (Red Path)
                   if (r >= 6 && r <= 8 && c <= 5) {
                     const isRedPath = (r === 7) || (r === 6 && c === 0);
                     const isRedStart = r === 6 && c === 0;
@@ -757,7 +464,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
               )}
 
               {/* Render Standing 3D Pawns placed precisely inside cell coordinates */}
-              {tokens.map((token) => {
+              {engineState.tokens.map((token) => {
                 const [r, c] = getTokenCell(token);
                 const isPlayable = isTokenPlayable(token);
 
@@ -779,9 +486,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
             </div>
           </div>
 
-          {/* ========================================================== */}
           {/* TWO TRANSLUCENT ACRYLIC GLASS DICE */}
-          {/* ========================================================== */}
           <div 
             className="absolute bottom-[-15px] right-[80px] z-30"
             style={{
@@ -807,19 +512,16 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           </div>
 
         </div>
-
       </div>
 
-      {/* ========================================================== */}
-      {/* ACTION CONTROLS & DYNAMIC QUADRANT SELECTOR HUD */}
-      {/* ========================================================== */}
+      {/* ACTION CONTROLS & HUD */}
       <div className="relative sm:absolute sm:bottom-4 sm:left-4 mx-auto mt-2 sm:mt-0 w-full max-w-[340px] sm:w-auto bg-[#180e08]/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-amber-500/30 flex flex-col gap-2 shadow-[0_15px_30px_rgba(0,0,0,0.5)] z-30">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className={`w-2.5 h-2.5 rounded-full ${isUserTurn(activePlayer) ? 'bg-amber-400 animate-pulse' : 'bg-slate-600'}`} />
             <span className="text-[10px] font-mono font-bold text-amber-300 uppercase tracking-widest">
               {isUserTurn(activePlayer) 
-                ? (playerMode === '2-player' ? "YOUR TURN: PICK QUADRANT TO MOVE" : "YOUR TURN (RED 🔴)") 
+                ? (playerMode === '2-player' ? "YOUR TURN: SELECT QUADRANT TO MOVE" : "YOUR TURN (RED 🔴)") 
                 : `${activePlayer.toUpperCase()}'S TURN (BOT)`}
             </span>
           </div>
@@ -828,7 +530,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           </span>
         </div>
 
-        {/* Dynamic Quadrant Filter Selector in 2-Player mode during User turn after rolling */}
+        {/* Dynamic Quadrant Filter Selector in 2-Player mode */}
         {playerMode === '2-player' && isUserTurn(activePlayer) && hasRolled && (
           <div className="flex items-center gap-1.5 p-1 bg-[#0f0905] rounded-xl border border-amber-500/25">
             <span className="text-[9px] font-mono text-amber-500/70 font-bold px-1.5 uppercase">QUADRANT:</span>
@@ -870,9 +572,9 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         
         <button
           onClick={rollDice}
-          disabled={!isUserTurn(activePlayer) || hasRolled || isRolling || gameResult !== 'playing' || botIsThinking}
+          disabled={!isUserTurn(activePlayer) || hasRolled || isRolling || engineState.gameStatus !== 'playing' || botIsThinking}
           className={`w-full py-1.5 font-extrabold tracking-widest uppercase font-display text-center rounded-xl transition-all border text-xs cursor-pointer ${
-            isUserTurn(activePlayer) && !hasRolled && !isRolling && gameResult === 'playing'
+            isUserTurn(activePlayer) && !hasRolled && !isRolling && engineState.gameStatus === 'playing'
               ? 'bg-amber-500/20 border-amber-500 hover:bg-amber-500/30 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.35)] animate-pulse'
               : 'bg-[#21140c] border-amber-950 text-amber-700/60 cursor-not-allowed'
           }`}
@@ -881,7 +583,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         </button>
       </div>
 
-      {/* FLOATING LEADERBOARD PANEL */}
+      {/* LEADERBOARD PANEL */}
       <div className="relative sm:absolute sm:top-16 sm:right-4 mx-auto mt-2 sm:mt-0 w-full max-w-[300px] sm:w-auto sm:max-w-[170px] bg-[#180e08]/95 backdrop-blur-md py-2.5 px-3.5 rounded-2xl border border-amber-500/25 shadow-2xl space-y-2 z-30">
         <div className="flex justify-between items-center text-[8px] font-mono border-b border-amber-500/15 pb-1">
           <span className="font-extrabold text-[9.5px] tracking-wide text-amber-300">⚔️ {playerMode.toUpperCase()} MATCH</span>
@@ -897,19 +599,19 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
         <div className="space-y-1 text-[8.5px]">
           <div className="flex items-center justify-between text-rose-300">
             <span className="truncate max-w-[65px] font-bold">You (Red)</span>
-            <span className="font-mono text-rose-400 font-bold">{tokens.filter(t => t.color === 'red' && t.status === 'finished').length}/4</span>
+            <span className="font-mono text-rose-400 font-bold">{engineState.tokens.filter(t => t.color === 'red' && t.status === 'finished').length}/4</span>
           </div>
           <div className="flex items-center justify-between text-blue-300">
             <span className="truncate max-w-[65px] font-medium">{playerMode === '2-player' ? `${opponentName} (Blue)` : 'Bot 1 (Blue)'}</span>
-            <span className="font-mono text-blue-400 font-bold">{tokens.filter(t => t.color === 'blue' && t.status === 'finished').length}/4</span>
+            <span className="font-mono text-blue-400 font-bold">{engineState.tokens.filter(t => t.color === 'blue' && t.status === 'finished').length}/4</span>
           </div>
           <div className="flex items-center justify-between text-emerald-300">
             <span className="truncate max-w-[65px] font-medium">{playerMode === '2-player' ? `${opponentName} (Green)` : 'Bot 2 (Green)'}</span>
-            <span className="font-mono text-emerald-400 font-bold">{tokens.filter(t => t.color === 'green' && t.status === 'finished').length}/4</span>
+            <span className="font-mono text-emerald-400 font-bold">{engineState.tokens.filter(t => t.color === 'green' && t.status === 'finished').length}/4</span>
           </div>
           <div className="flex items-center justify-between text-yellow-300">
             <span className="truncate max-w-[65px] font-medium">{playerMode === '2-player' ? 'You (Yellow)' : 'Bot 3 (Yellow)'}</span>
-            <span className="font-mono text-yellow-400 font-bold">{tokens.filter(t => t.color === 'gold' && t.status === 'finished').length}/4</span>
+            <span className="font-mono text-yellow-400 font-bold">{engineState.tokens.filter(t => t.color === 'gold' && t.status === 'finished').length}/4</span>
           </div>
         </div>
       </div>
@@ -919,10 +621,8 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   );
 };
 
-// ==========================================================
 // GLOSSY 3D PLASTIC PAWN
-// ==========================================================
-const LudoPawn3D: React.FC<{ color: 'red' | 'green' | 'blue' | 'gold', isPlayable?: boolean, view3D?: boolean }> = ({ color, isPlayable, view3D }) => {
+const LudoPawn3D: React.FC<{ color: PlayerColor, isPlayable?: boolean, view3D?: boolean }> = ({ color, isPlayable, view3D }) => {
   const pawnColors = {
     red: {
       head: '#E52521',
@@ -958,13 +658,11 @@ const LudoPawn3D: React.FC<{ color: 'red' | 'green' | 'blue' | 'gold', isPlayabl
 
   return (
     <div className="relative flex flex-col items-center justify-center w-6 h-8 sm:w-7 sm:h-9 cursor-pointer group">
-      {/* 1. Oval drop shadow cast on board cell surface */}
       <div 
         className="absolute bottom-0 w-5 h-1.5 rounded-full blur-[0.8px] pointer-events-none"
         style={{ backgroundColor: 'rgba(0,0,0,0.5)', transform: view3D ? 'scaleY(0.5) translateY(3px)' : 'none' }}
       />
 
-      {/* 2. Upright Standing 3D Halma Pawn Structure */}
       <motion.div 
         whileHover={isPlayable ? { scale: 1.3, y: -5 } : { scale: 1.12 }}
         className="relative flex flex-col items-center transition-all duration-300 z-20"
@@ -973,7 +671,6 @@ const LudoPawn3D: React.FC<{ color: 'red' | 'green' | 'blue' | 'gold', isPlayabl
           transformStyle: 'preserve-3d'
         }}
       >
-        {/* Pawn Sphere Head */}
         <div 
           className="relative w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border shadow-md z-20"
           style={{ 
@@ -981,27 +678,22 @@ const LudoPawn3D: React.FC<{ color: 'red' | 'green' | 'blue' | 'gold', isPlayabl
             borderColor: style.border
           }}
         >
-          {/* Glossy specular reflection highlight */}
           <div className="absolute top-[2px] left-[2.5px] w-1.5 h-1.5 rounded-full bg-white/85 blur-[0.2px]" />
         </div>
 
-        {/* Pawn Tapered Neck Ring Collar */}
         <div 
           className="w-2.5 h-1 -mt-0.5 rounded-full border-t border-b z-15 shadow-inner"
           style={{ backgroundColor: style.collar, borderColor: style.border }}
         />
 
-        {/* Pawn Wide Conical Base / Skirt */}
         <div 
           className={`w-4.5 h-4.5 sm:w-5 sm:h-5 -mt-0.5 rounded-b-xl rounded-t-sm bg-gradient-to-b ${style.bodyGrad} border flex items-center justify-center shadow-lg relative overflow-hidden`}
           style={{ borderColor: style.border }}
         >
-          {/* Vertical sheen highlight strip */}
           <div className="absolute top-0 left-1 w-1 h-full bg-white/40 skew-x-[-15deg] blur-[0.4px]" />
         </div>
       </motion.div>
 
-      {/* Highlight ring for active playable token */}
       {isPlayable && (
         <span className="absolute bottom-0 w-6 h-6 rounded-full border-2 border-yellow-300 animate-ping pointer-events-none z-10" />
       )}
@@ -1009,9 +701,7 @@ const LudoPawn3D: React.FC<{ color: 'red' | 'green' | 'blue' | 'gold', isPlayabl
   );
 };
 
-// ==========================================================
 // TWO TRANSLUCENT ACRYLIC GLASS DICE
-// ==========================================================
 const SemiTranslucentWhiteDice: React.FC<{ value: number, isRolling: boolean }> = ({ value, isRolling }) => {
   const faceTransforms = [
     'rotateX(0deg) rotateY(0deg)',
