@@ -3599,6 +3599,26 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 opponentAvatar={opponentProfile?.avatar || ''}
                 onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
                 onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
+                onReMatch={() => {
+                  if (activeChallenge && activeChallenge.entryFee > 0) {
+                    if (userProfile.coins < activeChallenge.entryFee) {
+                      alert("Insufficient coins to restake!");
+                      return;
+                    }
+                    setUserProfile(prev => ({
+                      ...prev,
+                      coins: Math.max(0, prev.coins - activeChallenge.entryFee)
+                    }));
+                    const stakeTx: WalletTransaction = {
+                      id: `restake_${Date.now()}`,
+                      type: 'stake_lock',
+                      amount: activeChallenge.entryFee,
+                      description: `Restake Lock: Tic-Tac-Toe vs ${opponentProfile?.username || 'Bot'}`,
+                      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    };
+                    setTransactions(prev => [stakeTx, ...prev]);
+                  }
+                }}
                 botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
                 isBot={activeChallenge?.opponentType === 'bot'}
                 sessionId={activeChallenge?.id}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Swords, ShieldCheck, Timer, Award, HelpCircle, Trophy, Sparkles, X as XIcon, Circle, AlertCircle } from 'lucide-react';
+import { Swords, ShieldCheck, Timer, Award, HelpCircle, Trophy, Sparkles, X as XIcon, Circle, AlertCircle, RotateCcw, ArrowRight } from 'lucide-react';
 import { TicTacToeLogicService } from '../services/ticTacToeLogic';
 import { TicTacToeGameState } from '../types';
 
@@ -10,6 +10,7 @@ interface InteractiveTicTacToeBoardProps {
   opponentAvatar: string;
   onGameOver: (winnerIsMe: boolean) => void;
   onAddLog: (log: string) => void;
+  onReMatch?: () => void;
   botDifficulty?: 'easy' | 'medium' | 'hard';
   isBot?: boolean;
   sessionId?: string;
@@ -24,6 +25,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
   opponentAvatar,
   onGameOver,
   onAddLog,
+  onReMatch,
   botDifficulty = 'medium',
   isBot = true,
   sessionId,
@@ -84,7 +86,6 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
             clearInterval(interval);
             setGameResult('bot_won');
             onAddLog(`[TIMER EXPIRED] Time ran out! Match awarded to ${opponentName}.`);
-            setTimeout(() => onGameOver(false), 2500);
             return 0;
           }
           return prev - 1;
@@ -95,7 +96,6 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
             clearInterval(interval);
             setGameResult('player_won');
             onAddLog(`[TIMER EXPIRED] ${opponentName} time elapsed! You win.`);
-            setTimeout(() => onGameOver(true), 2500);
             return 0;
           }
           return prev - 1;
@@ -104,7 +104,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPlayerTurn, gameResult, botIsThinking, opponentName, onAddLog, onGameOver]);
+  }, [isPlayerTurn, gameResult, botIsThinking, opponentName, onAddLog]);
 
   const botExecutingRef = React.useRef(false);
 
@@ -140,17 +140,14 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
             setGameResult('player_won');
             setScores(s => ({ ...s, player: s.player + 1 }));
             onAddLog(`[GAME OVER] VICTORY! You defeated ${opponentName}.`);
-            setTimeout(() => onGameOver(true), 2500);
           } else if (nextState.winnerId === player2Id) {
             setGameResult('bot_won');
             setScores(s => ({ ...s, bot: s.bot + 1 }));
             onAddLog(`[GAME OVER] DEFEAT. ${opponentName} won the match.`);
-            setTimeout(() => onGameOver(false), 2500);
           } else {
             setGameResult('draw');
             setScores(s => ({ ...s, draws: s.draws + 1 }));
             onAddLog(`[GAME OVER] DRAW! No winner in this round.`);
-            setTimeout(() => onGameOver(false), 2500);
           }
         }
       }
@@ -160,7 +157,7 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [gameState, isPlayerTurn, gameResult, botDifficulty, opponentName, onAddLog, onGameOver, player1Id, player2Id, isBot]);
+  }, [gameState, isPlayerTurn, gameResult, botDifficulty, opponentName, onAddLog, player1Id, player2Id, isBot]);
 
   const handleCellClick = (index: number) => {
     if (gameResult !== 'playing' || !isPlayerTurn || botIsThinking) return;
@@ -184,19 +181,38 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
         setGameResult('draw');
         setScores(s => ({ ...s, draws: s.draws + 1 }));
         onAddLog(`[GAME OVER] DRAW! Tactical standoff.`);
-        setTimeout(() => onGameOver(false), 2500);
       } else if (winnerIsP1 === amIPlayer1) {
         setGameResult('player_won');
         setScores(s => ({ ...s, player: s.player + 1 }));
         onAddLog(`[GAME OVER] VICTORY! You defeated ${opponentName}.`);
-        setTimeout(() => onGameOver(true), 2500);
       } else {
         setGameResult('bot_won');
         setScores(s => ({ ...s, bot: s.bot + 1 }));
         onAddLog(`[GAME OVER] DEFEAT. ${opponentName} won the match.`);
-        setTimeout(() => onGameOver(false), 2500);
       }
     }
+  };
+
+  const handlePlayAgain = () => {
+    if (onReMatch) {
+      onReMatch();
+    }
+    const freshBoard = TicTacToeLogicService.initializeBoard(
+      sessionId || `tictactoe_${Date.now()}`,
+      player1Id,
+      player2Id
+    );
+    setGameState(freshBoard);
+    if (!isBot && onUpdateLiveState) {
+      onUpdateLiveState(freshBoard);
+    }
+    setGameResult('playing');
+    setPlayerTimer(180);
+    setBotTimer(180);
+    setMoveAttemptLogs([]);
+    botExecutingRef.current = false;
+    setBotIsThinking(false);
+    onAddLog(`[REMATCH] Game re-initialized! Stakes locked for next round.`);
   };
 
   const formatTimer = (seconds: number) => {
@@ -485,6 +501,24 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
                 ? `${opponentName} outmaneuvered the board matrix. Good try!`
                 : `Both players matched every line step for step.`}
             </p>
+
+            {/* Rematch & Exit Action Buttons */}
+            <div className="flex flex-wrap items-center justify-center gap-3 w-full max-w-md">
+              <button
+                onClick={handlePlayAgain}
+                className="flex-1 py-3 px-5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-black uppercase tracking-wider rounded-xl text-xs flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(6,182,212,0.4)] transition-all cursor-pointer active:scale-95"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Play Again ({entryFee > 0 ? `Restake ${entryFee} Coins` : 'Free'})
+              </button>
+              <button
+                onClick={() => onGameOver(gameResult === 'player_won')}
+                className="py-3 px-5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-white font-bold uppercase tracking-wider rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+              >
+                <ArrowRight className="w-4 h-4" />
+                Exit Arena
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
