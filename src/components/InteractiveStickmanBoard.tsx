@@ -272,13 +272,15 @@ export const InteractiveStickmanBoard: React.FC<InteractiveStickmanBoardProps> =
 
           <SoundControls />
 
-          <button
-            onClick={() => setIsPaused(!isPaused)}
-            className="p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-500/40 hover:bg-cyan-900 text-cyan-300 font-bold text-xs flex items-center gap-1.5 px-3 transition-all"
-          >
-            {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
-            {isPaused ? 'Resume' : 'Pause'}
-          </button>
+          {isBot && (
+            <button
+              onClick={() => setIsPaused(!isPaused)}
+              className="p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-500/40 hover:bg-cyan-900 text-cyan-300 font-bold text-xs flex items-center gap-1.5 px-3 transition-all"
+            >
+              {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+              {isPaused ? 'Resume' : 'Pause'}
+            </button>
+          )}
         </div>
       </div>
 
