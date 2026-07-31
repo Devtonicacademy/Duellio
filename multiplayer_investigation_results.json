@@ -1,78 +1,78 @@
 {
   "timeline": [
     {
-      "timestamp": "2026-07-30T06:08:37.475Z",
-      "timeMs": 1785391717476,
+      "timestamp": "2026-07-30T23:25:30.570Z",
+      "timeMs": 1785453930573,
       "actor": "Host",
       "category": "Navigation",
       "event": "Navigating to home page",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:08:41.367Z",
-      "timeMs": 1785391721367,
+      "timestamp": "2026-07-30T23:25:39.642Z",
+      "timeMs": 1785453939642,
       "actor": "Host",
       "category": "Auth",
       "event": "Logging in Host user",
       "details": {
-        "uid": "qa_host_1785391721367",
+        "uid": "qa_host_1785453939641",
         "username": "Master_Host"
       }
     },
     {
-      "timestamp": "2026-07-30T06:08:42.632Z",
-      "timeMs": 1785391722633,
+      "timestamp": "2026-07-30T23:25:41.329Z",
+      "timeMs": 1785453941329,
       "actor": "Guest",
       "category": "Navigation",
       "event": "Navigating to home page",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:08:45.573Z",
-      "timeMs": 1785391725573,
+      "timestamp": "2026-07-30T23:25:44.429Z",
+      "timeMs": 1785453944430,
       "actor": "Guest",
       "category": "Auth",
       "event": "Logging in Guest user",
       "details": {
-        "uid": "qa_guest_1785391725573",
+        "uid": "qa_guest_1785453944429",
         "username": "Challenger_Guest"
       }
     },
     {
-      "timestamp": "2026-07-30T06:08:47.973Z",
-      "timeMs": 1785391727973,
+      "timestamp": "2026-07-30T23:25:47.162Z",
+      "timeMs": 1785453947162,
       "actor": "Host",
       "category": "Matchmaking",
-      "event": "Host loading session invite URL: stickman_qa_match_1785391727973",
+      "event": "Host loading session invite URL: stickman_qa_match_1785453947162",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:08:50.289Z",
-      "timeMs": 1785391730289,
+      "timestamp": "2026-07-30T23:25:50.494Z",
+      "timeMs": 1785453950494,
       "actor": "Host",
       "category": "Matchmaking",
       "event": "Host clicking Accept Stakes & Duel Now button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:08:52.792Z",
-      "timeMs": 1785391732792,
+      "timestamp": "2026-07-30T23:25:53.000Z",
+      "timeMs": 1785453953000,
       "actor": "Guest",
       "category": "Matchmaking",
-      "event": "Guest loading session invite URL: stickman_qa_match_1785391727973",
+      "event": "Guest loading session invite URL: stickman_qa_match_1785453947162",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:08:55.504Z",
-      "timeMs": 1785391735504,
+      "timestamp": "2026-07-30T23:25:56.277Z",
+      "timeMs": 1785453956277,
       "actor": "Guest",
       "category": "Matchmaking",
       "event": "Guest clicking Accept Stakes & Duel Now button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:08:59.007Z",
-      "timeMs": 1785391739007,
+      "timestamp": "2026-07-30T23:25:59.788Z",
+      "timeMs": 1785453959788,
       "actor": "System",
       "category": "GameInit",
       "event": "Game Engine Status Check",
@@ -90,16 +90,16 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:08:59.007Z",
-      "timeMs": 1785391739007,
+      "timestamp": "2026-07-30T23:25:59.788Z",
+      "timeMs": 1785453959788,
       "actor": "System",
       "category": "Gameplay",
       "event": ">>> STARTING MULTIPLAYER MATCH ROUND 1/5 <<<",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:08:59.009Z",
-      "timeMs": 1785391739009,
+      "timestamp": "2026-07-30T23:25:59.795Z",
+      "timeMs": 1785453959795,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 1 - Initial Countdown/Fight]",
@@ -117,24 +117,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:08:59.009Z",
-      "timeMs": 1785391739009,
+      "timestamp": "2026-07-30T23:25:59.795Z",
+      "timeMs": 1785453959795,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyD (move right) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:08:59.265Z",
-      "timeMs": 1785391739265,
+      "timestamp": "2026-07-30T23:26:00.058Z",
+      "timeMs": 1785453960058,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyA (move left) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:00.141Z",
-      "timeMs": 1785391740141,
+      "timestamp": "2026-07-30T23:26:00.922Z",
+      "timeMs": 1785453960922,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 1 - After Movement & Punch]",
@@ -152,24 +152,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:00.141Z",
-      "timeMs": 1785391740141,
+      "timestamp": "2026-07-30T23:26:00.923Z",
+      "timeMs": 1785453960923,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyW (jump) & KeyI (special)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:00.145Z",
-      "timeMs": 1785391740145,
+      "timestamp": "2026-07-30T23:26:00.930Z",
+      "timeMs": 1785453960930,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyK (kick) & KeyW (jump)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:01.350Z",
-      "timeMs": 1785391741350,
+      "timestamp": "2026-07-30T23:26:02.144Z",
+      "timeMs": 1785453962144,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 1 - After Special & Kick]",
@@ -187,16 +187,16 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:01.351Z",
-      "timeMs": 1785391741351,
+      "timestamp": "2026-07-30T23:26:02.145Z",
+      "timeMs": 1785453962145,
       "actor": "Host",
       "category": "GameLogic",
       "event": "Setting P2 health to 0 to trigger KO & victory",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:02.855Z",
-      "timeMs": 1785391742855,
+      "timestamp": "2026-07-30T23:26:03.651Z",
+      "timeMs": 1785453963651,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 1 - Match Game Over]",
@@ -214,32 +214,32 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:02.855Z",
-      "timeMs": 1785391742855,
+      "timestamp": "2026-07-30T23:26:03.651Z",
+      "timeMs": 1785453963651,
       "actor": "Host",
       "category": "Rematch",
       "event": "Host clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:02.856Z",
-      "timeMs": 1785391742856,
+      "timestamp": "2026-07-30T23:26:03.656Z",
+      "timeMs": 1785453963656,
       "actor": "Guest",
       "category": "Rematch",
       "event": "Guest clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:04.357Z",
-      "timeMs": 1785391744357,
+      "timestamp": "2026-07-30T23:26:05.160Z",
+      "timeMs": 1785453965161,
       "actor": "System",
       "category": "Gameplay",
       "event": ">>> STARTING MULTIPLAYER MATCH ROUND 2/5 <<<",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:04.359Z",
-      "timeMs": 1785391744359,
+      "timestamp": "2026-07-30T23:26:05.164Z",
+      "timeMs": 1785453965164,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 2 - Initial Countdown/Fight]",
@@ -257,24 +257,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:04.359Z",
-      "timeMs": 1785391744359,
+      "timestamp": "2026-07-30T23:26:05.164Z",
+      "timeMs": 1785453965164,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyD (move right) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:04.612Z",
-      "timeMs": 1785391744612,
+      "timestamp": "2026-07-30T23:26:05.428Z",
+      "timeMs": 1785453965428,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyA (move left) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:05.470Z",
-      "timeMs": 1785391745470,
+      "timestamp": "2026-07-30T23:26:06.349Z",
+      "timeMs": 1785453966349,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 2 - After Movement & Punch]",
@@ -292,24 +292,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:05.470Z",
-      "timeMs": 1785391745470,
+      "timestamp": "2026-07-30T23:26:06.349Z",
+      "timeMs": 1785453966349,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyW (jump) & KeyI (special)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:05.474Z",
-      "timeMs": 1785391745474,
+      "timestamp": "2026-07-30T23:26:06.414Z",
+      "timeMs": 1785453966414,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyK (kick) & KeyW (jump)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:06.679Z",
-      "timeMs": 1785391746679,
+      "timestamp": "2026-07-30T23:26:07.630Z",
+      "timeMs": 1785453967630,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 2 - After Special & Kick]",
@@ -327,16 +327,16 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:06.679Z",
-      "timeMs": 1785391746679,
+      "timestamp": "2026-07-30T23:26:07.630Z",
+      "timeMs": 1785453967630,
       "actor": "Host",
       "category": "GameLogic",
       "event": "Setting P2 health to 0 to trigger KO & victory",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:08.184Z",
-      "timeMs": 1785391748184,
+      "timestamp": "2026-07-30T23:26:09.139Z",
+      "timeMs": 1785453969139,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 2 - Match Game Over]",
@@ -354,32 +354,32 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:08.184Z",
-      "timeMs": 1785391748184,
+      "timestamp": "2026-07-30T23:26:09.139Z",
+      "timeMs": 1785453969139,
       "actor": "Host",
       "category": "Rematch",
       "event": "Host clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:08.186Z",
-      "timeMs": 1785391748186,
+      "timestamp": "2026-07-30T23:26:09.141Z",
+      "timeMs": 1785453969141,
       "actor": "Guest",
       "category": "Rematch",
       "event": "Guest clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:09.687Z",
-      "timeMs": 1785391749687,
+      "timestamp": "2026-07-30T23:26:10.643Z",
+      "timeMs": 1785453970643,
       "actor": "System",
       "category": "Gameplay",
       "event": ">>> STARTING MULTIPLAYER MATCH ROUND 3/5 <<<",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:09.689Z",
-      "timeMs": 1785391749689,
+      "timestamp": "2026-07-30T23:26:10.646Z",
+      "timeMs": 1785453970646,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 3 - Initial Countdown/Fight]",
@@ -397,24 +397,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:09.689Z",
-      "timeMs": 1785391749689,
+      "timestamp": "2026-07-30T23:26:10.647Z",
+      "timeMs": 1785453970647,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyD (move right) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:09.944Z",
-      "timeMs": 1785391749944,
+      "timestamp": "2026-07-30T23:26:10.906Z",
+      "timeMs": 1785453970906,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyA (move left) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:10.802Z",
-      "timeMs": 1785391750802,
+      "timestamp": "2026-07-30T23:26:11.809Z",
+      "timeMs": 1785453971809,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 3 - After Movement & Punch]",
@@ -432,24 +432,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:10.802Z",
-      "timeMs": 1785391750802,
+      "timestamp": "2026-07-30T23:26:11.809Z",
+      "timeMs": 1785453971809,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyW (jump) & KeyI (special)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:10.806Z",
-      "timeMs": 1785391750806,
+      "timestamp": "2026-07-30T23:26:11.819Z",
+      "timeMs": 1785453971819,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyK (kick) & KeyW (jump)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:12.011Z",
-      "timeMs": 1785391752011,
+      "timestamp": "2026-07-30T23:26:13.030Z",
+      "timeMs": 1785453973030,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 3 - After Special & Kick]",
@@ -467,16 +467,16 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:12.011Z",
-      "timeMs": 1785391752011,
+      "timestamp": "2026-07-30T23:26:13.030Z",
+      "timeMs": 1785453973030,
       "actor": "Host",
       "category": "GameLogic",
       "event": "Setting P2 health to 0 to trigger KO & victory",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:13.516Z",
-      "timeMs": 1785391753517,
+      "timestamp": "2026-07-30T23:26:14.537Z",
+      "timeMs": 1785453974537,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 3 - Match Game Over]",
@@ -494,32 +494,32 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:13.517Z",
-      "timeMs": 1785391753517,
+      "timestamp": "2026-07-30T23:26:14.537Z",
+      "timeMs": 1785453974537,
       "actor": "Host",
       "category": "Rematch",
       "event": "Host clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:13.518Z",
-      "timeMs": 1785391753518,
+      "timestamp": "2026-07-30T23:26:14.539Z",
+      "timeMs": 1785453974539,
       "actor": "Guest",
       "category": "Rematch",
       "event": "Guest clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:15.021Z",
-      "timeMs": 1785391755021,
+      "timestamp": "2026-07-30T23:26:16.042Z",
+      "timeMs": 1785453976042,
       "actor": "System",
       "category": "Gameplay",
       "event": ">>> STARTING MULTIPLAYER MATCH ROUND 4/5 <<<",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:15.022Z",
-      "timeMs": 1785391755022,
+      "timestamp": "2026-07-30T23:26:16.046Z",
+      "timeMs": 1785453976046,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 4 - Initial Countdown/Fight]",
@@ -537,24 +537,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:15.022Z",
-      "timeMs": 1785391755022,
+      "timestamp": "2026-07-30T23:26:16.046Z",
+      "timeMs": 1785453976046,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyD (move right) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:15.276Z",
-      "timeMs": 1785391755276,
+      "timestamp": "2026-07-30T23:26:16.310Z",
+      "timeMs": 1785453976310,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyA (move left) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:16.134Z",
-      "timeMs": 1785391756134,
+      "timestamp": "2026-07-30T23:26:17.174Z",
+      "timeMs": 1785453977174,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 4 - After Movement & Punch]",
@@ -572,24 +572,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:16.135Z",
-      "timeMs": 1785391756135,
+      "timestamp": "2026-07-30T23:26:17.174Z",
+      "timeMs": 1785453977174,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyW (jump) & KeyI (special)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:16.138Z",
-      "timeMs": 1785391756138,
+      "timestamp": "2026-07-30T23:26:17.186Z",
+      "timeMs": 1785453977186,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyK (kick) & KeyW (jump)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:17.344Z",
-      "timeMs": 1785391757344,
+      "timestamp": "2026-07-30T23:26:18.404Z",
+      "timeMs": 1785453978404,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 4 - After Special & Kick]",
@@ -607,16 +607,16 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:17.344Z",
-      "timeMs": 1785391757344,
+      "timestamp": "2026-07-30T23:26:18.404Z",
+      "timeMs": 1785453978404,
       "actor": "Host",
       "category": "GameLogic",
       "event": "Setting P2 health to 0 to trigger KO & victory",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:18.849Z",
-      "timeMs": 1785391758849,
+      "timestamp": "2026-07-30T23:26:19.909Z",
+      "timeMs": 1785453979909,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 4 - Match Game Over]",
@@ -634,32 +634,32 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:18.849Z",
-      "timeMs": 1785391758849,
+      "timestamp": "2026-07-30T23:26:19.909Z",
+      "timeMs": 1785453979909,
       "actor": "Host",
       "category": "Rematch",
       "event": "Host clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:18.851Z",
-      "timeMs": 1785391758851,
+      "timestamp": "2026-07-30T23:26:19.911Z",
+      "timeMs": 1785453979912,
       "actor": "Guest",
       "category": "Rematch",
       "event": "Guest clicking Play Again button",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:20.352Z",
-      "timeMs": 1785391760352,
+      "timestamp": "2026-07-30T23:26:21.417Z",
+      "timeMs": 1785453981417,
       "actor": "System",
       "category": "Gameplay",
       "event": ">>> STARTING MULTIPLAYER MATCH ROUND 5/5 <<<",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:20.354Z",
-      "timeMs": 1785391760354,
+      "timestamp": "2026-07-30T23:26:21.422Z",
+      "timeMs": 1785453981422,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 5 - Initial Countdown/Fight]",
@@ -677,24 +677,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:20.354Z",
-      "timeMs": 1785391760354,
+      "timestamp": "2026-07-30T23:26:21.422Z",
+      "timeMs": 1785453981422,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyD (move right) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:20.608Z",
-      "timeMs": 1785391760608,
+      "timestamp": "2026-07-30T23:26:21.679Z",
+      "timeMs": 1785453981679,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyA (move left) & KeyJ (punch)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:21.467Z",
-      "timeMs": 1785391761467,
+      "timestamp": "2026-07-30T23:26:22.542Z",
+      "timeMs": 1785453982542,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 5 - After Movement & Punch]",
@@ -712,24 +712,24 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:21.467Z",
-      "timeMs": 1785391761467,
+      "timestamp": "2026-07-30T23:26:22.543Z",
+      "timeMs": 1785453982543,
       "actor": "Host",
       "category": "Input",
       "event": "Host pressing KeyW (jump) & KeyI (special)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:21.470Z",
-      "timeMs": 1785391761470,
+      "timestamp": "2026-07-30T23:26:22.552Z",
+      "timeMs": 1785453982552,
       "actor": "Guest",
       "category": "Input",
       "event": "Guest pressing KeyK (kick) & KeyW (jump)",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:22.675Z",
-      "timeMs": 1785391762675,
+      "timestamp": "2026-07-30T23:26:23.766Z",
+      "timeMs": 1785453983766,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 5 - After Special & Kick]",
@@ -747,16 +747,16 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:22.675Z",
-      "timeMs": 1785391762675,
+      "timestamp": "2026-07-30T23:26:23.766Z",
+      "timeMs": 1785453983766,
       "actor": "Host",
       "category": "GameLogic",
       "event": "Setting P2 health to 0 to trigger KO & victory",
       "details": {}
     },
     {
-      "timestamp": "2026-07-30T06:09:24.179Z",
-      "timeMs": 1785391764179,
+      "timestamp": "2026-07-30T23:26:25.271Z",
+      "timeMs": 1785453985271,
       "actor": "System",
       "category": "SyncCheck",
       "event": "[Round 5 - Match Game Over]",
@@ -774,8 +774,8 @@
       }
     },
     {
-      "timestamp": "2026-07-30T06:09:24.179Z",
-      "timeMs": 1785391764179,
+      "timestamp": "2026-07-30T23:26:25.271Z",
+      "timeMs": 1785453985271,
       "actor": "System",
       "category": "Complete",
       "event": "All 5 test iterations executed.",
@@ -794,21 +794,21 @@
         }
       },
       {
-        "type": "info",
-        "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
-        "location": {
-          "url": "http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=ce540d05",
-          "lineNumber": 20102,
-          "columnNumber": 53
-        }
-      },
-      {
         "type": "debug",
         "text": "[vite] connected.",
         "location": {
           "url": "http://localhost:3000/@vite/client",
           "lineNumber": 911,
           "columnNumber": 14
+        }
+      },
+      {
+        "type": "info",
+        "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+        "location": {
+          "url": "http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=ce540d05",
+          "lineNumber": 20102,
+          "columnNumber": 53
         }
       },
       {
@@ -883,7 +883,7 @@
         "type": "verbose",
         "text": "[DOM] Input elements should have autocomplete attributes (suggested: \"current-password\"): (More info: https://goo.gl/9p2vKq) %o",
         "location": {
-          "url": "http://localhost:3000/?friendInvite=true&game=Stickman&stake=300&sender=Master_Host&sessionId=stickman_qa_match_1785391727973"
+          "url": "http://localhost:3000/?friendInvite=true&game=Stickman&stake=300&sender=Master_Host&sessionId=stickman_qa_match_1785453947162"
         }
       }
     ],
@@ -987,7 +987,7 @@
         "type": "verbose",
         "text": "[DOM] Input elements should have autocomplete attributes (suggested: \"current-password\"): (More info: https://goo.gl/9p2vKq) %o",
         "location": {
-          "url": "http://localhost:3000/?friendInvite=true&game=Stickman&stake=300&sender=Master_Host&sessionId=stickman_qa_match_1785391727973"
+          "url": "http://localhost:3000/?friendInvite=true&game=Stickman&stake=300&sender=Master_Host&sessionId=stickman_qa_match_1785453947162"
         }
       }
     ]

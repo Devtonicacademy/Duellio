@@ -662,13 +662,17 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     refundedCoins: number;
   } | null>(null);
 
-  const opponentId = activeChallenge
-    ? (activeChallenge.opponentType === 'player'
-        ? (activeChallenge.senderId === userProfile.uid 
-            ? (activeChallenge.receiverId === 'pending' ? '' : activeChallenge.receiverId) 
-            : activeChallenge.senderId)
-        : (activeChallenge.senderId === userProfile.uid ? selectedBot?.uid || 'bot' : activeChallenge.senderId))
-    : '';
+  const opponentId = whotGameState?.playerIds?.find(id => id !== userProfile.uid) || (
+    activeChallenge
+      ? (activeChallenge.opponentType === 'player'
+          ? (activeChallenge.senderId === userProfile.uid 
+              ? (activeChallenge.receiverId === 'pending' ? '' : activeChallenge.receiverId) 
+              : activeChallenge.senderId)
+          : (activeChallenge.senderId === userProfile.uid 
+              ? (activeChallenge.receiverId && activeChallenge.receiverId !== 'pending' ? activeChallenge.receiverId : (selectedBot?.uid || 'bot')) 
+              : activeChallenge.senderId))
+      : ''
+  );
 
   const opponentProfile = activeChallenge
     ? (activeChallenge.opponentType === 'bot' && activeChallenge.senderId === 'friend_user'
@@ -703,7 +707,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     if (lastTimeoutPlayerRef.current === activePlayerId) return; // Prevent double timeout execution in the same turn!
     lastTimeoutPlayerRef.current = activePlayerId;
 
-    const botId = activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid : activeChallenge?.senderId;
+    const botId = whotGameState?.playerIds?.find(id => id !== userProfile.uid) || opponentId || 'bot';
     if (!botId) return;
 
     if (activePlayerId === userProfile.uid) {
@@ -944,7 +948,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       return;
     }
 
-    const botId = activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid : activeChallenge?.senderId;
+    const botId = whotGameState?.playerIds?.find(id => id !== userProfile.uid) || opponentId || 'bot';
     const players = [
       { id: userProfile.uid, name: 'Lead Developer' },
       ...(botId ? [{ id: botId, name: opponentProfile?.username || 'Opponent' }] : [])
@@ -988,7 +992,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   // Dynamically compute tension CSS class based on remaining card counts
   const getTensionClass = () => {
     if (!whotGameState || whotGameState.status !== 'playing') return '';
-    const botId = activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid : activeChallenge?.senderId;
+    const botId = whotGameState?.playerIds?.find(id => id !== userProfile.uid) || opponentId || 'bot';
     const userCount = whotGameState?.playerHands?.[userProfile.uid]?.length || 0;
     const botCount = botId ? (whotGameState?.playerHands?.[botId]?.length || 0) : 0;
     
@@ -1006,7 +1010,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     if (gamePlayStatus !== 'playing' || !whotGameState || whotGameState.status !== 'playing') return;
     
     if (whotGameState.deckCount === 0) {
-      const opponentId = activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid : activeChallenge?.senderId;
+      const opponentId = whotGameState?.playerIds?.find(id => id !== userProfile.uid) || (activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid : activeChallenge?.senderId) || 'bot';
       if (!opponentId) return;
 
       const userHand = whotGameState?.playerHands?.[userProfile.uid] || [];
@@ -1273,7 +1277,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     if (activeChallenge?.opponentType === 'player') return; // Don't auto-play for real players
     if (whotGameState.activePlayerId === userProfile.uid) return; // User turn
 
-    const botId = activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid : activeChallenge?.senderId;
+    const botId = whotGameState?.playerIds?.find(id => id !== userProfile.uid) || opponentId || 'bot';
     if (!botId) return;
 
     const timer = setTimeout(() => {
@@ -1532,7 +1536,9 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       fullDeck.splice(30);
     }
     
-    const opId = challenge.senderId === userProfile.uid ? challenge.receiverId : challenge.senderId;
+    const opId = (challenge.senderId === userProfile.uid 
+      ? (challenge.receiverId && challenge.receiverId !== 'pending' ? challenge.receiverId : (selectedBot?.uid || 'bot'))
+      : challenge.senderId) || 'bot';
 
     const startPlayerId = Math.random() < 0.5 ? userProfile.uid : opId;
     const isHumanTurn = startPlayerId === userProfile.uid;
@@ -1603,9 +1609,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     soundEngine.playWhotCardDraw();
 
     const penaltyActive = whotGameState.penaltyCount > 0;
-    const targetOpponentId = opponentId || (activeChallenge?.opponentType === 'player' 
-      ? (activeChallenge.senderId === userProfile.uid ? (activeChallenge.receiverId === 'pending' ? '' : activeChallenge.receiverId) : activeChallenge.senderId)
-      : (activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid || 'bot' : activeChallenge?.senderId));
+    const targetOpponentId = whotGameState?.playerIds?.find(id => id !== userProfile.uid) || opponentId || 'bot';
 
     if (penaltyActive) {
       const pCount = whotGameState.penaltyCount;
@@ -1692,9 +1696,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const executePlayCardMove = (card: WhotCard, claimedSuit?: 'Circles' | 'Triangles' | 'Crosses' | 'Stars' | 'Squares') => {
     if (!whotGameState) return;
 
-    const targetOpponentId = opponentId || (activeChallenge?.opponentType === 'player' 
-      ? (activeChallenge.senderId === userProfile.uid ? (activeChallenge.receiverId === 'pending' ? '' : activeChallenge.receiverId) : activeChallenge.senderId)
-      : (activeChallenge?.senderId === userProfile.uid ? selectedBot?.uid || 'bot' : activeChallenge?.senderId));
+    const targetOpponentId = whotGameState?.playerIds?.find(id => id !== userProfile.uid) || opponentId || 'bot';
 
     const playerHand = whotGameState?.playerHands?.[userProfile.uid] || [];
     const nextPlayerHand = playerHand.filter(c => c.id !== card.id);
@@ -1811,9 +1813,10 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   };
 
   // Bot Turn State Logic
-  const executeBotTurn = (botId: string) => {
+  const executeBotTurn = (botIdParam?: string) => {
     if (!whotGameState) return;
     
+    const botId = whotGameState?.playerIds?.find(id => id !== userProfile.uid) || botIdParam || opponentId || 'bot';
     const botHand = whotGameState?.playerHands?.[botId] || [];
     const topCard = whotGameState.discardPile[0];
     const activeSuit = whotGameState.activeSuit;
