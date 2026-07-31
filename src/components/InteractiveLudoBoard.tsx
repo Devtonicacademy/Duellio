@@ -98,12 +98,23 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
   const diceRollValue = engineState.currentDiceValue || 6;
   const gameResult = engineState.winner ? `${engineState.winner}_won` : 'playing';
 
-  // Determine whether current turn color belongs to the Human User
+  // Determine whether current turn color belongs to the local player
   const isUserTurn = (color: PlayerColor): boolean => {
-    if (playerMode === '2-player') {
-      return color === 'red' || color === 'gold';
+    if (isBot) {
+      if (playerMode === '2-player') {
+        return color === 'red' || color === 'gold';
+      }
+      return color === 'red';
     }
-    return color === 'red';
+
+    // Live Player vs Player Duel Mode:
+    if (isHost) {
+      // Host controls Red (and Gold/Yellow in 2-player mode)
+      return playerMode === '2-player' ? (color === 'red' || color === 'gold') : (color === 'red');
+    } else {
+      // Guest controls Blue (and Green in 2-player mode)
+      return playerMode === '2-player' ? (color === 'blue' || color === 'green') : (color === 'blue');
+    }
   };
 
   const playableTokenIds = (hasRolled && isUserTurn(activePlayer) && engineState.currentDiceValue !== null)
@@ -130,11 +141,13 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     if (!isBot && liveGameState?.engineState) {
       setEngineState(liveGameState.engineState);
       if (liveGameState.engineState.winner) {
-        const isWinner = liveGameState.engineState.winner === 'red' || (playerMode === '2-player' && liveGameState.engineState.winner === 'gold');
+        const isWinner = isHost
+          ? (liveGameState.engineState.winner === 'red' || liveGameState.engineState.winner === 'team1' || (playerMode === '2-player' && liveGameState.engineState.winner === 'gold'))
+          : (liveGameState.engineState.winner === 'blue' || liveGameState.engineState.winner === 'team2' || (playerMode === '2-player' && liveGameState.engineState.winner === 'green'));
         onGameOver(isWinner);
       }
     }
-  }, [liveGameState, isBot, playerMode, onGameOver]);
+  }, [liveGameState, isBot, playerMode, isHost, onGameOver]);
 
   // Auto Bot Trigger
   useEffect(() => {
@@ -240,12 +253,12 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     if (!hasRolled || isRolling || engineState.gameStatus !== 'playing' || botIsThinking) return false;
     if (!isUserTurn(activePlayer)) return false;
 
-    if (playerMode === '2-player') {
-      if (token.color !== 'red' && token.color !== 'gold') return false;
-      if (userSelectedQuadrant !== 'all' && token.color !== userSelectedQuadrant) return false;
-    } else {
-      if (token.color !== activePlayer) return false;
-    }
+    const allowedColors = isBot
+      ? (playerMode === '2-player' ? ['red', 'gold'] : ['red'])
+      : (isHost ? (playerMode === '2-player' ? ['red', 'gold'] : ['red']) : (playerMode === '2-player' ? ['blue', 'green'] : ['blue']));
+
+    if (!allowedColors.includes(token.color)) return false;
+    if (playerMode === '2-player' && userSelectedQuadrant !== 'all' && token.color !== userSelectedQuadrant) return false;
 
     if (engineState.currentDiceValue === null) return false;
     const legalMoves = getLegalMoves(engineState, token.color, engineState.currentDiceValue);
@@ -273,7 +286,9 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 
       if (nextState.winner) {
         soundEngine.playLudoVictory();
-        const isMeWin = nextState.winner === 'red' || (playerMode === '2-player' && nextState.winner === 'gold');
+        const isMeWin = isHost
+          ? (nextState.winner === 'red' || nextState.winner === 'team1' || (playerMode === '2-player' && nextState.winner === 'gold'))
+          : (nextState.winner === 'blue' || nextState.winner === 'team2' || (playerMode === '2-player' && nextState.winner === 'green'));
         onGameOver(isMeWin);
       }
 

@@ -338,7 +338,9 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           } else if (friendChallenge.gameType === 'Chess') {
             initialSession = ChessRulesService.initializeBoard(sessionId, userProfile.uid, 'guest');
           } else if (friendChallenge.gameType === 'Ludo') {
-            initialSession = { sessionId, activePlayer: 'red', status: 'playing', playerIds: [userProfile.uid, ''] };
+            const mode = (friendChallenge as any)?.ludoMode || '2-player';
+            const freshEngine = createInitialGameState(['red', 'blue', 'green', 'gold'], mode);
+            initialSession = { sessionId, engineState: freshEngine, activePlayer: 'red', status: 'playing', playerIds: [userProfile.uid, ''] };
           } else {
             initialSession = { sessionId, status: 'playing', playerIds: [userProfile.uid, ''] };
           }
@@ -452,6 +454,9 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 fallbackGameState = DraftLogicService.initializeBoard(sessionId, hostId, userProfile.uid);
               } else if (friendChallenge.gameType === 'TicTacToe') {
                 fallbackGameState = TicTacToeLogicService.initializeBoard(sessionId, hostId, userProfile.uid);
+              } else if (friendChallenge.gameType === 'Ludo') {
+                const mode = (friendChallenge as any)?.ludoMode || '2-player';
+                fallbackGameState = { engineState: createInitialGameState(['red', 'blue', 'green', 'gold'], mode) };
               }
 
               const fallbackSessionData = sanitizeFirestoreData({
