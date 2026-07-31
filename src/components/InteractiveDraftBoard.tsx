@@ -244,7 +244,10 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
 
     }, 250);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      setBotIsThinking(false);
+    };
 
   }, [isPlayerTurn, gameState, gameResult, botIsThinking, isBot, opponentName, onAddLog, onGameOver, player1Id, player2Id]);
 

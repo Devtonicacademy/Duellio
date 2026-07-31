@@ -439,7 +439,7 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
     setBotIsThinking(true);
     onAddLog(`[TURN KICK] Bot player ${opponentName} evaluating legal moves with FEN engine.`);
 
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       const legalMoves = ChessRulesService.getAllLegalMoves(board, 'b', castlingRights, enPassantTarget);
 
       if (legalMoves.length === 0) {
@@ -488,6 +488,11 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
       executeChessMove(chosen.from[0], chosen.from[1], chosen.to[0], chosen.to[1]);
       setBotIsThinking(false);
     }, 250);
+
+    return () => {
+      clearTimeout(timer);
+      setBotIsThinking(false);
+    };
 
   }, [activeColor, board, gameResult, castlingRights, enPassantTarget]);
 

@@ -176,7 +176,11 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
       setBotIsThinking(false);
     }, delay);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      botExecutingRef.current = false;
+      setBotIsThinking(false);
+    };
   }, [gameState, isPlayerTurn, gameResult, botDifficulty, opponentName, onAddLog, player1Id, player2Id, isBot]);
 
   const handleCellClick = (index: number) => {
