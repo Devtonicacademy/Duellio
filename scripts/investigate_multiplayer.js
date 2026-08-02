@@ -19,7 +19,7 @@ function checkServer() {
 }
 
 async function runInvestigation() {
-  console.log('🔍 Starting Deep Multiplayer QA Investigation...');
+  console.log('🔍 Starting Comprehensive Real-Time Multiplayer QA Investigation...');
 
   let devServer = null;
   const serverRunning = await checkServer();
@@ -76,7 +76,7 @@ async function runInvestigation() {
     await pageHost.setViewport({ width: 1280, height: 720 });
     await pageGuest.setViewport({ width: 1280, height: 720 });
 
-    // Console listeners
+    // Console & pageerror listeners
     pageHost.on('console', msg => {
       const type = msg.type();
       const text = msg.text();
@@ -111,7 +111,7 @@ async function runInvestigation() {
       logEvent('Guest', 'FailedResource', `404/Failed: ${req.url()}`);
     });
 
-    // Network request tracking
+    // Network tracking
     pageHost.on('request', req => {
       if (req.url().includes('firestore.googleapis.com')) {
         networkLogs.host.push({ method: req.method(), url: req.url(), time: Date.now() });
@@ -124,7 +124,7 @@ async function runInvestigation() {
     });
 
     // 1. Open Host Page
-    logEvent('Host', 'Navigation', 'Navigating to home page');
+    logEvent('Host', 'Navigation', 'Navigating to Duellio home page');
     await pageHost.goto(URL, { waitUntil: 'networkidle2' });
 
     const hostUid = 'qa_host_' + Date.now();
@@ -143,7 +143,7 @@ async function runInvestigation() {
     await pageHost.reload({ waitUntil: 'networkidle2' });
 
     // 2. Open Guest Page
-    logEvent('Guest', 'Navigation', 'Navigating to home page');
+    logEvent('Guest', 'Navigation', 'Navigating to Duellio home page');
     await pageGuest.goto(URL, { waitUntil: 'networkidle2' });
 
     const guestUid = 'qa_guest_' + Date.now();
@@ -163,41 +163,72 @@ async function runInvestigation() {
 
     await new Promise(r => setTimeout(r, 1000));
 
-    // 3. Host creates Stickman match by navigating to Lobbies tab and opening Stickman board
-    const sessionId = 'stickman_qa_match_' + Date.now();
-    const hostInviteUrl = `${URL}?friendInvite=true&game=Stickman&stake=300&sender=${encodeURIComponent(hostName)}&sessionId=${sessionId}`;
-
-    logEvent('Host', 'Matchmaking', `Host loading session invite URL: ${sessionId}`);
-    await pageHost.goto(hostInviteUrl, { waitUntil: 'networkidle2' });
-
-    await new Promise(r => setTimeout(r, 1500));
-
-    logEvent('Host', 'Matchmaking', 'Host clicking Accept Stakes & Duel Now button');
+    // 3. Host clicks Lobbies / Sandbox tab
+    logEvent('Host', 'UI', 'Navigating to Lobbies / Sandbox tab');
     await pageHost.evaluate(() => {
       const btns = Array.from(document.querySelectorAll('button'));
-      const acceptBtn = btns.find(b => b.textContent?.includes('Accept Stakes & Duel Now'));
-      if (acceptBtn) acceptBtn.click();
+      const sandboxBtn = btns.find(b => b.textContent?.includes('Lobbies') || b.textContent?.includes('Sandbox'));
+      if (sandboxBtn) sandboxBtn.click();
     });
-
-    await new Promise(r => setTimeout(r, 2500));
-
-    // Guest joins session
-    const guestInviteUrl = `${URL}?friendInvite=true&game=Stickman&stake=300&sender=${encodeURIComponent(hostName)}&sessionId=${sessionId}`;
-    logEvent('Guest', 'Matchmaking', `Guest loading session invite URL: ${sessionId}`);
-    await pageGuest.goto(guestInviteUrl, { waitUntil: 'networkidle2' });
 
     await new Promise(r => setTimeout(r, 1500));
 
-    logEvent('Guest', 'Matchmaking', 'Guest clicking Accept Stakes & Duel Now button');
-    await pageGuest.evaluate(() => {
+    // Host clicks Create Challenge button
+    logEvent('Host', 'Matchmaking', 'Host opening Create Challenge modal');
+    await pageHost.evaluate(() => {
       const btns = Array.from(document.querySelectorAll('button'));
-      const acceptBtn = btns.find(b => b.textContent?.includes('Accept Stakes & Duel Now'));
-      if (acceptBtn) acceptBtn.click();
+      const createBtn = btns.find(b => b.textContent?.includes('Create') || b.textContent?.includes('Host') || b.textContent?.includes('Challenge'));
+      if (createBtn) createBtn.click();
     });
 
-    await new Promise(r => setTimeout(r, 3500));
+    await new Promise(r => setTimeout(r, 1500));
 
-    // Check game engine status on both ends
+    // Select Stickman game in challenge modal if selector present
+    logEvent('Host', 'Matchmaking', 'Host selecting Stickman and creating lobby');
+    await pageHost.evaluate(() => {
+      const select = document.querySelector('select');
+      if (select) {
+        select.value = 'Stickman';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      const btns = Array.from(document.querySelectorAll('button'));
+      const broadcastBtn = btns.find(b => b.textContent?.includes('Broadcast') || b.textContent?.includes('Host') || b.textContent?.includes('Create') || b.textContent?.includes('Challenge'));
+      if (broadcastBtn) broadcastBtn.click();
+    });
+
+    await new Promise(r => setTimeout(r, 2000));
+
+    // 4. Guest opens Lobbies tab and joins open lobby
+    logEvent('Guest', 'UI', 'Guest navigating to Lobbies / Sandbox tab');
+    await pageGuest.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const sandboxBtn = btns.find(b => b.textContent?.includes('Lobbies') || b.textContent?.includes('Sandbox'));
+      if (sandboxBtn) sandboxBtn.click();
+    });
+
+    await new Promise(r => setTimeout(r, 1500));
+
+    // Guest clicks Active Sessions / Open Lobbies tab
+    logEvent('Guest', 'Matchmaking', 'Guest clicking Active Sessions / Open Lobbies');
+    await pageGuest.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const activeSessionsBtn = btns.find(b => b.textContent?.includes('Active') || b.textContent?.includes('Lobbies'));
+      if (activeSessionsBtn) activeSessionsBtn.click();
+    });
+
+    await new Promise(r => setTimeout(r, 1500));
+
+    // Guest clicks Join & Play
+    logEvent('Guest', 'Matchmaking', 'Guest clicking Join & Play on open lobby');
+    await pageGuest.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const joinBtn = btns.find(b => b.textContent?.includes('Join & Play') || b.textContent?.includes('Join') || b.textContent?.includes('Play'));
+      if (joinBtn) joinBtn.click();
+    });
+
+    await new Promise(r => setTimeout(r, 4000));
+
+    // Verify engine & canvas state
     const getEngineData = (p) => p.evaluate(() => {
       return {
         hasCanvas: !!document.querySelector('canvas'),
