@@ -32,7 +32,6 @@ import { InteractiveLudoBoard } from './InteractiveLudoBoard';
 import { InteractiveChessBoard } from './InteractiveChessBoard';
 import { InteractiveDraftBoard } from './InteractiveDraftBoard';
 import { InteractiveTicTacToeBoard } from './InteractiveTicTacToeBoard';
-import { InteractiveStickmanBoard } from './InteractiveStickmanBoard';
 import { soundEngine } from '../services/soundEngine';
 import { SoundControls } from './SoundControls';
 import { TicTacToeLogicService } from '../services/ticTacToeLogic';
@@ -48,12 +47,12 @@ interface PhaseSandboxTabProps {
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
   transactions: WalletTransaction[];
   setTransactions: React.Dispatch<React.SetStateAction<WalletTransaction[]>>;
-  preselectedGame?: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman' | null;
-  setPreselectedGame?: React.Dispatch<React.SetStateAction<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman' | null>>;
+  preselectedGame?: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | null;
+  setPreselectedGame?: React.Dispatch<React.SetStateAction<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | null>>;
   suggestedStake?: number;
   friendChallenge?: {
     senderName: string;
-    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman';
+    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
     entryFee: number;
     opponentType?: 'bot' | 'player';
     botDifficulty?: 'easy' | 'medium' | 'hard';
@@ -63,7 +62,7 @@ interface PhaseSandboxTabProps {
   } | null;
   setFriendChallenge?: React.Dispatch<React.SetStateAction<{
     senderName: string;
-    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman';
+    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
     entryFee: number;
     opponentType?: 'bot' | 'player';
     botDifficulty?: 'easy' | 'medium' | 'hard';
@@ -207,7 +206,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const [onlineBots, setOnlineBots] = useState<UserProfile[]>(() => otherUsers);
   
   // Custom Friend Challenge state parameters
-  const [friendGame, setFriendGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman'>('Stickman');
+  const [friendGame, setFriendGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe'>('Chess');
   const [friendStake, setFriendStake] = useState<number>(300);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
@@ -216,7 +215,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const [liveGameState, setLiveGameState] = useState<any>(null);
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [selectedBot, setSelectedBot] = useState<UserProfile | null>(() => otherUsers[0] || null);
-  const [gameType, setGameType] = useState<'Whot' | 'Ludo' | 'Chess' | 'Draft' | 'TicTacToe' | 'Stickman'>('Stickman');
+  const [gameType, setGameType] = useState<'Whot' | 'Ludo' | 'Chess' | 'Draft' | 'TicTacToe'>('Chess');
   const [entryFee, setEntryFee] = useState<number>(300);
 
   // Notification alert state for semi last card, last card, checkup
@@ -1463,12 +1462,6 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           `[PRESENCE SYNC] Player status switched: in-game`,
           `[DRAFTS START] Standard checkers layout configured. Command your cyan pieces!`
         ]);
-      } else if (activeChallenge.gameType === 'Stickman') {
-        setGamePlayLogs([
-          `[ESCROW LOCK] Atomic escrow write success. STAKE: ${activeChallenge.entryFee} coins escrowed.`,
-          `[PRESENCE SYNC] Player status switched: in-game`,
-          `[STICKMAN START] Kung-Fu Arena combat session active. Fight!`
-        ]);
       } else {
         setGamePlayLogs([
           `[ESCROW LOCK] Atomic escrow write success. STAKE: ${activeChallenge.entryFee} coins escrowed.`,
@@ -2487,7 +2480,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                     <div className="space-y-1.5">
                       <label className="text-[10px] text-neutral-450 font-mono font-bold uppercase tracking-wider">Configure Arena Option</label>
                       <div className="grid grid-cols-5 gap-1 font-sans">
-                        {(['Stickman', 'Chess', 'Ludo', 'Whot', 'Draft', 'TicTacToe'] as const).map((game) => (
+                        {(['Chess', 'Ludo', 'Whot', 'Draft', 'TicTacToe'] as const).map((game) => (
                           <button
                             key={game}
                             onClick={() => setFriendGame(game)}
@@ -3684,30 +3677,6 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                   }
                 }}
               />
-            ) : activeChallenge?.gameType === 'Stickman' ? (
-              <InteractiveStickmanBoard
-                entryFee={activeChallenge.entryFee}
-                opponentName={opponentProfile?.username || 'Bot'}
-                opponentAvatar={opponentProfile?.avatar || ''}
-                userName={userProfile.username}
-                onGameOver={(winnerIsMe) => completeMatchWithOutcome(winnerIsMe)}
-                onAddLog={(log) => setGamePlayLogs(prev => [log, ...prev])}
-                onReMatch={() => handleGenericReMatch('Stickman')}
-                botDifficulty={activeChallenge.botDifficulty || (activeChallenge.opponentType === 'bot' && activeChallenge.entryFee > 0 ? 'hard' : undefined)}
-                isBot={activeChallenge?.opponentType === 'bot'}
-                sessionId={activeChallenge?.id}
-                isHost={activeChallenge?.senderId === userProfile.uid}
-                liveGameState={liveGameState}
-                onUpdateLiveState={(newState) => {
-                  if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
-                    const isP2InputPayload = Boolean(newState.p2Input && !newState.p1Health && !newState.gameState);
-                    const updatePayload = isP2InputPayload
-                      ? { p2Input: newState.p2Input, updatedAt: Date.now() }
-                      : { gameState: newState, ...(newState.p2Input ? { p2Input: newState.p2Input } : {}), updatedAt: Date.now() };
-                    updateDoc(doc(db, 'gameSessions', activeChallenge.id), sanitizeFirestoreData(updatePayload)).catch(console.error);
-                  }
-                }}
-              />
             ) : (
               <InteractiveChessBoard
                 entryFee={activeChallenge.entryFee}
@@ -3808,7 +3777,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
               <div className="space-y-1.5">
                 <label className="text-xs text-neutral-550 font-mono font-semibold">Select Game Base</label>
                 <div className="grid grid-cols-5 gap-1.5">
-                  {(['Stickman', 'Whot', 'Ludo', 'Chess', 'Draft', 'TicTacToe'] as const).map((g) => (
+                  {(['Chess', 'Whot', 'Ludo', 'Draft', 'TicTacToe'] as const).map((g) => (
                     <button
                       key={g}
                       onClick={() => setGameType(g)}

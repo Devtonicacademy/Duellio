@@ -4,7 +4,7 @@ import { Swords } from 'lucide-react';
 
 interface FriendInviteModalProps {
   friendInvite: {
-    game: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman';
+    game: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
     stake: number;
     sender: string;
     sessionId?: string;

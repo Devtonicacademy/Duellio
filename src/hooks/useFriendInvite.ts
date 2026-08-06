@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 export function useFriendInvite() {
   const [friendInvite, setFriendInvite] = useState<{
-    game: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman';
+    game: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
     stake: number;
     sender: string;
     sessionId?: string;
@@ -17,8 +17,8 @@ export function useFriendInvite() {
     const sessionId = params.get('sessionId') || undefined;
 
     if (hasInvite && inviteGame && inviteStake && inviteSender) {
-      const validGames = ['Chess', 'Ludo', 'Whot', 'Draft', 'TicTacToe', 'Stickman'];
-      const gameType = validGames.includes(inviteGame) ? (inviteGame as 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman') : 'Stickman';
+      const validGames = ['Chess', 'Ludo', 'Whot', 'Draft', 'TicTacToe'];
+      const gameType = validGames.includes(inviteGame) ? (inviteGame as 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe') : 'Chess';
       const stakeVal = Math.max(100, Math.min(1000, parseInt(inviteStake) || 300));
       
       setFriendInvite({

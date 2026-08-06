@@ -183,12 +183,12 @@ async function runInvestigation() {
 
     await new Promise(r => setTimeout(r, 1500));
 
-    // Select Stickman game in challenge modal if selector present
-    logEvent('Host', 'Matchmaking', 'Host selecting Stickman and creating lobby');
+    // Select Chess game in challenge modal if selector present
+    logEvent('Host', 'Matchmaking', 'Host selecting Chess and creating lobby');
     await pageHost.evaluate(() => {
       const select = document.querySelector('select');
       if (select) {
-        select.value = 'Stickman';
+        select.value = 'Chess';
         select.dispatchEvent(new Event('change', { bubbles: true }));
       }
       const btns = Array.from(document.querySelectorAll('button'));

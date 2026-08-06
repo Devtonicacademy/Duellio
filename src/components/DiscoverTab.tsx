@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 interface DiscoverTabProps {
-  onSelectGame: (gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman', suggestedStake: number) => void;
+  onSelectGame: (gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe', suggestedStake: number) => void;
   userCoins: number;
 }
 
@@ -27,7 +27,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
   const [activeCategory, setActiveTab] = useState<'all' | 'strategy' | 'classic' | 'fast' | 'high'>('all');
   const [searchInput, setSearchInput] = useState('');
   const [quickStake, setQuickStake] = useState<number>(250);
-  const [selectedQuickGame, setSelectedQuickGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman'>('Stickman');
+  const [selectedQuickGame, setSelectedQuickGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe'>('Chess');
 
   const featuredGames = [
     {
@@ -103,21 +103,6 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
       desc: 'High-stakes diagonal checkers arena. Execute multi-piece jump captures and king promotion maneuvers.',
       tags: ['STRATEGY', 'DRAFT'],
       image: '/assets/draft_bg.png',
-      isFeatured: false
-    },
-    {
-      id: 'stickman-arena',
-      title: 'Stickman Kung-Fu Arena',
-      gameType: 'Stickman' as const,
-      category: 'fast',
-      stakeMin: 5,
-      stakeMax: 1500,
-      totalStaked: 62000,
-      playersLive: '6.8k Live',
-      rating: 5.0,
-      desc: 'High-octane 2D stickman martial arts duel. Land combos, dodge attacks, and knock down your opponent.',
-      tags: ['COMBAT ARENA', 'STICKMAN'],
-      image: '/assets/stickman_bg.png',
       isFeatured: false
     }
   ];

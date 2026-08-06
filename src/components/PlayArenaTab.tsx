@@ -31,7 +31,7 @@ interface PlayArenaTabProps {
   userProfile: UserProfile;
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
   onLaunchMatch: (matchData: {
-    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman';
+    gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
     opponentType: 'bot' | 'player';
     botDifficulty?: 'easy' | 'medium' | 'hard';
     entryFee: number;
@@ -98,17 +98,6 @@ const AVAILABLE_GAMES = [
     color: 'from-sky-500/10 to-indigo-500/10 border-sky-500/20',
     image: '/assets/tictactoe_bg.png',
     gradientBg: 'from-sky-500/30 via-indigo-500/10 to-transparent'
-  },
-  {
-    id: 'Stickman' as const,
-    name: 'Stickman Kung-Fu Arena',
-    metric: 'Real-Time 2D Combat',
-    desc: 'High-intensity physics combat duel. Master martial arts combos, airborne kicks, weapon pickups (Katanas, Spears, Nunchakus), Chi special blasts, and dynamic arena hazards.',
-    icon: '/assets/stickman_icon.png',
-    difficultyRecommendation: 'Action & Combat Skill',
-    color: 'from-rose-500/10 to-pink-500/10 border-rose-500/20',
-    image: '/assets/stickman_bg.png',
-    gradientBg: 'from-rose-500/30 via-pink-500/10 to-transparent'
   }
 ];
 
@@ -118,7 +107,7 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
   onLaunchMatch,
   allProfiles
 }) => {
-  const [selectedGame, setSelectedGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman' | null>(null);
+  const [selectedGame, setSelectedGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | null>(null);
   const [opponentStyle, setOpponentStyle] = useState<'bot' | 'player'>('bot');
   const [botPlayMode, setBotPlayMode] = useState<'practice' | 'staked'>('staked');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');

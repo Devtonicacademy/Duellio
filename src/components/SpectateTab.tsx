@@ -23,7 +23,7 @@ interface SpectateTabProps {
 
 interface LiveMatch {
   id: string;
-  gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman';
+  gameType: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
   playerA: { username: string; avatar: string; wins: number; odds: number };
   playerB: { username: string; avatar: string; wins: number; odds: number };
   pool: number;

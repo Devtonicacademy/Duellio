@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  * Duellio Unified Web Audio API Sound & Soundtrack Engine
  * Provides unique background soundtracks & sound effects for every game:
- * Chess, Ludo, Whot, Draft (Checkers), TicTacToe, and Stickman Brawler.
+ * Chess, Ludo, Whot, Draft (Checkers), and TicTacToe.
  */
 
-export type GameAudioType = 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | 'Stickman';
+export type GameAudioType = 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe';
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
@@ -180,9 +180,6 @@ class SoundEngine {
         break;
       case 'TicTacToe':
         this.synthTicTacToeSoundtrack(now);
-        break;
-      case 'Stickman':
-        this.synthStickmanSoundtrack(now);
         break;
     }
   }
@@ -473,60 +470,6 @@ class SoundEngine {
 
     playArcadeArp();
     this.bgmTimer = setInterval(playArcadeArp, 160); // Fast 8-bit tempo
-  }
-
-  // --- Stickman: Martial Zen Arena (Saw Drones & Pentatonic Bells) ---
-  private synthStickmanSoundtrack(now: number) {
-    if (!this.ctx || !this.bgmGain) return;
-
-    const drone1 = this.ctx.createOscillator();
-    const drone2 = this.ctx.createOscillator();
-    const filter = this.ctx.createBiquadFilter();
-    const gain = this.ctx.createGain();
-
-    drone1.type = 'sawtooth';
-    drone1.frequency.value = 55.0; // A1
-    drone2.type = 'sawtooth';
-    drone2.frequency.value = 55.6;
-
-    filter.type = 'lowpass';
-    filter.frequency.value = 180;
-
-    gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(0.038, now + 2.5);
-
-    drone1.connect(filter);
-    drone2.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.bgmGain);
-
-    drone1.start(now);
-    drone2.start(now);
-    this.bgmNodes.push(drone1, drone2);
-
-    const pentatonic = [220.0, 261.63, 293.66, 329.63, 392.0, 440.0];
-
-    const playMartialBell = () => {
-      if (!this.isBgmPlaying || !this.ctx || !this.bgmGain) return;
-      const t = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
-      const bellGain = this.ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.value = pentatonic[Math.floor(Math.random() * pentatonic.length)];
-
-      bellGain.gain.setValueAtTime(0.035, t);
-      bellGain.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
-
-      osc.connect(bellGain);
-      bellGain.connect(this.bgmGain);
-
-      osc.start(t);
-      osc.stop(t + 1.65);
-    };
-
-    playMartialBell();
-    this.bgmTimer = setInterval(playMartialBell, 2200);
   }
 
   // ---------------------------------------------------------------------------
