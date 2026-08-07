@@ -65,6 +65,13 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     return createInitialGameState(['red', 'blue', 'green', 'gold']);
   });
 
+  const [selectedDieId, setSelectedDieId] = useState<string | null>(null);
+  const [secondDiceValue, setSecondDiceValue] = useState<number>(3);
+  const [isRolling, setIsRolling] = useState<boolean>(false);
+  const [hasRolled, setHasRolled] = useState<boolean>(false);
+  const [botIsThinking, setBotIsThinking] = useState<boolean>(false);
+  const [showHelperRules, setShowHelperRules] = useState<boolean>(false);
+
   const handlePlayAgain = () => {
     if (onReMatch) {
       onReMatch();
@@ -75,6 +82,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       onUpdateLiveState({ engineState: freshEngine });
     }
     setHasRolled(false);
+    setSelectedDieId(null);
     setIsRolling(false);
     setBotIsThinking(false);
     onAddLog(`[REMATCH] Ludo Board re-initialized! Stakes locked for next round.`);
@@ -87,12 +95,6 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       soundEngine.stopBgm();
     };
   }, []);
-
-  const [secondDiceValue, setSecondDiceValue] = useState<number>(3);
-  const [isRolling, setIsRolling] = useState<boolean>(false);
-  const [hasRolled, setHasRolled] = useState<boolean>(false);
-  const [botIsThinking, setBotIsThinking] = useState<boolean>(false);
-  const [showHelperRules, setShowHelperRules] = useState<boolean>(false);
 
   const activePlayer = engineState.players[engineState.activePlayerIndex];
   const diceRollValue = engineState.currentDiceValue || 6;
@@ -107,22 +109,29 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       return color === 'red';
     }
 
-    // Live Player vs Player Duel Mode:
     if (isHost) {
-      // Host controls Red (and Gold/Yellow in 2-player mode)
       return playerMode === '2-player' ? (color === 'red' || color === 'gold') : (color === 'red');
     } else {
-      // Guest controls Blue (and Green in 2-player mode)
       return playerMode === '2-player' ? (color === 'blue' || color === 'green') : (color === 'blue');
     }
   };
 
-  const activeDicePair = (engineState.currentDiceValue !== null)
-    ? (engineState.secondDiceValue !== null ? [engineState.currentDiceValue, engineState.secondDiceValue] as [number, number] : [engineState.currentDiceValue, secondDiceValue] as [number, number])
-    : null;
+  // Active unconsumed dice in pool
+  const unconsumedDice = engineState.dicePool.filter(d => !d.used);
 
-  const playableTokenIds = (hasRolled && isUserTurn(activePlayer) && activeDicePair !== null)
-    ? getLegalMoves(engineState, activePlayer, activeDicePair)
+  // Auto-select die with legal moves if none currently selected or selected die is consumed
+  useEffect(() => {
+    if (hasRolled && isUserTurn(activePlayer) && unconsumedDice.length > 0) {
+      const currentSelectedValid = unconsumedDice.some(d => d.id === selectedDieId);
+      if (!currentSelectedValid) {
+        const dieWithMoves = unconsumedDice.find(d => getLegalMoves(engineState, activePlayer, d.id).length > 0);
+        setSelectedDieId(dieWithMoves ? dieWithMoves.id : unconsumedDice[0].id);
+      }
+    }
+  }, [hasRolled, engineState.dicePool, engineState.tokens, activePlayer, selectedDieId]);
+
+  const playableTokenIds = (hasRolled && isUserTurn(activePlayer) && selectedDieId !== null)
+    ? getLegalMoves(engineState, activePlayer, selectedDieId)
         .filter(m => {
           if (playerMode === '2-player' && userSelectedQuadrant !== 'all') {
             const t = engineState.tokens.find(tok => tok.id === m.tokenId);
@@ -176,17 +185,15 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       const nextState = handleDiceRoll(engineState, [outcome1, outcome2]);
       setEngineState(nextState);
 
-      const legalMoves = getLegalMoves(nextState, activePlayer, [outcome1, outcome2]);
+      const legalMoves = getLegalMoves(nextState, activePlayer);
       
-      if (legalMoves.length === 0 || (nextState.consecutiveSixes === 0 && (outcome1 !== 6 || outcome2 !== 6) && nextState.turnStartState === null)) {
-        // Triple six penalty or no moves or turn end -> resolve rolled status
-        if (legalMoves.length === 0) {
-          setHasRolled(false);
-        } else {
-          setHasRolled(true);
-        }
+      if (legalMoves.length === 0) {
+        setHasRolled(false);
+        setSelectedDieId(null);
       } else {
         setHasRolled(true);
+        const firstDieWithMoves = nextState.dicePool.find(d => !d.used && getLegalMoves(nextState, activePlayer, d.id).length > 0);
+        setSelectedDieId(firstDieWithMoves ? firstDieWithMoves.id : (nextState.dicePool[0]?.id || null));
       }
 
       if (!isBot && onUpdateLiveState) {
@@ -206,53 +213,82 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       setSecondDiceValue(outcome2);
       setIsRolling(false);
 
-      const rolledState = handleDiceRoll(engineState, [outcome1, outcome2]);
-      setEngineState(rolledState);
+      let currentState = handleDiceRoll(engineState, [outcome1, outcome2]);
+      setEngineState(currentState);
 
-      const legalMoves = getLegalMoves(rolledState, colorToPlay, [outcome1, outcome2]);
+      let remainingUnconsumed = currentState.dicePool.filter(d => !d.used);
 
-      if (legalMoves.length === 0) {
+      if (remainingUnconsumed.length === 0 || getLegalMoves(currentState, colorToPlay).length === 0) {
         setHasRolled(false);
         setBotIsThinking(false);
         return;
       }
 
-      const isHard = botDifficulty === 'hard' || entryFee > 0;
-      let selectedMove = legalMoves[0];
+      const executeBotStep = (curr: LudoGameState) => {
+        const pool = curr.dicePool.filter(d => !d.used);
+        if (pool.length === 0) {
+          setHasRolled(false);
+          setBotIsThinking(false);
+          return;
+        }
 
-      if (isHard) {
-        const captureMove = legalMoves.find(m => m.isCapture);
-        const homeFinishMove = legalMoves.find(m => m.isHomeFinish);
-        const exitBaseMove = legalMoves.find(m => m.isLeavingBase);
+        // Find die with best move
+        let bestMove: { dieId: string; tokenId: string; isCapture: boolean; isHomeFinish: boolean; isLeavingBase: boolean } | null = null;
 
-        selectedMove = captureMove || homeFinishMove || exitBaseMove || legalMoves[0];
-      }
+        for (const die of pool) {
+          const moves = getLegalMoves(curr, colorToPlay, die.id);
+          if (moves.length > 0) {
+            const isHard = botDifficulty === 'hard' || entryFee > 0;
+            let choice = moves[0];
+            if (isHard) {
+              const cap = moves.find(m => m.isCapture);
+              const home = moves.find(m => m.isHomeFinish);
+              const exit = moves.find(m => m.isLeavingBase);
+              choice = cap || home || exit || moves[0];
+            }
+            bestMove = { dieId: die.id, tokenId: choice.tokenId, isCapture: choice.isCapture, isHomeFinish: choice.isHomeFinish, isLeavingBase: choice.isLeavingBase };
+            break;
+          }
+        }
 
-      setTimeout(() => {
+        if (!bestMove) {
+          setHasRolled(false);
+          setBotIsThinking(false);
+          return;
+        }
+
         try {
-          const movedState = executeMove(rolledState, selectedMove.tokenId, [outcome1, outcome2]);
-          setEngineState(movedState);
+          const nextState = executeMove(curr, bestMove.tokenId, bestMove.dieId);
+          setEngineState(nextState);
 
-          if (selectedMove.isCapture) {
-            soundEngine.playLudoKnockout();
-          } else if (selectedMove.isHomeFinish) {
-            soundEngine.playLudoGoal();
-          } else {
-            soundEngine.playLudoPieceStep();
+          if (bestMove.isCapture) soundEngine.playLudoKnockout();
+          else if (bestMove.isHomeFinish) soundEngine.playLudoGoal();
+          else soundEngine.playLudoPieceStep();
+
+          if (nextState.winner) {
+            soundEngine.playLudoVictory();
+            const isMeWin = nextState.winner === 'red' || (playerMode === '2-player' && nextState.winner === 'gold');
+            onGameOver(isMeWin);
+            setHasRolled(false);
+            setBotIsThinking(false);
+            return;
           }
 
-          if (movedState.winner) {
-            soundEngine.playLudoVictory();
-            const isMeWin = movedState.winner === 'red' || (playerMode === '2-player' && movedState.winner === 'gold');
-            onGameOver(isMeWin);
+          // Check if turn is still active for second die move
+          if (nextState.activePlayerIndex === curr.activePlayerIndex && nextState.dicePool.some(d => !d.used)) {
+            setTimeout(() => executeBotStep(nextState), 400);
+          } else {
+            setHasRolled(false);
+            setBotIsThinking(false);
           }
         } catch (e) {
           console.error("Bot move execution error:", e);
+          setHasRolled(false);
+          setBotIsThinking(false);
         }
+      };
 
-        setHasRolled(false);
-        setBotIsThinking(false);
-      }, 500);
+      setTimeout(() => executeBotStep(currentState), 400);
 
     }, 600);
   };
@@ -268,25 +304,26 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     if (!allowedColors.includes(token.color)) return false;
     if (playerMode === '2-player' && userSelectedQuadrant !== 'all' && token.color !== userSelectedQuadrant) return false;
 
-    if (activeDicePair === null) return false;
-    const legalMoves = getLegalMoves(engineState, token.color, activeDicePair);
+    if (!selectedDieId) return false;
+    const legalMoves = getLegalMoves(engineState, token.color, selectedDieId);
     return legalMoves.some(m => m.tokenId === token.id);
   };
 
   const handleSelectToken = (token: LudoTokenState) => {
-    if (!isTokenPlayable(token) || activeDicePair === null) return;
+    if (!isTokenPlayable(token) || !selectedDieId) return;
 
     try {
-      const legalMoves = getLegalMoves(engineState, token.color, activeDicePair);
+      const legalMoves = getLegalMoves(engineState, token.color, selectedDieId);
       const chosenMove = legalMoves.find(m => m.tokenId === token.id);
 
-      const nextState = executeMove(engineState, token.id, activeDicePair);
-      setEngineState(nextState);
-      setHasRolled(false);
+      if (!chosenMove) return;
 
-      if (chosenMove?.isCapture) {
+      const nextState = executeMove(engineState, token.id, selectedDieId);
+      setEngineState(nextState);
+
+      if (chosenMove.isCapture) {
         soundEngine.playLudoKnockout();
-      } else if (chosenMove?.isHomeFinish) {
+      } else if (chosenMove.isHomeFinish) {
         soundEngine.playLudoGoal();
       } else {
         soundEngine.playLudoPieceStep();
@@ -298,6 +335,25 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           ? (nextState.winner === 'red' || nextState.winner === 'team1' || (playerMode === '2-player' && nextState.winner === 'gold'))
           : (nextState.winner === 'blue' || nextState.winner === 'team2' || (playerMode === '2-player' && nextState.winner === 'green'));
         onGameOver(isMeWin);
+        setHasRolled(false);
+        setSelectedDieId(null);
+        return;
+      }
+
+      // Check remaining unconsumed dice for same player turn
+      const remainingDice = nextState.dicePool.filter(d => !d.used);
+      if (nextState.activePlayerIndex === engineState.activePlayerIndex && remainingDice.length > 0) {
+        const dieWithMoves = remainingDice.find(d => getLegalMoves(nextState, activePlayer, d.id).length > 0);
+        if (dieWithMoves) {
+          setSelectedDieId(dieWithMoves.id);
+          setHasRolled(true);
+        } else {
+          setHasRolled(false);
+          setSelectedDieId(null);
+        }
+      } else {
+        setHasRolled(false);
+        setSelectedDieId(null);
       }
 
       if (!isBot && onUpdateLiveState) {
@@ -358,13 +414,13 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           >
             <h4 className="font-display font-black text-white uppercase text-sm tracking-wider flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Official Authoritative Ludo Rules</span>
+              <span>Independent Two-Dice Ludo Rules</span>
             </h4>
             <ul className="list-disc pl-4 space-y-1 text-amber-200/80 font-mono text-[11px]">
-              <li><span className="text-amber-300 font-bold">Base Exit</span>: Token may ONLY leave base yard after rolling an exact <strong className="text-amber-400">6</strong>.</li>
-              <li><span className="text-rose-400 font-bold">3 Sixes Penalty</span>: Rolling 3 consecutive 6s forfeits turn and rolls back ALL turn movements!</li>
+              <li><span className="text-amber-300 font-bold">Independent Movement</span>: Choose which die to play first! Split dice across 2 pieces or move 1 piece sequentially.</li>
+              <li><span className="text-amber-300 font-bold">Base Exit</span>: A die value of <strong className="text-amber-400">6</strong> brings a piece onto starting square. Second die is played separately.</li>
+              <li><span className="text-rose-400 font-bold">3 Double-Six Penalty</span>: Rolling 3 consecutive double-6s forfeits turn and rolls back movements!</li>
               <li><span className="text-emerald-300 font-bold">Exact Finish</span>: Tokens require exact die value to enter center home (step 57).</li>
-              <li><span className="text-cyan-300 font-bold">Safe Squares</span>: Safe zones protect tokens from being captured.</li>
             </ul>
           </motion.div>
         )}
@@ -559,7 +615,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
             <div className={`w-2.5 h-2.5 rounded-full ${isUserTurn(activePlayer) ? 'bg-amber-400 animate-pulse' : 'bg-slate-600'}`} />
             <span className="text-[10px] font-mono font-bold text-amber-300 uppercase tracking-widest">
               {isUserTurn(activePlayer) 
-                ? (playerMode === '2-player' ? "YOUR TURN: SELECT QUADRANT TO MOVE" : "YOUR TURN (RED 🔴)") 
+                ? (playerMode === '2-player' ? "YOUR TURN: SELECT DIE & PIECE" : "YOUR TURN (RED 🔴)") 
                 : `${activePlayer.toUpperCase()}'S TURN (BOT)`}
             </span>
           </div>
@@ -567,6 +623,41 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
             {playerMode}
           </span>
         </div>
+
+        {/* Independent Dice Selection HUD when rolled */}
+        {hasRolled && isUserTurn(activePlayer) && engineState.dicePool.length > 0 && (
+          <div className="flex items-center justify-between gap-2 p-1.5 bg-[#0f0905] rounded-xl border border-amber-500/30">
+            <span className="text-[9px] font-mono font-bold text-amber-400 uppercase">SELECT DIE:</span>
+            <div className="flex items-center gap-2">
+              {engineState.dicePool.map((die) => {
+                const isSelected = selectedDieId === die.id;
+                const dieMoves = getLegalMoves(engineState, activePlayer, die.id);
+                const isUsable = !die.used && dieMoves.length > 0;
+
+                return (
+                  <button
+                    key={die.id}
+                    type="button"
+                    disabled={die.used || !isUsable}
+                    onClick={() => setSelectedDieId(die.id)}
+                    className={`px-3 py-1 rounded-lg font-mono font-black text-xs transition-all flex items-center gap-1 cursor-pointer ${
+                      die.used
+                        ? 'bg-neutral-850 text-neutral-600 border border-neutral-800 line-through cursor-not-allowed opacity-50'
+                        : isSelected
+                        ? 'bg-amber-400 text-black border border-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.6)] scale-105'
+                        : isUsable
+                        ? 'bg-amber-950/90 text-amber-200 border border-amber-500/40 hover:bg-amber-800'
+                        : 'bg-neutral-900 text-amber-700/50 border border-amber-950/40 opacity-40 cursor-not-allowed'
+                    }`}
+                  >
+                    <span>🎲 {die.value}</span>
+                    {die.used ? <span className="text-[8px]">(USED)</span> : !isUsable ? <span className="text-[8px]">(NO MOVES)</span> : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Dynamic Quadrant Filter Selector in 2-Player mode */}
         {playerMode === '2-player' && isUserTurn(activePlayer) && hasRolled && (
@@ -805,7 +896,7 @@ const SemiTranslucentWhiteDice: React.FC<{ value: number, isRolling: boolean }> 
     'rotateY(-90deg)',
     'rotateY(90deg)'
   ];
-  
+
   const style = {
     transform: isRolling
       ? 'rotateX(720deg) rotateY(1440deg) rotateZ(365deg)'
