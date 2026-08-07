@@ -92,9 +92,9 @@ function getPieceGeometry(type: PieceType): THREE.BufferGeometry {
     }
     geo = mergeGeometries(merlonGeos);
   }
-  else if (type === 'n') { // Knight (Sculpted 3D Horse Head)
-    // Base pedestal
-    const points: THREE.Vector2[] = [
+  else if (type === 'n') { // Knight (Sculpted Organic 3D Horse Head)
+    // 1. Base pedestal (Lathe)
+    const basePoints: THREE.Vector2[] = [
       new THREE.Vector2(0, 0),
       new THREE.Vector2(0.42, 0.0),
       new THREE.Vector2(0.42, 0.04),
@@ -105,41 +105,79 @@ function getPieceGeometry(type: PieceType): THREE.BufferGeometry {
       new THREE.Vector2(0.26, 0.24),
       new THREE.Vector2(0, 0.26)
     ];
-    const baseGeo = new THREE.LatheGeometry(points, RADIAL_SEGMENTS);
+    const baseGeo = new THREE.LatheGeometry(basePoints, RADIAL_SEGMENTS);
 
-    // 3D Extruded & Bevelled Horse Silhouette
-    const shape = new THREE.Shape();
-    shape.moveTo(-0.16, 0.24);
-    shape.lineTo(-0.20, 0.48);
-    shape.lineTo(-0.14, 0.70);
-    shape.lineTo(-0.07, 0.90); // Mane crest
-    shape.lineTo(0.09, 0.93);  // Ears
-    shape.lineTo(0.17, 0.80);  // Forehead
-    shape.lineTo(0.27, 0.64);  // Snout top
-    shape.lineTo(0.20, 0.50);  // Muzzle chin
-    shape.lineTo(0.10, 0.44);  // Jaw curve
-    shape.lineTo(0.04, 0.24);  // Base join
-    shape.closePath();
+    const parts: THREE.BufferGeometry[] = [baseGeo];
 
-    const extrudeSettings = {
-      depth: 0.18,
-      bevelEnabled: true,
-      bevelSegments: 4,
-      steps: 1,
-      bevelSize: 0.04,
-      bevelThickness: 0.04
-    };
-    const headGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    headGeo.center();
-    headGeo.translate(0, 0.58, 0);
+    // 2. Arched Neck & Chest Column (Tapered cylinder leaning forward)
+    const neckGeo = new THREE.CylinderGeometry(0.18, 0.24, 0.40, 24);
+    neckGeo.rotateX(-0.25); // Lean forward slightly
+    neckGeo.translate(0.04, 0.42, 0);
+    parts.push(neckGeo);
 
-    // Eye sockets
-    const leftEye = new THREE.SphereGeometry(0.035, 16, 16);
-    leftEye.translate(0.13, 0.73, 0.12);
-    const rightEye = new THREE.SphereGeometry(0.035, 16, 16);
-    rightEye.translate(0.13, 0.73, -0.12);
+    // 3. Main Head Skull (Rounded Ellipsoid)
+    const skullGeo = new THREE.SphereGeometry(0.19, 24, 24);
+    skullGeo.scale(1.2, 1.0, 0.85); // Elongated head skull
+    skullGeo.rotateZ(-0.2); // Angle head downward towards board center
+    skullGeo.translate(0.12, 0.68, 0);
+    parts.push(skullGeo);
 
-    geo = mergeGeometries([baseGeo, headGeo, leftEye, rightEye]);
+    // 4. Snout & Muzzle (Forward tapered cylinder angled down)
+    const snoutGeo = new THREE.CylinderGeometry(0.11, 0.16, 0.32, 24);
+    snoutGeo.rotateZ(-0.75); // Angle 43 deg downward
+    snoutGeo.translate(0.25, 0.60, 0);
+    parts.push(snoutGeo);
+
+    // Muzzle tip bulb
+    const muzzleTip = new THREE.SphereGeometry(0.105, 20, 20);
+    muzzleTip.scale(1.0, 0.8, 0.9);
+    muzzleTip.translate(0.36, 0.51, 0);
+    parts.push(muzzleTip);
+
+    // 5. Dual Muscular Jaw Cheeks (Left & Right spheres)
+    const leftJaw = new THREE.SphereGeometry(0.12, 16, 16);
+    leftJaw.translate(0.06, 0.60, 0.11);
+    parts.push(leftJaw);
+
+    const rightJaw = new THREE.SphereGeometry(0.12, 16, 16);
+    rightJaw.translate(0.06, 0.60, -0.11);
+    parts.push(rightJaw);
+
+    // 6. Alert Horse Ears (Left & Right Cones pointing up/forward)
+    const leftEar = new THREE.ConeGeometry(0.05, 0.18, 16);
+    leftEar.rotateX(0.25);
+    leftEar.rotateZ(-0.35);
+    leftEar.translate(0.06, 0.88, 0.08);
+    parts.push(leftEar);
+
+    const rightEar = new THREE.ConeGeometry(0.05, 0.18, 16);
+    rightEar.rotateX(-0.25);
+    rightEar.rotateZ(-0.35);
+    rightEar.translate(0.06, 0.88, -0.08);
+    parts.push(rightEar);
+
+    // 7. Carved Arched Mane Crest (Back of neck ridge)
+    const maneCount = 5;
+    for (let i = 0; i < maneCount; i++) {
+      const maneSegment = new THREE.BoxGeometry(0.06, 0.10, 0.12);
+      const t = i / (maneCount - 1);
+      const mx = -0.10 + t * 0.12;
+      const my = 0.40 + t * 0.38;
+      maneSegment.rotateZ(0.3 - t * 0.4);
+      maneSegment.translate(mx, my, 0);
+      parts.push(maneSegment);
+    }
+
+    // 8. Eyes (Left & Right)
+    const leftEye = new THREE.SphereGeometry(0.032, 16, 16);
+    leftEye.translate(0.20, 0.69, 0.11);
+    parts.push(leftEye);
+
+    const rightEye = new THREE.SphereGeometry(0.032, 16, 16);
+    rightEye.translate(0.20, 0.69, -0.11);
+    parts.push(rightEye);
+
+    geo = mergeGeometries(parts);
   }
   else if (type === 'b') { // Bishop - Miter Head & Finial
     const points: THREE.Vector2[] = [
