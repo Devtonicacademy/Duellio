@@ -792,8 +792,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const handleTurnTimeout = () => {
     if (!whotGameState || whotGameState.status !== 'playing') return;
     
-    const activePlayerId = whotGameState.activePlayerId;
-    if (lastTimeoutPlayerRef.current === activePlayerId) return; // Prevent double timeout execution in the same turn!
+    const activePlayerId = whotGameState?.activePlayerId;
+    if (!activePlayerId || lastTimeoutPlayerRef.current === activePlayerId) return; // Prevent double timeout execution in the same turn!
     lastTimeoutPlayerRef.current = activePlayerId;
 
     const botId = whotGameState?.playerIds?.find(id => id !== userProfile.uid) || opponentId || 'bot';
@@ -1367,7 +1367,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   useEffect(() => {
     if (!whotGameState || whotGameState.status !== 'playing') return;
     if (activeChallenge?.opponentType === 'player') return; // Don't auto-play for real players
-    if (whotGameState.activePlayerId === userProfile.uid) return; // User turn
+    if (whotGameState?.activePlayerId === userProfile.uid) return; // User turn
 
     const botId = whotGameState?.playerIds?.find(id => id !== userProfile.uid) || opponentId || 'bot';
     if (!botId) return;
@@ -1690,7 +1690,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   // Human player makes a draw
   const handleHumanDrawCard = () => {
     if (!whotGameState || whotGameState.status !== 'playing') return;
-    if (whotGameState.activePlayerId !== userProfile.uid) return;
+    if (whotGameState?.activePlayerId !== userProfile.uid) return;
 
     soundEngine.playWhotCardDraw();
 
@@ -1739,10 +1739,10 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   // Play a standard chosen card
   const handlePlayCard = (card: WhotCard) => {
     if (!whotGameState || whotGameState.status !== 'playing') return;
-    if (whotGameState.activePlayerId !== userProfile.uid) return;
+    if (whotGameState?.activePlayerId !== userProfile.uid) return;
 
     const penaltyActive = whotGameState.penaltyCount > 0;
-    const topCard = whotGameState.discardPile[0];
+    const topCard = whotGameState.discardPile?.[0];
     const activeSuit = whotGameState.activeSuit;
 
     let isValid = false;
@@ -3258,6 +3258,18 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                   </div>
                 </div>
 
+                {!whotGameState ? (
+                  <div className="py-20 px-6 text-center bg-black/40 border border-white/10 rounded-3xl backdrop-blur-xl space-y-4 my-6 shadow-2xl">
+                    <div className="w-12 h-12 rounded-full border-4 border-amber-400 border-t-transparent animate-spin mx-auto shadow-[0_0_20px_rgba(251,191,36,0.4)]" />
+                    <h3 className="text-sm font-extrabold text-white uppercase tracking-wider font-display">
+                      Synchronizing Whot Arena...
+                    </h3>
+                    <p className="text-xs text-neutral-400 font-mono max-w-sm mx-auto">
+                      Connecting game session and shuffling card deck. Match will begin in a moment.
+                    </p>
+                  </div>
+                ) : (
+                  <>
                 {/* 3D Stage — wraps all zones to preserve the 3D coordinate space */}
                 <div className={is3DMode ? 'whot-3d-stage space-y-6' : 'space-y-6'}>
 
@@ -3272,7 +3284,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                     <div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-extrabold text-white">{opponentProfile?.username}</span>
-                        {whotGameState.activePlayerId !== userProfile.uid && (
+                        {whotGameState?.activePlayerId !== userProfile.uid && (
                           <span className="text-[10px] bg-amber-400 text-amber-950 px-2 py-0.5 rounded-full font-black animate-pulse uppercase">THINKING...</span>
                         )}
                       </div>
@@ -3332,11 +3344,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                         <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider">Draw Pile</span>
                         <button
                           onClick={handleHumanDrawCard}
-                          disabled={whotGameState.activePlayerId !== userProfile.uid || whotGameState.status === 'completed'}
+                          disabled={whotGameState?.activePlayerId !== userProfile.uid || whotGameState?.status === 'completed'}
                           className={`relative group shrink-0 select-none ${
                             is3DMode ? 'whot-draw-deck-3d' : ''
                           } ${
-                            whotGameState.activePlayerId === userProfile.uid && whotGameState.status !== 'completed'
+                            whotGameState?.activePlayerId === userProfile.uid && whotGameState?.status !== 'completed'
                               ? 'opacity-100 cursor-pointer active:scale-95'
                               : 'opacity-50 cursor-not-allowed'
                           }`}
@@ -3350,7 +3362,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                               <span className="text-xs sm:text-sm font-serif font-black opacity-90 uppercase tracking-widest select-none font-bold">Whot!</span>
                             </div>
                             <div className="z-10 bg-black/60 px-1.5 py-0.5 rounded-md font-mono text-[8px] sm:text-[9px] font-black tracking-tight self-center mt-auto">
-                              {whotGameState.deckCount} Left
+                              {whotGameState?.deckCount || 0} Left
                             </div>
                           </div>
                         </button>
@@ -3360,16 +3372,16 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                       <div className="flex flex-col items-center space-y-2">
                         <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider">Active Play</span>
                         <div className={`p-1.5 bg-[#0c4021] rounded-2xl border border-[#1b6b3b] shadow-inner ${is3DMode ? 'whot-discard-card-3d' : ''}`}>
-                          {renderWhotCard(whotGameState.discardPile[0], false)}
+                          {whotGameState?.discardPile?.[0] ? renderWhotCard(whotGameState.discardPile[0], false) : null}
                         </div>
                       </div>
                     </div>
 
                     <div className="text-center space-y-1.5">
                       <p className="text-xs text-emerald-100">
-                        Current active Suit: <strong className="text-amber-300 uppercase font-black tracking-wider bg-black/30 px-2.5 py-1 rounded-md">{whotGameState.activeSuit}</strong>
+                        Current active Suit: <strong className="text-amber-300 uppercase font-black tracking-wider bg-black/30 px-2.5 py-1 rounded-md">{whotGameState?.activeSuit}</strong>
                       </p>
-                      {whotGameState.whotClaimedSuit && (
+                      {whotGameState?.whotClaimedSuit && (
                         <span className="text-xs bg-amber-400 text-amber-950 px-2.5 py-1 rounded-full font-black inline-block animate-bounce shadow-md">
                           ★ Obligated Suit: {whotGameState.whotClaimedSuit}
                         </span>
@@ -3390,28 +3402,28 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                         <span>Game Stadium Feed:</span>
                       </div>
                       <p className="font-mono text-xs text-emerald-250 bg-black/50 p-3 border border-white/5 rounded-xl leading-relaxed">
-                        🔊 {whotGameState.lastActionMessage}
+                        🔊 {whotGameState?.lastActionMessage}
                       </p>
-                      {whotGameState.penaltyCount > 0 && (
+                      {(whotGameState?.penaltyCount || 0) > 0 && (
                         <div className="flex items-center gap-2 font-mono text-[10px] sm:text-xs font-black text-rose-100 bg-rose-950/70 border border-rose-500/30 p-2.5 rounded-xl animate-pulse">
                           <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                          <span>Draw {whotGameState.penaltyCount} cards or play matching value!</span>
+                          <span>Draw {whotGameState?.penaltyCount} cards or play matching value!</span>
                         </div>
                       )}
                     </div>
 
                     <div className="text-[10px] text-neutral-450 mt-3 border-t border-white/5 pt-2 text-center">
-                      {whotGameState.activePlayerId === userProfile.uid 
+                      {whotGameState?.activePlayerId === userProfile.uid 
                         ? "👉 Tap red deck to draw, or select a card to play" 
                         : "⌛ Wait for opponent..."}
                     </div>
                   </div>
 
                   {/* Mobile-only: compact penalty alert strip (only shows when penalty is active) */}
-                  {whotGameState.penaltyCount > 0 && (
+                  {(whotGameState?.penaltyCount || 0) > 0 && (
                     <div className="md:hidden flex items-center gap-2 font-mono text-[10px] font-black text-rose-100 bg-rose-950/70 border border-rose-500/30 p-2.5 rounded-xl animate-pulse">
                       <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                      <span>Draw {whotGameState.penaltyCount} cards or play matching value!</span>
+                      <span>Draw {whotGameState?.penaltyCount} cards or play matching value!</span>
                     </div>
                   )}
                 </div>
@@ -3471,13 +3483,13 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                       </button>
 
                       <span className={`text-xs font-mono tracking-wider font-extrabold px-3 py-1.5 rounded-full border ${
-                        whotGameState.activePlayerId === userProfile.uid 
+                        whotGameState?.activePlayerId === userProfile.uid 
                           ? (turnTimeLeft <= 15 
                               ? 'bg-rose-500 text-white border-white shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-bounce' 
                               : 'bg-emerald-400 text-neutral-950 border-white shadow-[0_0_15px_rgba(52,211,153,0.3)] animate-pulse')
                           : 'bg-black/40 text-emerald-300 border-white/10'
                       }`}>
-                        {whotGameState.activePlayerId === userProfile.uid 
+                        {whotGameState?.activePlayerId === userProfile.uid 
                           ? `👉 YOUR TURN: Tap card to play! (${turnTimeLeft}s left)` 
                           : `⌛ ${opponentProfile?.username || 'Opponent'}'s turn... (${turnTimeLeft}s)`}
                       </span>
@@ -3637,9 +3649,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                     </div>
                   )}
                 </div>
+                </>
+                )}
 
                 {/* Game Over Screen */}
-                {whotGameState.status === 'completed' && (
+                {whotGameState?.status === 'completed' && (
                   <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center z-[80] p-4 text-center space-y-6">
                     {/* Animated Confetti / Cheers */}
                     <div className="relative">
