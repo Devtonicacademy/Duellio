@@ -5,6 +5,8 @@
 
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { RotateCcw, Camera, Move3d } from 'lucide-react';
 
 type PieceType = 'p' | 'r' | 'n' | 'b' | 'q' | 'k';
 type Color = 'w' | 'b';
@@ -263,6 +265,8 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const pieceMeshesRef = useRef<Map<string, THREE.Group>>(new Map());
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
   const selectedSquareRef = useRef(selectedSquare);
   const validDestinationsRef = useRef(validDestinations);
   const onTileClickRef = useRef(onTileClick);
@@ -285,15 +289,15 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x03060e);
 
-    // Camera angled to match photo (38° tilt, clear view of back rank & piece silhouettes)
+    // Camera angled to match reference photo perspective (centered view of board)
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
     if (myColor === 'b') {
       camera.position.set(0, 8.5, -9.5);
-      camera.lookAt(0, 0.2, -0.2);
     } else {
       camera.position.set(0, 8.5, 9.5);
-      camera.lookAt(0, 0.2, 0.2);
     }
+    camera.lookAt(0, 0.4, 0);
+    cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
@@ -307,11 +311,24 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
     }
     container.appendChild(renderer.domElement);
 
-    // --- LIGHTING SETUP (STUDIO LIGHTING MATCHING PHOTO) ---
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    // --- ORBITCONTROLS SETUP ---
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0, 0.4, 0);
+    controls.minDistance = 4.5;
+    controls.maxDistance = 16.0;
+    controls.minPolarAngle = Math.PI / 12; // ~15° elevated view (prevents looking under board)
+    controls.maxPolarAngle = Math.PI / 2.25; // ~80° top-down view (prevents extreme low clipping)
+    controls.maxAzimuthAngle = Infinity;
+    controls.minAzimuthAngle = -Infinity;
+    controlsRef.current = controls;
+
+    // --- LIGHTING SETUP (STUDIO CINEMATIC LIGHTING MATCHING PHOTO) ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
     scene.add(ambientLight);
 
-    const mainSpot = new THREE.DirectionalLight(0xffffff, 1.3);
+    const mainSpot = new THREE.DirectionalLight(0xffffff, 1.4);
     mainSpot.position.set(-6, 12, 8);
     mainSpot.castShadow = true;
     mainSpot.shadow.mapSize.width = 2048;
@@ -319,52 +336,58 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
     mainSpot.shadow.bias = -0.0001;
     scene.add(mainSpot);
 
-    // Subtle blue rim highlight light for Cyber Cyan theme accenting
-    const cyanRim = new THREE.PointLight(0x06b6d4, 1.2, 15);
-    cyanRim.position.set(5, 6, -5);
+    // Subtle blue rim light for Cyber Cyan theme specular reflections
+    const cyanRim = new THREE.PointLight(0x06b6d4, 1.4, 16);
+    cyanRim.position.set(6, 6, -6);
     scene.add(cyanRim);
 
-    // Warm gold fill light for Gold/Amber bot theme accenting
-    const amberFill = new THREE.PointLight(0xf59e0b, 0.9, 15);
-    amberFill.position.set(-5, 4, -4);
+    // Warm gold fill light for Gold theme specular reflections
+    const amberFill = new THREE.PointLight(0xf59e0b, 1.1, 16);
+    amberFill.position.set(-6, 5, -5);
     scene.add(amberFill);
 
-    // --- BOARD MESHES CREATION ---
+    // --- BOARD MESHES CREATION (DARK LUXURY BOARD MATCHING REFERENCE PHOTO) ---
     const boardGroup = new THREE.Group();
     scene.add(boardGroup);
 
-    // 1. Dark Wood / Matte Outer Border Base (Matching Photo)
-    const outerBaseGeo = new THREE.BoxGeometry(9.6, 0.4, 9.6);
+    // 1. Dark Luxury Wood Base Frame (Stepped bevel border)
+    const outerBaseGeo = new THREE.BoxGeometry(9.6, 0.45, 9.6);
     const outerBaseMat = new THREE.MeshStandardMaterial({
-      color: 0x18181b,
-      roughness: 0.5,
+      color: 0x1c1310, // Dark luxury wood
+      roughness: 0.4,
       metalness: 0.2
     });
     const outerBase = new THREE.Mesh(outerBaseGeo, outerBaseMat);
-    outerBase.position.set(0, -0.2, 0);
+    outerBase.position.set(0, -0.225, 0);
     outerBase.receiveShadow = true;
     boardGroup.add(outerBase);
 
-    // Thin white border line around 8x8 playing field (Matching Photo)
-    const lineBorderGeo = new THREE.BoxGeometry(8.16, 0.02, 8.16);
-    const lineBorderMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    // Bevelled gold accent line border around 8x8 playing field (Matching photo gold trim)
+    const lineBorderGeo = new THREE.BoxGeometry(8.18, 0.02, 8.18);
+    const lineBorderMat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37, // Gold trim
+      metalness: 0.85,
+      roughness: 0.2,
+      emissive: 0x996515,
+      emissiveIntensity: 0.25
+    });
     const lineBorder = new THREE.Mesh(lineBorderGeo, lineBorderMat);
     lineBorder.position.set(0, 0.001, 0);
     boardGroup.add(lineBorder);
 
-    // 2. 8x8 Board Tiles (Alternating White & Charcoal Dark Squares matching photo)
+    // 2. 8x8 Board Tiles (Cream Ivory & Dark Mahogany matching reference photo)
     const tileGroup = new THREE.Group();
     boardGroup.add(tileGroup);
 
     const whiteSquareMat = new THREE.MeshStandardMaterial({
-      color: 0xf8fafc,
-      roughness: 0.25,
+      color: 0xf4e8d1, // Warm Cream Ivory
+      roughness: 0.2,
       metalness: 0.05
     });
 
     const darkSquareMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
-      roughness: 0.35,
+      color: 0x4a1a12, // Rich Deep Mahogany Wood
+      roughness: 0.3,
       metalness: 0.1
     });
 
@@ -378,8 +401,6 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
         const tileMat = (isDark ? darkSquareMat : whiteSquareMat).clone();
 
         const tileMesh = new THREE.Mesh(tileGeo, tileMat);
-        // X coord: -3.5 to +3.5 (col 0 to 7)
-        // Z coord: -3.5 to +3.5 (row 0 to 7)
         const x = c - 3.5;
         const z = r - 3.5;
         tileMesh.position.set(x, 0.025, z);
@@ -391,12 +412,12 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
       }
     }
 
-    // --- MATERIALS FOR 3D CHESS PIECES ---
-    // Player ('w') Pieces: Rich Vibrant Glossy Cyber Cyan (Original Theme Color)
+    // --- MATERIALS FOR 3D CHESS PIECES (CYAN AND GOLD MANDATORY THEME) ---
+    // Player ('w') Pieces: Rich Vibrant Metallic Cyber Cyan
     const whitePieceMat = new THREE.MeshStandardMaterial({
-      color: 0x06b6d4,
+      color: 0x06b6d4, // Cyber Cyan
       roughness: 0.18,
-      metalness: 0.35,
+      metalness: 0.40,
       emissive: 0x0284c7,
       emissiveIntensity: 0.15
     });
@@ -409,11 +430,11 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
       emissiveIntensity: 0.4
     });
 
-    // Bot ('b') Pieces: Rich Vibrant Glossy Cyber Gold / Amber (Original Theme Color)
+    // Bot ('b') Pieces: Rich Vibrant Metallic Cyber Gold
     const blackPieceMat = new THREE.MeshStandardMaterial({
-      color: 0xd97706,
+      color: 0xd97706, // Cyber Gold
       roughness: 0.18,
-      metalness: 0.45,
+      metalness: 0.50,
       emissive: 0x78350f,
       emissiveIntensity: 0.15
     });
@@ -545,29 +566,46 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
       });
     };
 
-    // --- RAYCASTING FOR MOUSE & TOUCH TILE CLICKS ---
+    // --- SMART INPUT DISCRIMINATION (CAMERA DRAG VS PIECE SELECTION TAP) ---
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    const handlePointerDown = (event: MouseEvent) => {
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    let pointerDownPos = { x: 0, y: 0 };
+    let pointerDownTime = 0;
 
-      raycaster.setFromCamera(mouse, camera);
+    const handlePointerDown = (event: PointerEvent) => {
+      pointerDownPos = { x: event.clientX, y: event.clientY };
+      pointerDownTime = Date.now();
+    };
 
-      // Check intersections against 8x8 tiles
-      const intersects = raycaster.intersectObjects(tileGroup.children, true);
-      if (intersects.length > 0) {
-        const hitTile = intersects[0].object as THREE.Mesh;
-        if (hitTile.userData && typeof hitTile.userData.row === 'number') {
-          onTileClickRef.current(hitTile.userData.row, hitTile.userData.col);
+    const handlePointerUp = (event: PointerEvent) => {
+      const dx = event.clientX - pointerDownPos.x;
+      const dy = event.clientY - pointerDownPos.y;
+      const dist = Math.hypot(dx, dy);
+      const duration = Date.now() - pointerDownTime;
+
+      // If pointer moved < 6px and held < 350ms, treat as a piece/tile selection tap
+      if (dist < 6 && duration < 350) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+
+        // Check intersections against 8x8 tiles
+        const intersects = raycaster.intersectObjects(tileGroup.children, true);
+        if (intersects.length > 0) {
+          const hitTile = intersects[0].object as THREE.Mesh;
+          if (hitTile.userData && typeof hitTile.userData.row === 'number') {
+            onTileClickRef.current(hitTile.userData.row, hitTile.userData.col);
+          }
         }
       }
     };
 
     const domElement = renderer.domElement;
     domElement.addEventListener('pointerdown', handlePointerDown);
+    domElement.addEventListener('pointerup', handlePointerUp);
 
     // --- ANIMATION LOOP & RESIZING ---
     let animId: number;
@@ -575,6 +613,7 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
     const animate = () => {
       animId = requestAnimationFrame(animate);
 
+      controls.update();
       updatePiecePositions();
 
       // Subtle pulse on target rings
@@ -605,6 +644,8 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
       cancelAnimationFrame(animId);
       resizeObserver.disconnect();
       domElement.removeEventListener('pointerdown', handlePointerDown);
+      domElement.removeEventListener('pointerup', handlePointerUp);
+      controls.dispose();
 
       pieceMeshesRef.current.clear();
       renderer.dispose();
@@ -624,10 +665,46 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
     };
   }, [board]);
 
+  const handleResetView = () => {
+    if (!controlsRef.current || !cameraRef.current) return;
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+
+    if (myColor === 'b') {
+      camera.position.set(0, 8.5, -9.5);
+    } else {
+      camera.position.set(0, 8.5, 9.5);
+    }
+    controls.target.set(0, 0.4, 0);
+    controls.update();
+  };
+
   return (
-    <div 
-      ref={containerRef} 
-      className="w-full h-full min-h-[420px] max-h-[550px] relative rounded-2xl overflow-hidden cursor-pointer select-none"
-    />
+    <div className="w-full h-full min-h-[420px] max-h-[550px] relative rounded-2xl overflow-hidden select-none group">
+      {/* Three.js WebGL Canvas Container */}
+      <div 
+        ref={containerRef} 
+        className="w-full h-full cursor-grab active:cursor-grabbing"
+      />
+
+      {/* Viewport Top HUD Controls Overlay */}
+      <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none z-20">
+        {/* Camera interaction hint badge */}
+        <div className="bg-[#040810]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-cyan-500/20 text-[9.5px] font-mono text-cyan-300 flex items-center gap-1.5 shadow-md">
+          <Move3d className="w-3 h-3 text-cyan-400 animate-pulse" />
+          <span>Drag to Orbit • Scroll to Zoom • Tap Piece to Select</span>
+        </div>
+
+        {/* Reset Camera View Button */}
+        <button
+          onClick={handleResetView}
+          className="pointer-events-auto bg-[#070D18]/90 hover:bg-[#0c1629] border border-cyan-500/30 hover:border-cyan-400 text-cyan-400 hover:text-white px-2.5 py-1 rounded-lg text-[10px] font-mono uppercase font-bold flex items-center gap-1.5 transition-all shadow-lg cursor-pointer active:scale-95"
+          title="Reset Camera View to Default Angle"
+        >
+          <RotateCcw className="w-3 h-3 text-cyan-400" />
+          <span>Reset View</span>
+        </button>
+      </div>
+    </div>
   );
 };

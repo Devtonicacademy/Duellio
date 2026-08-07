@@ -236,10 +236,11 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
         </div>
       </section>
 
-      {/* Board Cards Grid Layout - 3 Cards Per Row */}
+      {/* Balanced 5-Card Bento Grid Layout */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredBoards.length > 0 ? (
           filteredBoards.map((game, index) => {
+            const isFeatured = game.isFeatured && filteredBoards.length === featuredGames.length;
             return (
               <motion.div 
                 key={game.id}
@@ -247,10 +248,14 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{ duration: 0.45, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
-                className="glass-bento glass-bento-hover rounded-3xl overflow-hidden group flex flex-col justify-between border border-white/10 col-span-1 min-h-[30rem]"
+                className={`glass-bento glass-bento-hover rounded-3xl overflow-hidden group flex border border-white/10 ${
+                  isFeatured
+                    ? 'lg:col-span-2 md:col-span-2 flex-col md:flex-row min-h-[30rem]'
+                    : 'col-span-1 flex-col min-h-[30rem]'
+                }`}
               >
-                {/* Tall Vertical Product Cover image */}
-                <div className="relative overflow-hidden w-full h-64 sm:h-72 lg:h-80">
+                {/* Product Cover image */}
+                <div className={`relative overflow-hidden w-full ${isFeatured ? 'md:w-1/2 h-64 md:h-auto' : 'h-64 sm:h-72 lg:h-80'}`}>
                   <img 
                     src={game.image} 
                     alt={game.title} 
@@ -260,7 +265,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F13] via-[#0F0F13]/25 to-transparent"></div>
                   
                   {/* Floating Tags */}
-                  <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+                  <div className="absolute top-4 right-4 flex flex-col items-end gap-2 z-10">
                     {game.tags.map(t => (
                       <span key={t} className="px-3 py-1 bg-black/75 backdrop-blur-md text-purple-300 font-display font-bold text-[9px] tracking-wider rounded-xl border border-purple-500/30 uppercase shadow-md">
                         {t}
@@ -274,10 +279,15 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
                 </div>
 
                 {/* Info and Actions */}
-                <div className="p-6 flex-1 flex flex-col justify-between space-y-5">
-                  <div className="space-y-2.5">
+                <div className={`p-6 flex-1 flex flex-col justify-between space-y-5 ${isFeatured ? 'md:w-1/2' : ''}`}>
+                  <div className="space-y-3">
                     <div className="flex justify-between items-start">
                       <div>
+                        {isFeatured && (
+                          <span className="inline-block px-2.5 py-0.5 mb-2 bg-purple-500/20 text-purple-300 border border-purple-500/35 rounded-md font-mono text-[9px] font-bold uppercase tracking-wider">
+                            FEATURED HIGHLIGHT
+                          </span>
+                        )}
                         <h4 className="text-white font-display text-lg font-bold tracking-tight">
                           {game.title}
                         </h4>
@@ -287,15 +297,23 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-mono font-bold text-neutral-200 border border-white/10">
+                      <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-mono font-bold text-neutral-200 border border-white/10 shrink-0">
                         <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                         <span>{game.rating.toFixed(1)}</span>
                       </div>
                     </div>
 
-                    <p className="text-neutral-400 text-xs leading-relaxed font-sans line-clamp-2">
+                    <p className="text-neutral-400 text-xs leading-relaxed font-sans">
                       {game.desc}
                     </p>
+
+                    {isFeatured && (
+                      <div className="pt-2 flex flex-wrap gap-2 text-[10px] font-mono">
+                        <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg text-neutral-300">✓ Official FIDE Rules</span>
+                        <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg text-neutral-300">✓ Zero-Trust Escrow</span>
+                        <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg text-neutral-300">✓ ELO Matchmaking</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2.5 items-center pt-2">
@@ -305,7 +323,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({ onSelectGame, userCoin
                     >
                       Place Stake & Play
                     </button>
-                    <div className="px-3.5 py-3 bg-white/5 rounded-xl text-neutral-300 font-mono text-[10px] border border-white/10 font-bold">
+                    <div className="px-3.5 py-3 bg-white/5 rounded-xl text-neutral-300 font-mono text-[10px] border border-white/10 font-bold shrink-0">
                       {game.playersLive}
                     </div>
                   </div>
