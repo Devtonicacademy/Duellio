@@ -117,8 +117,12 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     }
   };
 
-  const playableTokenIds = (hasRolled && isUserTurn(activePlayer) && engineState.currentDiceValue !== null)
-    ? getLegalMoves(engineState, activePlayer, engineState.currentDiceValue)
+  const activeDicePair = (engineState.currentDiceValue !== null)
+    ? (engineState.secondDiceValue !== null ? [engineState.currentDiceValue, engineState.secondDiceValue] as [number, number] : [engineState.currentDiceValue, secondDiceValue] as [number, number])
+    : null;
+
+  const playableTokenIds = (hasRolled && isUserTurn(activePlayer) && activeDicePair !== null)
+    ? getLegalMoves(engineState, activePlayer, activeDicePair)
         .filter(m => {
           if (playerMode === '2-player' && userSelectedQuadrant !== 'all') {
             const t = engineState.tokens.find(tok => tok.id === m.tokenId);
@@ -168,15 +172,19 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       setSecondDiceValue(outcome2);
       setIsRolling(false);
 
-      // Pass roll to Authoritative Game Engine
-      const nextState = handleDiceRoll(engineState, outcome1);
+      // Pass 2-dice pair to Authoritative Game Engine
+      const nextState = handleDiceRoll(engineState, [outcome1, outcome2]);
       setEngineState(nextState);
 
-      const legalMoves = getLegalMoves(nextState, activePlayer, outcome1);
+      const legalMoves = getLegalMoves(nextState, activePlayer, [outcome1, outcome2]);
       
-      if (legalMoves.length === 0 || nextState.consecutiveSixes === 0 && outcome1 === 6 && nextState.turnStartState === null) {
-        // Triple six penalty or no moves -> turn auto-resolved
-        setHasRolled(false);
+      if (legalMoves.length === 0 || (nextState.consecutiveSixes === 0 && (outcome1 !== 6 || outcome2 !== 6) && nextState.turnStartState === null)) {
+        // Triple six penalty or no moves or turn end -> resolve rolled status
+        if (legalMoves.length === 0) {
+          setHasRolled(false);
+        } else {
+          setHasRolled(true);
+        }
       } else {
         setHasRolled(true);
       }
@@ -198,10 +206,10 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
       setSecondDiceValue(outcome2);
       setIsRolling(false);
 
-      const rolledState = handleDiceRoll(engineState, outcome1);
+      const rolledState = handleDiceRoll(engineState, [outcome1, outcome2]);
       setEngineState(rolledState);
 
-      const legalMoves = getLegalMoves(rolledState, colorToPlay, outcome1);
+      const legalMoves = getLegalMoves(rolledState, colorToPlay, [outcome1, outcome2]);
 
       if (legalMoves.length === 0) {
         setHasRolled(false);
@@ -222,7 +230,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
 
       setTimeout(() => {
         try {
-          const movedState = executeMove(rolledState, selectedMove.tokenId, outcome1);
+          const movedState = executeMove(rolledState, selectedMove.tokenId, [outcome1, outcome2]);
           setEngineState(movedState);
 
           if (selectedMove.isCapture) {
@@ -260,19 +268,19 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     if (!allowedColors.includes(token.color)) return false;
     if (playerMode === '2-player' && userSelectedQuadrant !== 'all' && token.color !== userSelectedQuadrant) return false;
 
-    if (engineState.currentDiceValue === null) return false;
-    const legalMoves = getLegalMoves(engineState, token.color, engineState.currentDiceValue);
+    if (activeDicePair === null) return false;
+    const legalMoves = getLegalMoves(engineState, token.color, activeDicePair);
     return legalMoves.some(m => m.tokenId === token.id);
   };
 
   const handleSelectToken = (token: LudoTokenState) => {
-    if (!isTokenPlayable(token) || engineState.currentDiceValue === null) return;
+    if (!isTokenPlayable(token) || activeDicePair === null) return;
 
     try {
-      const legalMoves = getLegalMoves(engineState, token.color, engineState.currentDiceValue);
+      const legalMoves = getLegalMoves(engineState, token.color, activeDicePair);
       const chosenMove = legalMoves.find(m => m.tokenId === token.id);
 
-      const nextState = executeMove(engineState, token.id, engineState.currentDiceValue);
+      const nextState = executeMove(engineState, token.id, activeDicePair);
       setEngineState(nextState);
       setHasRolled(false);
 

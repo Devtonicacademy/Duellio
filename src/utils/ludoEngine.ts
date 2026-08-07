@@ -217,63 +217,157 @@ export function rollDie(): number {
   return Math.floor(Math.random() * 6) + 1;
 }
 
+export function rollDicePair(): [number, number] {
+  return [rollDie(), rollDie()];
+}
+
+/**
+  * Helper to check if a cell contains an opponent blockade (2+ opponent tokens on same cell).
+  */
+export function isOpponentBlockade(
+  state: LudoGameState,
+  friendlyColors: PlayerColor[],
+  targetCell: [number, number]
+): boolean {
+  const opponentTokensOnCell = state.tokens.filter(t => {
+    if (friendlyColors.includes(t.color) || t.status !== 'board') return false;
+    const cell = getTokenCell(t);
+    return cell[0] === targetCell[0] && cell[1] === targetCell[1];
+  });
+  return opponentTokensOnCell.length >= 2;
+}
+
+/**
+  * Helper to check if moving a token along its path is blocked by any opponent blockade.
+  */
+export function isPathBlockedByOpponent(
+  state: LudoGameState,
+  token: LudoTokenState,
+  fromPos: number,
+  toPos: number,
+  friendlyColors: PlayerColor[]
+): boolean {
+  const startStep = Math.max(0, fromPos + 1);
+  for (let pos = startStep; pos <= toPos; pos++) {
+    if (pos >= 52) break; // Home runway is isolated per color
+    const testToken: LudoTokenState = { ...token, position: pos, status: 'board' };
+    const cell = getTokenCell(testToken);
+    if (isOpponentBlockade(state, friendlyColors, cell)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Module 3: Rule Validator & Legal Move Engine
-export function getLegalMoves(state: LudoGameState, playerColor: PlayerColor, dieValue: number): LegalMove[] {
+export function getLegalMoves(
+  state: LudoGameState,
+  playerColor: PlayerColor,
+  dieValue: number | [number, number]
+): LegalMove[] {
   if (state.gameStatus !== 'playing' || state.winner !== null) return [];
+
+  let d1: number;
+  let d2: number;
+
+  if (Array.isArray(dieValue)) {
+    d1 = dieValue[0];
+    d2 = dieValue[1];
+  } else {
+    d1 = dieValue;
+    d2 = state.secondDiceValue !== null ? state.secondDiceValue : 0;
+  }
 
   const friendlyColors = getFriendlyColors(playerColor, state.mode);
   const targetTokens = state.tokens.filter(t => friendlyColors.includes(t.color));
   const legalMoves: LegalMove[] = [];
 
+  const combinedStep = d1 + d2;
+
   targetTokens.forEach(token => {
     if (token.status === 'finished') return;
 
     if (token.status === 'home') {
-      // Official Rule: Leaving base requires a roll of EXACTLY 6
-      if (dieValue === 6) {
-        legalMoves.push({
-          tokenId: token.id,
-          fromPosition: -1,
-          toPosition: 0,
-          isLeavingBase: true,
-          isCapture: false,
-          isHomeFinish: false
-        });
-      }
-    } else {
-      const targetPos = token.position + dieValue;
-      
-      // Official Rule: Exact finish required (max position 57)
-      if (targetPos <= 57) {
-        let isCap = false;
+      // Official Rule: Leaving yard requires a roll of 6 on at least one die
+      if (d1 === 6 || d2 === 6) {
+        // Exiting yard consumes one 6 (placing token on starting square 0)
+        // and advances the token by the remaining die value (or 6 if double 6).
+        const exitStep = (d1 === 6 && d2 === 6) ? 6 : (d1 === 6 ? d2 : d1);
+        const toPos = exitStep; // Position 0 + exitStep
 
-        // Check capture on common track (position < 52)
-        if (targetPos < 52) {
-          const testTokenState: LudoTokenState = { ...token, position: targetPos, status: 'board' };
-          const targetCell = getTokenCell(testTokenState);
-          const isSafe = SAFE_COORDS.some(([r, c]) => r === targetCell[0] && c === targetCell[1]);
+        if (toPos <= 57) {
+          if (!isPathBlockedByOpponent(state, token, -1, toPos, friendlyColors)) {
+            let isCap = false;
+            if (toPos < 52) {
+              const testToken: LudoTokenState = { ...token, position: toPos, status: 'board' };
+              const cell = getTokenCell(testToken);
+              const isSafe = SAFE_COORDS.some(([r, c]) => r === cell[0] && c === cell[1]);
 
-          if (!isSafe) {
-            const collidedToken = state.tokens.find(t => {
-              if (t.id === token.id || friendlyColors.includes(t.color) || t.status !== 'board' || t.position >= 52) return false;
-              const cell = getTokenCell(t);
-              return cell[0] === targetCell[0] && cell[1] === targetCell[1];
-            });
-
-            if (collidedToken) {
-              isCap = true;
+              if (!isSafe) {
+                const opponentTokens = state.tokens.filter(t => {
+                  if (t.id === token.id || friendlyColors.includes(t.color) || t.status !== 'board' || t.position >= 52) return false;
+                  const cCell = getTokenCell(t);
+                  return cCell[0] === cell[0] && cCell[1] === cell[1];
+                });
+                if (opponentTokens.length === 1) {
+                  isCap = true;
+                }
+              }
             }
+
+            legalMoves.push({
+              tokenId: token.id,
+              fromPosition: -1,
+              toPosition: toPos,
+              isLeavingBase: true,
+              isCapture: isCap,
+              isHomeFinish: toPos === 57
+            });
           }
         }
+      }
+    } else {
+      // Token on board: combined movement distance d1 + d2
+      const targetPos = token.position + combinedStep;
 
-        legalMoves.push({
-          tokenId: token.id,
-          fromPosition: token.position,
-          toPosition: targetPos,
-          isLeavingBase: false,
-          isCapture: isCap,
-          isHomeFinish: targetPos === 57
-        });
+      // Official Rule: Exact finish required (max 57)
+      if (targetPos <= 57) {
+        if (!isPathBlockedByOpponent(state, token, token.position, targetPos, friendlyColors)) {
+          let isCap = false;
+
+          if (targetPos < 52) {
+            const testToken: LudoTokenState = { ...token, position: targetPos, status: 'board' };
+            const targetCell = getTokenCell(testToken);
+            const isSafe = SAFE_COORDS.some(([r, c]) => r === targetCell[0] && c === targetCell[1]);
+
+            if (!isSafe) {
+              const opponentTokens = state.tokens.filter(t => {
+                if (t.id === token.id || friendlyColors.includes(t.color) || t.status !== 'board' || t.position >= 52) return false;
+                const cCell = getTokenCell(t);
+                return cCell[0] === targetCell[0] && cCell[1] === targetCell[1];
+              });
+
+              if (opponentTokens.length === 1) {
+                isCap = true;
+              } else if (opponentTokens.length >= 2) {
+                // Opponent blockade on target cell prevents landing!
+                return;
+              }
+            }
+          }
+
+          // Deduplicate tokenId moves to same target position
+          if (!legalMoves.some(m => m.tokenId === token.id && m.toPosition === targetPos)) {
+            legalMoves.push({
+              tokenId: token.id,
+              fromPosition: token.position,
+              toPosition: targetPos,
+              isLeavingBase: false,
+              isCapture: isCap,
+              isHomeFinish: targetPos === 57
+            });
+          }
+        }
       }
     }
   });
@@ -282,13 +376,29 @@ export function getLegalMoves(state: LudoGameState, playerColor: PlayerColor, di
 }
 
 // Module 4: Turn Manager & Move Execution Engine
-export function executeMove(state: LudoGameState, tokenId: string, dieValue: number): LudoGameState {
+export function executeMove(
+  state: LudoGameState,
+  tokenId: string,
+  dieValue?: number | [number, number]
+): LudoGameState {
   const activeColor = state.players[state.activePlayerIndex];
-  const legalMoves = getLegalMoves(state, activeColor, dieValue);
+
+  let evalDie: number | [number, number];
+  if (dieValue !== undefined) {
+    evalDie = dieValue;
+  } else if (state.currentDiceValue !== null) {
+    evalDie = state.secondDiceValue !== null
+      ? [state.currentDiceValue, state.secondDiceValue]
+      : state.currentDiceValue;
+  } else {
+    throw new Error(`[ILLEGAL MOVE] No active dice roll to execute move.`);
+  }
+
+  const legalMoves = getLegalMoves(state, activeColor, evalDie);
   const targetMove = legalMoves.find(m => m.tokenId === tokenId);
 
   if (!targetMove) {
-    throw new Error(`[ILLEGAL MOVE] Token ${tokenId} cannot move with die value ${dieValue}`);
+    throw new Error(`[ILLEGAL MOVE] Token ${tokenId} cannot move with current dice roll.`);
   }
 
   // Snapshot turn start state if this is the first roll of the turn
@@ -307,23 +417,21 @@ export function executeMove(state: LudoGameState, tokenId: string, dieValue: num
   const nextTokens = state.tokens.map(t => {
     if (t.id !== tokenId) return t;
 
-    let nextPos = t.position;
-    let nextStatus = t.status;
+    let nextPos = targetMove.toPosition;
+    let nextStatus: TokenStatus = t.status;
 
     if (t.status === 'home') {
-      nextPos = 0;
-      nextStatus = 'board' as const;
-    } else {
-      nextPos += dieValue;
-      if (nextPos === 57) {
-        nextStatus = 'finished' as const;
-      }
+      nextStatus = 'board';
+    }
+
+    if (nextPos === 57) {
+      nextStatus = 'finished';
     }
 
     return { ...t, position: nextPos, status: nextStatus };
   });
 
-  // Resolve captures (Module 5: Capture Engine)
+  // Resolve captures
   const movedToken = nextTokens.find(t => t.id === tokenId)!;
   if (movedToken.status === 'board' && movedToken.position < 52) {
     const targetCell = getTokenCell(movedToken);
@@ -342,7 +450,7 @@ export function executeMove(state: LudoGameState, tokenId: string, dieValue: num
     }
   }
 
-  // Module 6: Win Detection
+  // Win Detection
   let winner: PlayerColor | 'team1' | 'team2' | null = null;
   if (state.mode === '2-player') {
     const team1Finished = nextTokens.filter(t => (t.color === 'red' || t.color === 'gold') && t.status === 'finished').length;
@@ -367,7 +475,7 @@ export function executeMove(state: LudoGameState, tokenId: string, dieValue: num
 
   const logs = [...state.logs];
   if (targetMove.isLeavingBase) {
-    logs.unshift(`[MOVE] ${activeColor.toUpperCase()} released token ${tokenId.toUpperCase()} from base yard.`);
+    logs.unshift(`[MOVE] ${activeColor.toUpperCase()} released token ${tokenId.toUpperCase()} from yard to step ${targetMove.toPosition}.`);
   } else {
     logs.unshift(`[MOVE] ${activeColor.toUpperCase()} moved token ${tokenId.toUpperCase()} to step ${targetMove.toPosition}.`);
   }
@@ -384,21 +492,25 @@ export function executeMove(state: LudoGameState, tokenId: string, dieValue: num
       gameStatus: 'completed',
       winner,
       currentDiceValue: null,
+      secondDiceValue: null,
       turnStartState: null,
       logs
     };
   }
 
-  // Official Rule: Rolling a 6 grants exactly 1 additional roll.
-  // Note: Official rules do NOT award an extra roll for capturing.
-  const getsExtraRoll = dieValue === 6;
+  // Extra Roll Rule: Rolling double 6s ([6, 6]) or single 6 in 1-die mode grants an extra roll
+  const d1 = state.currentDiceValue;
+  const d2 = state.secondDiceValue;
+  const isDoubleSix = (d1 === 6 && d2 === 6);
+  const isSingleSixLegacy = (d1 === 6 && d2 === null);
+  const getsExtraRoll = isDoubleSix || isSingleSixLegacy;
 
   let nextPlayerIndex = state.activePlayerIndex;
   let nextConsecutiveSixes = state.consecutiveSixes;
   let nextTurnStartState = turnStartState;
 
   if (getsExtraRoll) {
-    logs.unshift(`[EXTRA ROLL] Rolled a 6! ${activeColor.toUpperCase()} gets another roll.`);
+    logs.unshift(`[EXTRA ROLL] Rolled double 6s! ${activeColor.toUpperCase()} gets another roll.`);
   } else {
     nextPlayerIndex = (state.activePlayerIndex + 1) % state.players.length;
     nextConsecutiveSixes = 0;
@@ -412,15 +524,31 @@ export function executeMove(state: LudoGameState, tokenId: string, dieValue: num
     consecutiveSixes: nextConsecutiveSixes,
     turnStartState: nextTurnStartState,
     currentDiceValue: null,
+    secondDiceValue: null,
     logs
   };
 }
 
 // Turn Controller for Dice Roll Resolution & Triple-Six Rollback
-export function handleDiceRoll(state: LudoGameState, dieValue: number): LudoGameState {
+export function handleDiceRoll(
+  state: LudoGameState,
+  dieOutcome: number | [number, number]
+): LudoGameState {
   const activeColor = state.players[state.activePlayerIndex];
   const logs = [...state.logs];
-  logs.unshift(`[DICE ROLL] ${activeColor.toUpperCase()} rolled a ${dieValue}.`);
+
+  let d1: number;
+  let d2: number;
+
+  if (Array.isArray(dieOutcome)) {
+    d1 = dieOutcome[0];
+    d2 = dieOutcome[1];
+    logs.unshift(`[DICE ROLL] ${activeColor.toUpperCase()} rolled [${d1}, ${d2}].`);
+  } else {
+    d1 = dieOutcome;
+    d2 = rollDie();
+    logs.unshift(`[DICE ROLL] ${activeColor.toUpperCase()} rolled [${d1}, ${d2}].`);
+  }
 
   // Snapshot state at start of turn if not already saved
   let turnStartState = state.turnStartState;
@@ -432,16 +560,16 @@ export function handleDiceRoll(state: LudoGameState, dieValue: number): LudoGame
   }
 
   let consecutiveSixes = state.consecutiveSixes;
+  const isDoubleSix = (d1 === 6 && d2 === 6);
 
-  if (dieValue === 6) {
+  if (isDoubleSix) {
     consecutiveSixes += 1;
-    logs.unshift(`[SIXES METER] Consecutive 6s count: ${consecutiveSixes}`);
+    logs.unshift(`[DOUBLE SIX METER] Consecutive double 6s count: ${consecutiveSixes}`);
 
-    // OFFICIAL RULE: Triple-Six (6 -> 6 -> 6) Rollback Penalty
+    // OFFICIAL RULE: Triple Double-Six Penalty (6,6 -> 6,6 -> 6,6)
     if (consecutiveSixes >= 3) {
-      logs.unshift(`[TRIPLE SIX PENALTY] 3 consecutive 6s rolled! Forfeiting turn and undoing all movements performed during this turn.`);
+      logs.unshift(`[TRIPLE SIX PENALTY] 3 consecutive double-6s rolled! Forfeiting turn and rolling back movements.`);
       
-      // Rollback to turn start state!
       const restoredTokens = JSON.parse(JSON.stringify(turnStartState.tokens));
       const nextPlayerIndex = (state.activePlayerIndex + 1) % state.players.length;
 
@@ -450,25 +578,27 @@ export function handleDiceRoll(state: LudoGameState, dieValue: number): LudoGame
         tokens: restoredTokens,
         activePlayerIndex: nextPlayerIndex,
         currentDiceValue: null,
+        secondDiceValue: null,
         consecutiveSixes: 0,
         turnStartState: null,
         logs
       };
     }
+  } else {
+    consecutiveSixes = 0;
   }
 
   // Determine legal moves
-  const legalMoves = getLegalMoves(state, activeColor, dieValue);
+  const legalMoves = getLegalMoves(state, activeColor, [d1, d2]);
 
   if (legalMoves.length === 0) {
-    logs.unshift(`[NO MOVES] No legal moves available for ${activeColor.toUpperCase()} with roll ${dieValue}.`);
+    logs.unshift(`[NO MOVES] No legal moves available for ${activeColor.toUpperCase()} with roll [${d1}, ${d2}].`);
     
-    // If die is NOT 6, pass turn immediately
     let nextPlayerIndex = state.activePlayerIndex;
     let nextConsecutiveSixes = consecutiveSixes;
     let nextTurnStartState = turnStartState;
 
-    if (dieValue !== 6) {
+    if (!isDoubleSix) {
       nextPlayerIndex = (state.activePlayerIndex + 1) % state.players.length;
       nextConsecutiveSixes = 0;
       nextTurnStartState = null;
@@ -476,7 +606,8 @@ export function handleDiceRoll(state: LudoGameState, dieValue: number): LudoGame
 
     return {
       ...state,
-      currentDiceValue: null,
+      currentDiceValue: d1,
+      secondDiceValue: d2,
       activePlayerIndex: nextPlayerIndex,
       consecutiveSixes: nextConsecutiveSixes,
       turnStartState: nextTurnStartState,
@@ -486,9 +617,11 @@ export function handleDiceRoll(state: LudoGameState, dieValue: number): LudoGame
 
   return {
     ...state,
-    currentDiceValue: dieValue,
+    currentDiceValue: d1,
+    secondDiceValue: d2,
     consecutiveSixes,
     turnStartState,
     logs
   };
 }
+
