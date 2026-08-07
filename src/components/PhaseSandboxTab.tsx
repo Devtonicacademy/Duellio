@@ -132,6 +132,35 @@ function shuffleDeck(deck: WhotCard[]): WhotCard[] {
   return shuffled;
 }
 
+// Normalize Whot game state to map temporary 'guest' or empty string hand keys to the active user's UID
+function normalizeWhotGameState(gameState: any, currentUserId: string): WhotGameState | null {
+  if (!gameState) return null;
+  if (!gameState.playerHands) return gameState;
+
+  const hands = { ...gameState.playerHands };
+  let playerIds = Array.isArray(gameState.playerIds) ? [...gameState.playerIds] : [];
+
+  if (hands['guest'] && (!hands[currentUserId] || hands[currentUserId].length === 0)) {
+    hands[currentUserId] = hands['guest'];
+    delete hands['guest'];
+  }
+  if (hands[''] && (!hands[currentUserId] || hands[currentUserId].length === 0)) {
+    hands[currentUserId] = hands[''];
+    delete hands[''];
+  }
+
+  playerIds = playerIds.map(id => (id === 'guest' || id === '') ? currentUserId : id);
+  if (!playerIds.includes(currentUserId) && currentUserId) {
+    playerIds.push(currentUserId);
+  }
+
+  return {
+    ...gameState,
+    playerIds,
+    playerHands: hands
+  };
+}
+
 function hasAnyPlayableCard(hand: WhotCard[], activeSuit: string, topCard: WhotCard | undefined, penaltyCount: number) {
   if (!topCard) return false;
   const penaltyActive = penaltyCount > 0;
@@ -378,7 +407,21 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
             `[MULTIPLAYER] Game created! Share link with opponent to begin.`
           ]);
         } else {
-          // Setup Guest joining
+          // Setup Guest joining - Optimistically switch to playing status immediately to prevent render lag
+          const guestOptimisticChallenge: MatchChallenge = {
+            id: sessionId,
+            senderId: friendChallenge.senderName || 'Host',
+            senderName: friendChallenge.senderName || 'Host',
+            receiverId: userProfile.uid,
+            gameType: friendChallenge.gameType,
+            entryFee: friendChallenge.entryFee,
+            status: 'accepted',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            opponentType: 'player'
+          };
+          setActiveChallenge(guestOptimisticChallenge);
+          setGamePlayStatus('playing');
+
           getDoc(doc(db, 'gameSessions', sessionId)).then((docSnap) => {
             if (docSnap.exists()) {
               const sessionData = docSnap.data();
@@ -392,19 +435,19 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 delete newPlayerHands['guest'];
                 delete newPlayerHands[''];
 
-                const updatedGameState = {
+                const updatedGameState = normalizeWhotGameState({
                   ...(sessionData.gameState || {}),
                   playerIds: [sessionData.hostId, userProfile.uid],
                   playerHands: newPlayerHands,
                   lastActionMessage: `${userProfile.username} has joined! Match starts now.`
-                };
+                }, userProfile.uid);
 
-                if (friendChallenge.gameType === 'Chess' && !updatedGameState.board) {
+                if (friendChallenge.gameType === 'Chess' && !(updatedGameState as any)?.board) {
                   const freshChess = ChessRulesService.initializeBoard(sessionId, sessionData.hostId, userProfile.uid);
-                  updatedGameState.board = freshChess.board;
-                  updatedGameState.activeColor = updatedGameState.activeColor || freshChess.activeColor;
-                  updatedGameState.castlingRights = updatedGameState.castlingRights || freshChess.castlingRights;
-                  updatedGameState.enPassantTarget = updatedGameState.enPassantTarget !== undefined ? updatedGameState.enPassantTarget : freshChess.enPassantTarget;
+                  (updatedGameState as any).board = freshChess.board;
+                  (updatedGameState as any).activeColor = (updatedGameState as any).activeColor || freshChess.activeColor;
+                  (updatedGameState as any).castlingRights = (updatedGameState as any).castlingRights || freshChess.castlingRights;
+                  (updatedGameState as any).enPassantTarget = (updatedGameState as any).enPassantTarget !== undefined ? (updatedGameState as any).enPassantTarget : freshChess.enPassantTarget;
                 }
 
                 const inviteChallenge: MatchChallenge = {
@@ -421,7 +464,9 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
                 setActiveChallenge(inviteChallenge);
                 setGamePlayStatus('playing');
-                _setWhotGameState(updatedGameState);
+                if (friendChallenge.gameType === 'Whot') {
+                  _setWhotGameState(updatedGameState);
+                }
                 setLiveGameState(sessionData.gameState && (sessionData.gameState.board || sessionData.gameState.pieces) ? sessionData.gameState : updatedGameState);
                 whotDeckRef.current = sessionData.deck || [];
 
@@ -448,7 +493,41 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
               // Self-healing fallback: If session doc was not found on Firestore, initialize & set it up now
               const hostId = friendChallenge.senderName || 'Host';
               let fallbackGameState: any = {};
-              if (friendChallenge.gameType === 'Chess') {
+              let fallbackDeck: WhotCard[] = [];
+
+              if (friendChallenge.gameType === 'Whot') {
+                const fullDeck = shuffleDeck(generateWhotDeck(whotSettings.optional20));
+                const hostHand = fullDeck.splice(0, 6);
+                const guestHand = fullDeck.splice(0, 6);
+                let starterIndex = 0;
+                for (let i = 0; i < fullDeck.length; i++) {
+                  if (fullDeck[i].value !== 1 && fullDeck[i].value !== 2 && fullDeck[i].value !== 5 && fullDeck[i].value !== 8 && fullDeck[i].value !== 14 && fullDeck[i].value !== 20) {
+                    starterIndex = i;
+                    break;
+                  }
+                }
+                const starterCard = fullDeck.splice(starterIndex, 1)[0];
+                if (fullDeck.length > 30) fullDeck.splice(30);
+
+                fallbackGameState = {
+                  sessionId,
+                  playerIds: [hostId, userProfile.uid],
+                  playerHands: {
+                    [hostId]: hostHand,
+                    [userProfile.uid]: guestHand
+                  },
+                  deckCount: fullDeck.length,
+                  discardPile: [starterCard],
+                  activeSuit: starterCard.suit,
+                  activePlayerId: hostId,
+                  status: 'playing',
+                  turnTimer: 120,
+                  penaltyCount: 0,
+                  lastActionMessage: 'Session auto-recovered. Match starts now!'
+                };
+                fallbackDeck = fullDeck;
+                whotDeckRef.current = fullDeck;
+              } else if (friendChallenge.gameType === 'Chess') {
                 fallbackGameState = ChessRulesService.initializeBoard(sessionId, hostId, userProfile.uid);
               } else if (friendChallenge.gameType === 'Draft') {
                 fallbackGameState = DraftLogicService.initializeBoard(sessionId, hostId, userProfile.uid);
@@ -469,7 +548,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 status: 'playing',
                 entryFee: friendChallenge.entryFee || 0,
                 gameState: fallbackGameState,
-                deck: [],
+                deck: fallbackDeck,
                 createdAt: Date.now(),
                 updatedAt: Date.now()
               });
@@ -490,7 +569,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
               setActiveChallenge(inviteChallenge);
               setGamePlayStatus('playing');
-              _setWhotGameState(null);
+              if (friendChallenge.gameType === 'Whot') {
+                _setWhotGameState(fallbackGameState);
+              } else {
+                _setWhotGameState(null);
+              }
               setLiveGameState(fallbackGameState);
 
               setGamePlayLogs([
@@ -631,7 +714,8 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   
   const setWhotGameState = (value: React.SetStateAction<WhotGameState | null>) => {
     _setWhotGameState(prev => {
-      const nextState = typeof value === 'function' ? (value as Function)(prev) : value;
+      const rawState = typeof value === 'function' ? (value as Function)(prev) : value;
+      const nextState = normalizeWhotGameState(rawState, userProfile.uid);
       if (nextState && activeChallenge?.opponentType === 'player' && activeChallenge?.id) {
         const sessionRef = doc(db, 'gameSessions', activeChallenge.id);
         updateDoc(sessionRef, sanitizeFirestoreData({
@@ -1151,13 +1235,14 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         
         // Sync local game state
         if (data.gameState) {
-          _setWhotGameState(data.gameState);
+          const normalizedState = normalizeWhotGameState(data.gameState, userProfile.uid);
+          _setWhotGameState(normalizedState);
           setLiveGameState({
-            ...data.gameState,
+            ...normalizedState,
             ...(data.p2Input ? { p2Input: data.p2Input } : {})
           });
         }
-        if (data.deck) {
+        if (data.deck && data.deck.length > 0) {
           whotDeckRef.current = data.deck;
         }
         
