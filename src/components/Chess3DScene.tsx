@@ -36,185 +36,198 @@ function getPieceGeometry(type: PieceType): THREE.BufferGeometry {
   }
 
   let geo: THREE.BufferGeometry;
+  const RADIAL_SEGMENTS = 64; // Ultra smooth high-res 3D lathe curves
 
-  if (type === 'p') { // Pawn - Staunton Classic
+  if (type === 'p') { // Pawn - Classic Staunton Proportion
     const points: THREE.Vector2[] = [
       new THREE.Vector2(0, 0),
-      new THREE.Vector2(0.38, 0.0),
-      new THREE.Vector2(0.38, 0.05),
-      new THREE.Vector2(0.32, 0.09),
-      new THREE.Vector2(0.34, 0.12),
-      new THREE.Vector2(0.24, 0.16),
-      new THREE.Vector2(0.14, 0.38),
-      new THREE.Vector2(0.20, 0.42),
-      new THREE.Vector2(0.12, 0.46),
-      new THREE.Vector2(0.18, 0.58),
-      new THREE.Vector2(0.12, 0.62),
-      new THREE.Vector2(0, 0.62)
+      new THREE.Vector2(0.42, 0.0),
+      new THREE.Vector2(0.42, 0.04),
+      new THREE.Vector2(0.36, 0.07),
+      new THREE.Vector2(0.38, 0.10),
+      new THREE.Vector2(0.32, 0.14),
+      new THREE.Vector2(0.34, 0.18),
+      new THREE.Vector2(0.24, 0.22),
+      new THREE.Vector2(0.14, 0.42),
+      new THREE.Vector2(0.22, 0.46),
+      new THREE.Vector2(0.14, 0.50),
+      new THREE.Vector2(0.18, 0.60),
+      new THREE.Vector2(0.11, 0.64),
+      new THREE.Vector2(0, 0.64)
     ];
-    const lathe = new THREE.LatheGeometry(points, 36);
+    const lathe = new THREE.LatheGeometry(points, RADIAL_SEGMENTS);
     // Spherical head
-    const head = new THREE.SphereGeometry(0.175, 32, 32);
-    head.translate(0, 0.68, 0);
+    const head = new THREE.SphereGeometry(0.18, 32, 32);
+    head.translate(0, 0.70, 0);
     geo = mergeGeometries([lathe, head]);
   } 
   else if (type === 'r') { // Rook / Castle - Staunton Parapet
     const points: THREE.Vector2[] = [
       new THREE.Vector2(0, 0),
-      new THREE.Vector2(0.38, 0.0),
-      new THREE.Vector2(0.38, 0.06),
-      new THREE.Vector2(0.32, 0.10),
-      new THREE.Vector2(0.35, 0.14),
-      new THREE.Vector2(0.25, 0.18),
-      new THREE.Vector2(0.24, 0.52),
-      new THREE.Vector2(0.32, 0.58),
-      new THREE.Vector2(0.32, 0.76),
-      new THREE.Vector2(0.25, 0.76),
-      new THREE.Vector2(0.25, 0.66),
-      new THREE.Vector2(0, 0.66)
+      new THREE.Vector2(0.42, 0.0),
+      new THREE.Vector2(0.42, 0.04),
+      new THREE.Vector2(0.36, 0.07),
+      new THREE.Vector2(0.38, 0.10),
+      new THREE.Vector2(0.32, 0.14),
+      new THREE.Vector2(0.34, 0.18),
+      new THREE.Vector2(0.28, 0.22),
+      new THREE.Vector2(0.26, 0.56),
+      new THREE.Vector2(0.35, 0.64),
+      new THREE.Vector2(0.35, 0.84),
+      new THREE.Vector2(0.26, 0.84),
+      new THREE.Vector2(0.26, 0.72),
+      new THREE.Vector2(0, 0.72)
     ];
-    const lathe = new THREE.LatheGeometry(points, 36);
+    const lathe = new THREE.LatheGeometry(points, RADIAL_SEGMENTS);
 
     // Castellated parapet cutouts (4 Merlons)
     const merlonGeos: THREE.BufferGeometry[] = [lathe];
     const merlonCount = 4;
     for (let i = 0; i < merlonCount; i++) {
       const angle = (i * Math.PI * 2) / merlonCount;
-      const m = new THREE.BoxGeometry(0.12, 0.12, 0.09);
-      m.translate(0, 0.74, 0.27);
+      const m = new THREE.BoxGeometry(0.14, 0.14, 0.10);
+      m.translate(0, 0.82, 0.30);
       m.rotateY(angle);
       merlonGeos.push(m);
     }
     geo = mergeGeometries(merlonGeos);
   }
-  else if (type === 'n') { // Knight (Sculpted Horse Head)
+  else if (type === 'n') { // Knight (Sculpted 3D Horse Head)
     // Base pedestal
     const points: THREE.Vector2[] = [
       new THREE.Vector2(0, 0),
-      new THREE.Vector2(0.38, 0.0),
-      new THREE.Vector2(0.38, 0.06),
-      new THREE.Vector2(0.32, 0.10),
-      new THREE.Vector2(0.34, 0.14),
-      new THREE.Vector2(0.25, 0.22),
-      new THREE.Vector2(0, 0.24)
+      new THREE.Vector2(0.42, 0.0),
+      new THREE.Vector2(0.42, 0.04),
+      new THREE.Vector2(0.36, 0.07),
+      new THREE.Vector2(0.38, 0.10),
+      new THREE.Vector2(0.32, 0.14),
+      new THREE.Vector2(0.34, 0.18),
+      new THREE.Vector2(0.26, 0.24),
+      new THREE.Vector2(0, 0.26)
     ];
-    const baseGeo = new THREE.LatheGeometry(points, 36);
+    const baseGeo = new THREE.LatheGeometry(points, RADIAL_SEGMENTS);
 
     // 3D Extruded & Bevelled Horse Silhouette
     const shape = new THREE.Shape();
-    shape.moveTo(-0.15, 0.22);
-    shape.lineTo(-0.18, 0.45);
-    shape.lineTo(-0.13, 0.66);
-    shape.lineTo(-0.06, 0.86); // Mane crest
-    shape.lineTo(0.08, 0.89);  // Ears
-    shape.lineTo(0.16, 0.76);  // Forehead
-    shape.lineTo(0.25, 0.61);  // Snout top
-    shape.lineTo(0.19, 0.48);  // Muzzle chin
-    shape.lineTo(0.09, 0.42);  // Jaw curve
-    shape.lineTo(0.04, 0.22);  // Base join
+    shape.moveTo(-0.16, 0.24);
+    shape.lineTo(-0.20, 0.48);
+    shape.lineTo(-0.14, 0.70);
+    shape.lineTo(-0.07, 0.90); // Mane crest
+    shape.lineTo(0.09, 0.93);  // Ears
+    shape.lineTo(0.17, 0.80);  // Forehead
+    shape.lineTo(0.27, 0.64);  // Snout top
+    shape.lineTo(0.20, 0.50);  // Muzzle chin
+    shape.lineTo(0.10, 0.44);  // Jaw curve
+    shape.lineTo(0.04, 0.24);  // Base join
     shape.closePath();
 
     const extrudeSettings = {
-      depth: 0.16,
+      depth: 0.18,
       bevelEnabled: true,
       bevelSegments: 4,
       steps: 1,
-      bevelSize: 0.035,
-      bevelThickness: 0.035
+      bevelSize: 0.04,
+      bevelThickness: 0.04
     };
     const headGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     headGeo.center();
-    headGeo.translate(0, 0.55, 0);
+    headGeo.translate(0, 0.58, 0);
 
-    // Add small eye indent sphere accents
-    const leftEye = new THREE.SphereGeometry(0.03, 12, 12);
-    leftEye.translate(0.12, 0.70, 0.11);
-    const rightEye = new THREE.SphereGeometry(0.03, 12, 12);
-    rightEye.translate(0.12, 0.70, -0.11);
+    // Eye sockets
+    const leftEye = new THREE.SphereGeometry(0.035, 16, 16);
+    leftEye.translate(0.13, 0.73, 0.12);
+    const rightEye = new THREE.SphereGeometry(0.035, 16, 16);
+    rightEye.translate(0.13, 0.73, -0.12);
 
     geo = mergeGeometries([baseGeo, headGeo, leftEye, rightEye]);
   }
-  else if (type === 'b') { // Bishop - Teardrop Miter & Finial
+  else if (type === 'b') { // Bishop - Miter Head & Finial
     const points: THREE.Vector2[] = [
       new THREE.Vector2(0, 0),
-      new THREE.Vector2(0.38, 0.0),
-      new THREE.Vector2(0.38, 0.06),
-      new THREE.Vector2(0.32, 0.10),
-      new THREE.Vector2(0.34, 0.14),
-      new THREE.Vector2(0.24, 0.18),
-      new THREE.Vector2(0.15, 0.48),
-      new THREE.Vector2(0.23, 0.54),
-      new THREE.Vector2(0.14, 0.58),
-      new THREE.Vector2(0.24, 0.74),
-      new THREE.Vector2(0.18, 0.88),
-      new THREE.Vector2(0.06, 0.94),
-      new THREE.Vector2(0, 0.94)
+      new THREE.Vector2(0.42, 0.0),
+      new THREE.Vector2(0.42, 0.04),
+      new THREE.Vector2(0.36, 0.07),
+      new THREE.Vector2(0.38, 0.10),
+      new THREE.Vector2(0.32, 0.14),
+      new THREE.Vector2(0.34, 0.18),
+      new THREE.Vector2(0.25, 0.22),
+      new THREE.Vector2(0.15, 0.50),
+      new THREE.Vector2(0.24, 0.56),
+      new THREE.Vector2(0.15, 0.60),
+      new THREE.Vector2(0.26, 0.78),
+      new THREE.Vector2(0.20, 0.92),
+      new THREE.Vector2(0.06, 0.98),
+      new THREE.Vector2(0, 0.98)
     ];
-    const lathe = new THREE.LatheGeometry(points, 36);
+    const lathe = new THREE.LatheGeometry(points, RADIAL_SEGMENTS);
 
     // Top finial sphere
-    const finial = new THREE.SphereGeometry(0.07, 24, 24);
-    finial.translate(0, 0.98, 0);
+    const finial = new THREE.SphereGeometry(0.075, 24, 24);
+    finial.translate(0, 1.02, 0);
 
     geo = mergeGeometries([lathe, finial]);
   }
-  else if (type === 'q') { // Queen - Flared Coronet Crown
+  else if (type === 'q') { // Queen - Coronet Crown
     const points: THREE.Vector2[] = [
       new THREE.Vector2(0, 0),
-      new THREE.Vector2(0.40, 0.0),
-      new THREE.Vector2(0.40, 0.06),
-      new THREE.Vector2(0.34, 0.10),
-      new THREE.Vector2(0.36, 0.14),
-      new THREE.Vector2(0.26, 0.20),
-      new THREE.Vector2(0.17, 0.60),
-      new THREE.Vector2(0.25, 0.66),
-      new THREE.Vector2(0.18, 0.70),
-      new THREE.Vector2(0.30, 0.98),
-      new THREE.Vector2(0.24, 0.98),
-      new THREE.Vector2(0, 0.98)
+      new THREE.Vector2(0.44, 0.0),
+      new THREE.Vector2(0.44, 0.04),
+      new THREE.Vector2(0.38, 0.07),
+      new THREE.Vector2(0.40, 0.10),
+      new THREE.Vector2(0.34, 0.14),
+      new THREE.Vector2(0.36, 0.18),
+      new THREE.Vector2(0.27, 0.24),
+      new THREE.Vector2(0.17, 0.62),
+      new THREE.Vector2(0.26, 0.68),
+      new THREE.Vector2(0.19, 0.72),
+      new THREE.Vector2(0.32, 1.02),
+      new THREE.Vector2(0.25, 1.02),
+      new THREE.Vector2(0, 1.02)
     ];
-    const lathe = new THREE.LatheGeometry(points, 36);
+    const lathe = new THREE.LatheGeometry(points, RADIAL_SEGMENTS);
 
-    // Coronet points (mini spheres on crown rim)
+    // Coronet points (8 mini spheres on crown rim)
     const coronetGeos: THREE.BufferGeometry[] = [lathe];
     const coronetCount = 8;
     for (let i = 0; i < coronetCount; i++) {
       const angle = (i * Math.PI * 2) / coronetCount;
       const ball = new THREE.SphereGeometry(0.045, 16, 16);
-      ball.translate(0.28 * Math.cos(angle), 0.98, 0.28 * Math.sin(angle));
+      ball.translate(0.30 * Math.cos(angle), 1.02, 0.30 * Math.sin(angle));
       coronetGeos.push(ball);
     }
 
     // Top center finial sphere
-    const topBall = new THREE.SphereGeometry(0.08, 24, 24);
-    topBall.translate(0, 1.06, 0);
+    const topBall = new THREE.SphereGeometry(0.085, 24, 24);
+    topBall.translate(0, 1.10, 0);
     coronetGeos.push(topBall);
 
     geo = mergeGeometries(coronetGeos);
   }
-  else { // King - Tall Crown & Cross
+  else { // King - Tall Crown & 3D Cross
     const points: THREE.Vector2[] = [
       new THREE.Vector2(0, 0),
-      new THREE.Vector2(0.42, 0.0),
-      new THREE.Vector2(0.42, 0.06),
-      new THREE.Vector2(0.35, 0.10),
-      new THREE.Vector2(0.37, 0.14),
-      new THREE.Vector2(0.27, 0.22),
-      new THREE.Vector2(0.17, 0.58),
-      new THREE.Vector2(0.27, 0.65),
-      new THREE.Vector2(0.17, 0.70),
-      new THREE.Vector2(0.32, 1.04),
-      new THREE.Vector2(0.26, 1.10),
-      new THREE.Vector2(0.12, 1.14),
-      new THREE.Vector2(0, 1.14)
+      new THREE.Vector2(0.46, 0.0),
+      new THREE.Vector2(0.46, 0.04),
+      new THREE.Vector2(0.40, 0.07),
+      new THREE.Vector2(0.42, 0.10),
+      new THREE.Vector2(0.35, 0.14),
+      new THREE.Vector2(0.37, 0.18),
+      new THREE.Vector2(0.28, 0.24),
+      new THREE.Vector2(0.18, 0.62),
+      new THREE.Vector2(0.28, 0.68),
+      new THREE.Vector2(0.18, 0.74),
+      new THREE.Vector2(0.34, 1.08),
+      new THREE.Vector2(0.27, 1.14),
+      new THREE.Vector2(0.12, 1.18),
+      new THREE.Vector2(0, 1.18)
     ];
-    const lathe = new THREE.LatheGeometry(points, 36);
+    const lathe = new THREE.LatheGeometry(points, RADIAL_SEGMENTS);
 
     // Cross on top of King's crown
-    const vBar = new THREE.BoxGeometry(0.06, 0.22, 0.06);
-    vBar.translate(0, 1.25, 0);
-    const hBar = new THREE.BoxGeometry(0.16, 0.06, 0.06);
-    hBar.translate(0, 1.27, 0);
+    const vBar = new THREE.BoxGeometry(0.06, 0.24, 0.06);
+    vBar.translate(0, 1.30, 0);
+    const hBar = new THREE.BoxGeometry(0.18, 0.06, 0.06);
+    hBar.translate(0, 1.32, 0);
 
     geo = mergeGeometries([lathe, vBar, hBar]);
   }
@@ -549,10 +562,10 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
 
             pieceGroup.add(mainMesh);
 
-            // Glowing accent ring base pedestal
-            const baseRingGeo = new THREE.CylinderGeometry(0.39, 0.41, 0.03, 32);
+            // Glowing accent ring base pedestal embedded underneath base disc
+            const baseRingGeo = new THREE.CylinderGeometry(0.425, 0.435, 0.015, 36);
             const baseRingMesh = new THREE.Mesh(baseRingGeo, ringMat);
-            baseRingMesh.position.y = 0.015;
+            baseRingMesh.position.y = 0.0075;
             pieceGroup.add(baseRingMesh);
 
             pieceGroup.position.set(targetX, targetY, targetZ);
