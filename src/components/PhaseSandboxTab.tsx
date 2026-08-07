@@ -42,6 +42,38 @@ import { db } from '../firebase';
 import { doc, setDoc, increment, updateDoc, onSnapshot, collection, query, where, getDoc, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { sanitizeFirestoreData } from '../utils/firestoreSanitizer';
 
+const parseTimestamp = (rawTimestamp: any): string => {
+  if (!rawTimestamp) {
+    return new Date().toISOString();
+  }
+  if (typeof rawTimestamp.toDate === 'function') {
+    try {
+      return rawTimestamp.toDate().toISOString();
+    } catch {
+      return new Date().toISOString();
+    }
+  }
+  if (typeof rawTimestamp === 'object' && typeof rawTimestamp.seconds === 'number') {
+    return new Date(rawTimestamp.seconds * 1000).toISOString();
+  }
+  if (typeof rawTimestamp === 'string') {
+    return rawTimestamp;
+  }
+  if (typeof rawTimestamp === 'number') {
+    return new Date(rawTimestamp).toISOString();
+  }
+  return new Date().toISOString();
+};
+
+const getMsgTime = (ts: any): number => {
+  if (!ts) return Date.now();
+  if (typeof ts.toDate === 'function') return ts.toDate().getTime();
+  if (typeof ts === 'object' && typeof ts.seconds === 'number') return ts.seconds * 1000;
+  const d = new Date(ts);
+  if (!isNaN(d.getTime())) return d.getTime();
+  return Date.now();
+};
+
 interface PhaseSandboxTabProps {
   userProfile: UserProfile;
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
@@ -1288,9 +1320,10 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           senderName: mData.senderName,
           senderAvatar: mData.senderAvatar,
           text: mData.text,
-          timestamp: typeof mData.timestamp === 'string' ? mData.timestamp : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          timestamp: parseTimestamp(mData.timestamp)
         } as ChatMessage);
       });
+      msgs.sort((a, b) => getMsgTime(a.timestamp) - getMsgTime(b.timestamp));
       if (msgs.length > 0) {
         setChatMessages(msgs);
       }
@@ -1405,18 +1438,21 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       senderName: userProfile.username,
       senderAvatar: userProfile.avatar,
       text: inputMessage,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      timestamp: new Date().toISOString()
     };
-
-    setChatMessages(prev => [...prev, userMsg]);
-    setInputMessage('');
 
     if (activeChallenge?.id && activeChallenge.opponentType === 'player') {
       addDoc(collection(db, 'gameSessions', activeChallenge.id, 'messages'), {
-        ...userMsg,
+        senderId: userProfile.uid,
+        senderName: userProfile.username,
+        senderAvatar: userProfile.avatar,
+        text: inputMessage,
         timestamp: serverTimestamp()
       }).catch(console.error);
+    } else {
+      setChatMessages(prev => [...prev, userMsg]);
     }
+    setInputMessage('');
   };
 
   const renderChatPanelContent = () => {
@@ -1425,6 +1461,10 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         <div className="flex-1 p-4 overflow-y-auto space-y-4">
           {chatMessages.map((msg) => {
             const isMe = msg.senderId === userProfile.uid;
+            const msgDate = new Date(msg.timestamp);
+            const timeDisplay = !isNaN(msgDate.getTime()) 
+              ? msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : msg.timestamp || 'Just now';
             return (
               <div key={msg.id} className={`flex items-start gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
                 <img 
@@ -1436,7 +1476,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                 <div className="max-w-[75%] space-y-1">
                   <div className={`flex items-baseline gap-2 text-[10px] text-neutral-400 font-mono ${isMe ? 'flex-row-reverse' : ''}`}>
                     <span className="font-bold text-neutral-300">{msg.senderName}</span>
-                    <span>{msg.timestamp}</span>
+                    <span>{timeDisplay}</span>
                   </div>
                   <div className={`p-3.5 rounded-2xl text-xs leading-relaxed font-sans shadow-md ${
                     isMe 

@@ -97,6 +97,15 @@ const parseTimestamp = (rawTimestamp: any): string => {
   return new Date().toISOString();
 };
 
+const getMsgTime = (ts: any): number => {
+  if (!ts) return Date.now();
+  if (typeof ts.toDate === 'function') return ts.toDate().getTime();
+  if (typeof ts === 'object' && typeof ts.seconds === 'number') return ts.seconds * 1000;
+  const d = new Date(ts);
+  if (!isNaN(d.getTime())) return d.getTime();
+  return Date.now();
+};
+
 export const ChatTab: React.FC<ChatTabProps> = ({
   userProfile,
   setUserProfile,
@@ -171,7 +180,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         });
       });
       // Sort by timestamp descending
-      chats.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
+      chats.sort((a, b) => getMsgTime(b.timestamp) - getMsgTime(a.timestamp));
       setRecentChats(chats);
     });
 
@@ -257,7 +266,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             timestamp: parseTimestamp(data.timestamp)
           } as ChatMessage);
         });
-        msgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        msgs.sort((a, b) => getMsgTime(a.timestamp) - getMsgTime(b.timestamp));
         setChatMessages(msgs);
       });
     } else {
@@ -288,7 +297,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             challengeStatus: data.challengeStatus
           } as ChatMessage);
         });
-        msgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        msgs.sort((a, b) => getMsgTime(a.timestamp) - getMsgTime(b.timestamp));
         setChatMessages(msgs);
 
         // Auto join if sender's challenge was accepted
