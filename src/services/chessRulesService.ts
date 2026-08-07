@@ -76,20 +76,41 @@ export const INITIAL_BOARD: BoardGrid = [
 
 export function normalizeBoard(boardData: any): BoardGrid {
   if (!boardData) return JSON.parse(JSON.stringify(INITIAL_BOARD));
-  if (Array.isArray(boardData)) {
-    if (boardData.length > 0 && Array.isArray(boardData[0])) {
-      return boardData;
-    }
-  }
-  if (typeof boardData === 'object') {
-    const grid: BoardGrid = [];
-    for (let i = 0; i < 8; i++) {
-      const row = boardData[i] || boardData[i.toString()] || [];
-      grid.push(Array.isArray(row) ? row : []);
+
+  const grid: BoardGrid = Array.from({ length: 8 }, () => Array(8).fill(null));
+
+  // Case 1: 1D array of 64 elements
+  if (Array.isArray(boardData) && boardData.length === 64) {
+    for (let i = 0; i < 64; i++) {
+      const r = Math.floor(i / 8);
+      const c = i % 8;
+      const item = boardData[i];
+      if (item && typeof item === 'object' && item.type && item.color) {
+        grid[r][c] = { type: item.type as PieceType, color: item.color as Color };
+      }
     }
     return grid;
   }
-  return JSON.parse(JSON.stringify(INITIAL_BOARD));
+
+  // Case 2: 2D array or Object of rows/cells (e.g. Firestore map objects)
+  for (let r = 0; r < 8; r++) {
+    const rowData = Array.isArray(boardData)
+      ? boardData[r]
+      : (boardData[r] !== undefined ? boardData[r] : boardData[r.toString()]);
+
+    if (rowData) {
+      for (let c = 0; c < 8; c++) {
+        const item = Array.isArray(rowData)
+          ? rowData[c]
+          : (rowData[c] !== undefined ? rowData[c] : rowData[c.toString()]);
+
+        if (item && typeof item === 'object' && item.type && item.color) {
+          grid[r][c] = { type: item.type as PieceType, color: item.color as Color };
+        }
+      }
+    }
+  }
+  return grid;
 }
 
 export class ChessRulesService {

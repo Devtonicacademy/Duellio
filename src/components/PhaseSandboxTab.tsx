@@ -1163,7 +1163,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       const sessionId = activeChallenge.id;
       if (activeChallenge.gameType === 'TicTacToe') resetState = TicTacToeLogicService.initializeBoard(sessionId, 'host', 'guest');
       else if (activeChallenge.gameType === 'Draft') resetState = DraftLogicService.initializeBoard(sessionId, 'host', 'guest');
-      else if (activeChallenge.gameType === 'Chess') resetState = { sessionId, activeColor: 'w', status: 'playing' };
+      else if (activeChallenge.gameType === 'Chess') resetState = ChessRulesService.initializeBoard(sessionId, activeChallenge.senderId, userProfile.uid);
       else if (activeChallenge.gameType === 'Ludo') resetState = { sessionId, activePlayer: 'red', status: 'playing' };
       else resetState = { sessionId, status: 'playing' };
 
@@ -1191,7 +1191,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
       const sessionId = activeChallenge.id;
       if (activeChallenge.gameType === 'TicTacToe') resetState = TicTacToeLogicService.initializeBoard(sessionId, 'host', 'guest');
       else if (activeChallenge.gameType === 'Draft') resetState = DraftLogicService.initializeBoard(sessionId, 'host', 'guest');
-      else if (activeChallenge.gameType === 'Chess') resetState = { sessionId, activeColor: 'w', status: 'playing' };
+      else if (activeChallenge.gameType === 'Chess') resetState = ChessRulesService.initializeBoard(sessionId, activeChallenge.senderId, userProfile.uid);
       else if (activeChallenge.gameType === 'Ludo') resetState = { sessionId, activePlayer: 'red', status: 'playing' };
       else resetState = { sessionId, status: 'playing' };
 
@@ -2896,6 +2896,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
                                   };
                                   setActiveChallenge(inviteChallenge);
                                   setGamePlayStatus('playing');
+                                  setLiveGameState(s.gameState);
                                   _setWhotGameState(s.gameState);
                                   whotDeckRef.current = s.deck || [];
                                 }}
@@ -2983,6 +2984,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
                                 setActiveChallenge(inviteChallenge);
                                 setGamePlayStatus('playing');
+                                setLiveGameState(s.gameState && s.gameState.board ? s.gameState : updatedGameState);
                                 _setWhotGameState(updatedGameState);
                                 whotDeckRef.current = s.deck || [];
 
