@@ -121,7 +121,7 @@ export const InteractiveChessBoard: React.FC<InteractiveChessBoardProps> = ({
   const [invalidMoveMessage, setInvalidMoveMessage] = useState<string | null>(null);
   const [selectedPieceTips, setSelectedPieceTips] = useState<string | null>(null);
 
-  const myColor: Color = isBot ? 'w' : (isHost ? 'w' : 'b');
+  const myColor: Color = isBot ? 'w' : (liveGameState?.whitePlayerId ? (isHost ? 'w' : 'b') : (isHost ? 'w' : 'b'));
 
   const handlePlayAgain = () => {
     if (onReMatch) {

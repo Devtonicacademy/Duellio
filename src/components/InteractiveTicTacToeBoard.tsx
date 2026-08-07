@@ -35,11 +35,10 @@ export const InteractiveTicTacToeBoard: React.FC<InteractiveTicTacToeBoardProps>
   liveGameState,
   onUpdateLiveState
 }) => {
-  // In PvP, Host (P1) is ALWAYS 'host' (Index 0 => 'X'), Guest (P2) is ALWAYS 'guest' (Index 1 => 'O')
-  const player1Id = isBot ? 'player-user' : 'host';
-  const player2Id = isBot ? 'bot-user' : 'guest';
+  const player1Id = liveGameState?.playerIds?.[0] || (isBot ? 'player-user' : 'host');
+  const player2Id = liveGameState?.playerIds?.[1] || (isBot ? 'bot-user' : 'guest');
   const amIPlayer1 = isBot ? true : isHost;
-  const myId = isBot ? 'player-user' : (isHost ? 'host' : 'guest');
+  const myId = isBot ? 'player-user' : (isHost ? player1Id : player2Id);
 
   const myMarker = amIPlayer1 ? 'X' : 'O';
   const opponentMarker = amIPlayer1 ? 'O' : 'X';

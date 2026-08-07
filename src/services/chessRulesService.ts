@@ -124,7 +124,9 @@ export class ChessRulesService {
       castlingRights: { ...INITIAL_CASTLING_RIGHTS },
       enPassantTarget: null,
       status: 'playing',
-      playerIds: [hostId, guestId]
+      playerIds: [hostId, guestId],
+      whitePlayerId: hostId,
+      blackPlayerId: guestId
     };
   }
 

@@ -45,8 +45,8 @@ export const InteractiveDraftBoard: React.FC<InteractiveDraftBoardProps> = ({
     liveGameState || DraftLogicService.initializeBoard(sessionId || 'draft-session', 'host', 'guest')
   );
 
-  const player1Id = gameState?.playerIds?.[0] || (isBot ? 'player-user' : 'host');
-  const player2Id = gameState?.playerIds?.[1] || (isBot ? 'bot-user' : 'guest');
+  const player1Id = liveGameState?.playerIds?.[0] || gameState?.playerIds?.[0] || (isBot ? 'player-user' : 'host');
+  const player2Id = liveGameState?.playerIds?.[1] || gameState?.playerIds?.[1] || (isBot ? 'bot-user' : 'guest');
   const myId = isBot ? player1Id : (isHost ? player1Id : player2Id);
 
   // Start Draft BGM on mount

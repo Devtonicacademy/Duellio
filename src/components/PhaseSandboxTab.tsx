@@ -149,7 +149,7 @@ function normalizeWhotGameState(gameState: any, currentUserId: string): WhotGame
     delete hands[''];
   }
 
-  playerIds = playerIds.map(id => (id === 'guest' || id === '') ? currentUserId : id);
+  playerIds = playerIds.map(id => ((id === 'guest' || id === '') && currentUserId !== playerIds[0]) ? currentUserId : id);
   if (!playerIds.includes(currentUserId) && currentUserId) {
     playerIds.push(currentUserId);
   }
@@ -1161,9 +1161,11 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     if (activeChallenge) {
       let resetState: any = null;
       const sessionId = activeChallenge.id;
-      if (activeChallenge.gameType === 'TicTacToe') resetState = TicTacToeLogicService.initializeBoard(sessionId, 'host', 'guest');
-      else if (activeChallenge.gameType === 'Draft') resetState = DraftLogicService.initializeBoard(sessionId, 'host', 'guest');
-      else if (activeChallenge.gameType === 'Chess') resetState = ChessRulesService.initializeBoard(sessionId, activeChallenge.senderId, userProfile.uid);
+      const hostId = activeChallenge.senderId || 'host';
+      const guestId = userProfile.uid || 'guest';
+      if (activeChallenge.gameType === 'TicTacToe') resetState = TicTacToeLogicService.initializeBoard(sessionId, hostId, guestId);
+      else if (activeChallenge.gameType === 'Draft') resetState = DraftLogicService.initializeBoard(sessionId, hostId, guestId);
+      else if (activeChallenge.gameType === 'Chess') resetState = ChessRulesService.initializeBoard(sessionId, hostId, guestId);
       else if (activeChallenge.gameType === 'Ludo') resetState = { sessionId, activePlayer: 'red', status: 'playing' };
       else resetState = { sessionId, status: 'playing' };
 
@@ -3082,7 +3084,17 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setUserProfile(prev => ({ ...prev, coins: prev.coins + activeChallenge.entryFee, status: 'online' }));
+                  if (activeChallenge && activeChallenge.entryFee > 0) {
+                    const refundTx: WalletTransaction = {
+                      id: `refund_${Date.now()}`,
+                      type: 'stake_refund',
+                      amount: activeChallenge.entryFee,
+                      description: `Escrow Refund: Cancelled ${activeChallenge.gameType} Lobby`,
+                      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    };
+                    setTransactions(prev => [refundTx, ...prev]);
+                  }
+                  setUserProfile(prev => ({ ...prev, coins: prev.coins + (activeChallenge?.entryFee || 0), status: 'online' }));
                   setActiveChallenge(null);
                   setGamePlayStatus('none');
                 }}
