@@ -531,6 +531,8 @@ export default function App() {
                   setUserProfile={setUserProfile}
                   onLaunchMatch={handleLaunchArenaMatch}
                   allProfiles={allProfiles}
+                  preselectedGame={preselectedGame}
+                  setPreselectedGame={setPreselectedGame}
                 />
               )}
 

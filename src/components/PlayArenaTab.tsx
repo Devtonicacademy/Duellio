@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Swords, 
   Users, 
@@ -20,7 +20,13 @@ import {
   Brain,
   MessageSquare,
   Link,
-  Copy
+  Copy,
+  Minus,
+  Plus,
+  Check,
+  X,
+  Zap,
+  AlertTriangle
 } from 'lucide-react';
 import { UserProfile, WalletTransaction } from '../types';
 import { db } from '../firebase';
@@ -41,6 +47,8 @@ interface PlayArenaTabProps {
     ludoMode?: '2-player' | '4-player';
   }) => void;
   allProfiles: UserProfile[];
+  preselectedGame?: 'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | null;
+  setPreselectedGame?: React.Dispatch<React.SetStateAction<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | null>>;
 }
 
 const AVAILABLE_GAMES = [
@@ -105,7 +113,9 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
   userProfile,
   setUserProfile,
   onLaunchMatch,
-  allProfiles
+  allProfiles,
+  preselectedGame,
+  setPreselectedGame
 }) => {
   const [selectedGame, setSelectedGame] = useState<'Chess' | 'Ludo' | 'Whot' | 'Draft' | 'TicTacToe' | null>(null);
   const [opponentStyle, setOpponentStyle] = useState<'bot' | 'player'>('bot');
@@ -113,10 +123,35 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [stake, setStake] = useState<number>(250);
   const [ludoMode, setLudoMode] = useState<'2-player' | '4-player'>('2-player');
+
+  // Sync preselected game if coming from discover tab or header
+  useEffect(() => {
+    if (preselectedGame) {
+      setSelectedGame(preselectedGame);
+      if (setPreselectedGame) {
+        setPreselectedGame(null);
+      }
+    }
+  }, [preselectedGame, setPreselectedGame]);
   
   // Available other live players from allProfiles (excluding current user)
   const onlinePlayers = allProfiles.filter(p => p.uid !== userProfile.uid);
   const [selectedPlayerUid, setSelectedPlayerUid] = useState<string>(onlinePlayers[0]?.uid || '');
+
+  // Close modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedGame(null);
+      }
+    };
+    if (selectedGame) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedGame]);
 
   // Calculate bot multiplier modifier
   const getMultiplier = () => {
@@ -386,370 +421,520 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
       </div>
 
       {/* Match Settings Modal overlay */}
-      {selectedGame && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          {/* Backdrop with animate fade-in */}
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            onClick={() => setSelectedGame(null)}
-            className="absolute inset-0 bg-black/80 backdrop-blur-md"
-          />
-
-          {/* Modal Container — slides up from bottom on mobile, centered on desktop */}
-          <motion.div 
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="relative bg-[#0B0B0F] border border-white/[0.08] rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 md:p-8 max-w-lg w-full shadow-2xl space-y-4 sm:space-y-5 max-h-[92vh] sm:max-h-[90vh] overflow-y-auto z-10"
-            id="matchmaker-parameter-card"
+      <AnimatePresence>
+        {selectedGame && (
+          <div 
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-match-title"
           >
-            {/* ── Modal Header with game banner ── */}
-            {(() => {
-              const activeGame = AVAILABLE_GAMES.find(g => g.id === selectedGame);
-              return (
-                <div className="relative -mx-4 sm:-mx-6 md:-mx-8 -mt-4 sm:-mt-6 md:-mt-8 mb-2 overflow-hidden rounded-t-3xl">
-                  {/* Game background image banner */}
-                  <div className="h-24 sm:h-28 relative">
-                    <img
-                      src={activeGame?.image}
-                      alt={activeGame?.name}
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0F] via-[#0B0B0F]/60 to-transparent" />
-                    <div className={`absolute inset-0 bg-gradient-to-r ${activeGame?.gradientBg} opacity-40`} />
-                  </div>
+            {/* Backdrop with animated fade-in */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setSelectedGame(null)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-md"
+            />
 
-                  {/* Close button overlaid on banner */}
-                  <button 
-                    type="button"
-                    onClick={() => setSelectedGame(null)}
-                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 flex items-center justify-center text-neutral-300 hover:text-white transition-colors cursor-pointer border border-white/10"
-                  >
-                    ✕
-                  </button>
-
-                  {/* Title overlaid at bottom of banner */}
-                  <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-6 md:px-8 pb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 bg-neutral-900/80 backdrop-blur-md rounded-xl border border-white/10 flex items-center justify-center shrink-0">
-                        <img src={activeGame?.icon} alt="" className="w-5 h-5 object-contain" />
-                      </div>
-                      <div className="min-w-0">
-                        <h2 className="text-sm sm:text-base font-black text-white tracking-tight font-display truncate">
-                          {activeGame?.name}
-                        </h2>
-                        <p className="text-[10px] text-neutral-400 truncate">Configure match rules & opponent</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* ── Opponent Mode Selector ── */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-wider block">
-                Opponent Mode
-              </label>
-              <div className="grid grid-cols-2 gap-2 p-1 bg-[#070709] rounded-xl border border-white/[0.04]">
-                <button
-                  type="button"
-                  onClick={() => setOpponentStyle('bot')}
-                  className={`py-2.5 rounded-lg font-bold text-[11px] sm:text-xs font-display flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    opponentStyle === 'bot'
-                      ? 'bg-purple-350 text-[#070709]'
-                      : 'text-neutral-400 hover:text-white'
-                  }`}
-                >
-                  <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  VS Bot
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOpponentStyle('player')}
-                  className={`py-2.5 rounded-lg font-bold text-[11px] sm:text-xs font-display flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    opponentStyle === 'player'
-                      ? 'bg-purple-350 text-[#070709]'
-                      : 'text-neutral-400 hover:text-white'
-                  }`}
-                >
-                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  Live Duel
-                </button>
-              </div>
-            </div>
-
-            {/* ── Ludo Quadrant Mode Selector (Before Initiating Game) ── */}
-            {selectedGame === 'Ludo' && (
-              <div className="space-y-2 animate-fade-in bg-emerald-500/[0.04] border border-emerald-500/20 p-3 sm:p-4 rounded-2xl">
-                <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-mono font-bold text-emerald-300 uppercase tracking-wider block">
-                    Ludo Match Type
-                  </label>
-                  <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/30">
-                    {ludoMode === '2-player' ? '2-Player (2 Quadrants Each)' : '4-Player (1 Quadrant Each)'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 p-1 bg-[#070709] rounded-xl border border-white/[0.04]">
-                  <button
-                    type="button"
-                    onClick={() => setLudoMode('2-player')}
-                    className={`py-2.5 rounded-lg font-bold text-[11px] sm:text-xs font-display flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      ludoMode === '2-player'
-                        ? 'bg-amber-400 text-neutral-950 shadow-[0_0_10px_rgba(245,158,11,0.4)]'
-                        : 'text-neutral-400 hover:text-white'
-                    }`}
-                  >
-                    <UserCheck className="w-3.5 h-3.5" />
-                    2 Players (2 Quadrants)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLudoMode('4-player')}
-                    className={`py-2.5 rounded-lg font-bold text-[11px] sm:text-xs font-display flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      ludoMode === '4-player'
-                        ? 'bg-cyan-400 text-neutral-950 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
-                        : 'text-neutral-400 hover:text-white'
-                    }`}
-                  >
-                    <Users className="w-3.5 h-3.5" />
-                    4 Players (1 Quadrant)
-                  </button>
-                </div>
-
-                <p className="text-[10px] text-neutral-400 font-mono">
-                  {ludoMode === '2-player'
-                    ? '💡 2-Player Duel: You command 2 quadrants (Red & Yellow) with 8 total pawns.'
-                    : '💡 4-Player Battle Royale: 4 distinct players command 1 quadrant each (Red vs Blue vs Green vs Yellow).'}
-                </p>
-              </div>
-            )}
-
-            {/* ── Bot Play Mode (Practice vs Staked) ── */}
-            {opponentStyle === 'bot' && (
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-wider block">
-                  Bot Game Style
-                </label>
-                <div className="grid grid-cols-2 gap-2 p-1 bg-[#070709] rounded-xl border border-white/[0.04]">
-                  <button
-                    type="button"
-                    onClick={() => setBotPlayMode('practice')}
-                    className={`py-2 rounded-lg font-bold text-[11px] sm:text-xs font-display transition-all cursor-pointer ${
-                      botPlayMode === 'practice'
-                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                        : 'text-neutral-400 hover:text-white'
-                    }`}
-                  >
-                    Practice
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBotPlayMode('staked')}
-                    className={`py-2 rounded-lg font-bold text-[11px] sm:text-xs font-display transition-all cursor-pointer ${
-                      botPlayMode === 'staked'
-                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                        : 'text-neutral-400 hover:text-white'
-                    }`}
-                  >
-                    Staked
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── Bot Difficulty / Player Selection ── */}
-            {opponentStyle === 'bot' ? (
-              botPlayMode === 'practice' && (
-                <div className="space-y-2.5 animate-fade-in bg-purple-500/[0.03] border border-purple-500/10 p-3 sm:p-4 rounded-2xl">
-                  <div className="flex justify-between items-center gap-2">
-                    <label className="text-[10px] font-mono font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1 shrink-0">
-                      <Brain className="w-3.5 h-3.5" />
-                      Difficulty
-                    </label>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-2 font-sans">
-                    <button
-                      type="button"
-                      onClick={() => setDifficulty('easy')}
-                      className={`py-2 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
-                        difficulty === 'easy'
-                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                          : 'bg-neutral-900/60 border-transparent text-neutral-400 hover:bg-neutral-850 hover:text-neutral-200'
-                      }`}
-                    >
-                      <span className="text-[11px] sm:text-xs font-bold font-display">Easy</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDifficulty('medium')}
-                      className={`py-2 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
-                        difficulty === 'medium'
-                          ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
-                          : 'bg-neutral-900/60 border-transparent text-neutral-400 hover:bg-neutral-850 hover:text-neutral-200'
-                      }`}
-                    >
-                      <span className="text-[11px] sm:text-xs font-bold font-display">Medium</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDifficulty('hard')}
-                      className={`py-2 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
-                        difficulty === 'hard'
-                          ? 'bg-rose-500/15 border-rose-500/45 text-rose-305'
-                          : 'bg-neutral-900/60 border-transparent text-neutral-400 hover:bg-neutral-850 hover:text-neutral-200'
-                      }`}
-                    >
-                      <span className="text-[11px] sm:text-xs font-bold font-display">Hard</span>
-                    </button>
-                  </div>
-                </div>
-              )
-            ) : (
-              <div className="space-y-3 animate-fade-in bg-cyan-500/[0.03] border border-cyan-500/10 p-3 sm:p-4 rounded-2xl">
-                <label className="text-[10px] font-mono font-bold text-cyan-300 uppercase tracking-wider block">
-                  Select Opponent
-                </label>
-                
-                <div className="space-y-1.5 max-h-36 overflow-y-auto -mx-1 px-1">
-                  {onlinePlayers.map((player) => (
-                    <div
-                      key={player.uid}
-                      onClick={() => setSelectedPlayerUid(player.uid)}
-                      className={`flex items-center gap-2 p-2 rounded-xl transition-all cursor-pointer border select-none ${
-                        selectedPlayerUid === player.uid
-                          ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-200'
-                          : 'bg-neutral-900/50 border-transparent hover:bg-neutral-850 text-neutral-300'
-                      }`}
-                    >
-                      <img src={player.avatar} alt={player.username} className="w-7 h-7 rounded-full object-cover border border-white/10 shrink-0" referrerPolicy="no-referrer" />
-                      <div className="flex-1 min-w-0">
-                        <span className="font-bold text-[11px] block truncate leading-none">{player.username}</span>
-                        <span className="font-mono text-[8px] text-neutral-405 truncate block">W:{player.wins} · {player.coins.toLocaleString()}c</span>
-                      </div>
-                      {selectedPlayerUid === player.uid && (
-                        <span className="text-[9px] bg-cyan-400 text-neutral-950 font-bold px-1.5 py-0.5 rounded-md font-mono uppercase shrink-0">✓</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Invite Link */}
-                <div className="border-t border-cyan-500/15 pt-3 space-y-1.5">
-                  <span className="text-[10px] font-mono font-bold text-cyan-300 uppercase tracking-wider block">
-                    🔗 Invite Link
-                  </span>
-                  <div className="flex gap-1.5">
-                    <input
-                      readOnly
-                      onClick={(e) => (e.target as HTMLInputElement).select()}
-                      value={`${window.location.origin}${window.location.pathname}?friendInvite=true&game=${selectedGame}&stake=${stake}&sender=${encodeURIComponent(userProfile.username)}`}
-                      className="flex-1 min-w-0 bg-black/60 border border-white/10 rounded-lg px-2.5 py-1.5 text-[9px] text-neutral-350 font-mono focus:outline-none selection:bg-cyan-500 selection:text-neutral-950 truncate"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const link = `${window.location.origin}${window.location.pathname}?friendInvite=true&game=${selectedGame}&stake=${stake}&sender=${encodeURIComponent(userProfile.username)}`;
-                        try {
-                          navigator.clipboard.writeText(link);
-                        } catch (e) {
-                          console.warn("Clipboard copy failed:", e);
-                        }
-                        alert("📋 Invite link copied!");
-                      }}
-                      className="px-2.5 bg-cyan-400 hover:bg-cyan-300 active:scale-95 text-neutral-950 rounded-lg text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all shrink-0"
-                    >
-                      <Copy className="w-3 h-3" />
-                      Copy
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ── Entry Fee / Stakes ── */}
-            {!(opponentStyle === 'bot' && botPlayMode === 'practice') && (
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-wider">
-                    Entry Stakes
-                  </label>
-                  <span className="text-xs font-mono font-bold text-purple-300">{stake}c</span>
-                </div>
-                
-                <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
-                  {[100, 250, 500, 1000].map((val) => (
-                    <button
-                      key={val}
-                      type="button"
-                      onClick={() => setStake(val)}
-                      className={`py-2 text-[10px] font-mono font-bold rounded-xl transition-all border cursor-pointer ${
-                        stake === val
-                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                          : 'bg-neutral-900 hover:bg-neutral-850 border-white/[0.04] text-neutral-400'
-                      }`}
-                    >
-                      {val >= 1000 ? `${val / 1000}k` : val}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="pt-1">
-                  <input 
-                    type="range" 
-                    min="50" 
-                    max="2000" 
-                    step="50"
-                    value={stake} 
-                    onChange={(e) => setStake(Number(e.target.value))}
-                    className="w-full h-1 bg-neutral-900 rounded-lg appearance-none cursor-pointer accent-purple-500"
-                  />
-                  <div className="flex justify-between text-[8px] sm:text-[9px] font-mono text-neutral-500 mt-0.5">
-                    <span>50</span>
-                    <span>2,000</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ── Payout Summary ── */}
-            <div className="bg-[#070709] rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/[0.04] space-y-2">
-              <div className="flex justify-between items-center text-[11px] sm:text-xs">
-                <span className="text-neutral-450">Entry Fee</span>
-                <span className="text-white font-mono font-bold">
-                  -{opponentStyle === 'bot' && botPlayMode === 'practice' ? 0 : stake}c
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-[11px] sm:text-xs">
-                <span className="text-neutral-450">Stake Pool</span>
-                <span className="text-white font-mono font-bold">
-                  {opponentStyle === 'bot' && botPlayMode === 'practice' ? 0 : stake * 2}c
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center pt-1 border-t border-white/[0.04]">
-                <strong className="text-white font-black font-display uppercase text-[10px] sm:text-xs tracking-tight">Win Payout</strong>
-                <strong className="text-emerald-400 font-mono font-bold text-sm sm:text-base">
-                  +{opponentStyle === 'bot' && botPlayMode === 'practice' ? 0 : stake * 2}c
-                </strong>
-              </div>
-            </div>
-
-            {/* ── Launch CTA ── */}
-            <button
-              onClick={handleLaunch}
-              className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-purple-500 via-purple-700 to-pink-500 hover:from-purple-450 hover:to-pink-450 text-white font-extrabold text-xs sm:text-sm uppercase tracking-wider sm:tracking-widest rounded-xl shadow-lg shadow-purple-500/10 cursor-pointer hover:shadow-purple-500/20 active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+            {/* Modal Container — slides up from bottom on mobile, centered on desktop */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 340 }}
+              className="relative bg-[#0B0B0F] border border-white/10 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 md:p-7 max-w-lg w-full shadow-[0_25px_60px_rgba(0,0,0,0.85)] space-y-5 max-h-[92vh] sm:max-h-[88vh] overflow-y-auto z-10 custom-scrollbar text-white"
+              id="matchmaker-parameter-card"
             >
-              <Swords className="w-4 h-4 sm:w-5 sm:h-5" />
-              Start Duel
-            </button>
-          </motion.div>
-        </div>
-      )}
+              {/* ── Modal Header with game banner & artwork ── */}
+              {(() => {
+                const activeGame = AVAILABLE_GAMES.find(g => g.id === selectedGame);
+                const isPractice = opponentStyle === 'bot' && botPlayMode === 'practice';
+                const actualStake = isPractice ? 0 : stake;
+                const isInsufficient = userProfile.coins < actualStake;
+                const shortfall = actualStake - userProfile.coins;
+
+                return (
+                  <>
+                    <div className="relative -mx-5 sm:-mx-6 md:-mx-7 -mt-5 sm:-mt-6 md:-mt-7 mb-1 overflow-hidden rounded-t-3xl border-b border-white/[0.08]">
+                      {/* Game background image banner */}
+                      <div className="h-28 sm:h-32 relative">
+                        <img
+                          src={activeGame?.image}
+                          alt={activeGame?.name}
+                          className="w-full h-full object-cover brightness-90"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0F] via-[#0B0B0F]/70 to-transparent" />
+                        <div className={`absolute inset-0 bg-gradient-to-r ${activeGame?.gradientBg} opacity-50`} />
+                      </div>
+
+                      {/* Close button overlaid on banner */}
+                      <button 
+                        type="button"
+                        onClick={() => setSelectedGame(null)}
+                        aria-label="Close setup modal"
+                        className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md hover:bg-black/85 flex items-center justify-center text-neutral-300 hover:text-white transition-all cursor-pointer border border-white/15 hover:scale-105 active:scale-95 shadow-md z-20"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+
+                      {/* Title overlaid at bottom of banner */}
+                      <div className="absolute bottom-0 left-0 right-0 px-5 sm:px-6 md:px-7 pb-3.5 flex items-end justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-11 h-11 bg-neutral-900/90 backdrop-blur-md rounded-2xl border border-white/15 flex items-center justify-center shrink-0 shadow-lg p-1.5">
+                            <img src={activeGame?.icon} alt="" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30">
+                                Match Setup
+                              </span>
+                              <span className="text-[9px] font-mono text-neutral-400 hidden sm:inline-block">
+                                {activeGame?.metric}
+                              </span>
+                            </div>
+                            <h2 id="modal-match-title" className="text-base sm:text-lg font-black text-white tracking-tight font-display truncate mt-0.5">
+                              {activeGame?.name}
+                            </h2>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── Opponent Mode Selector Cards ── */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider block">
+                          1. Choose Opponent Type
+                        </label>
+                        <span className="text-[10px] font-mono text-neutral-400">
+                          {opponentStyle === 'bot' ? '🤖 vs AI Bot' : '👤 vs Live Player'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {/* Bot Selection Card */}
+                        <button
+                          type="button"
+                          onClick={() => setOpponentStyle('bot')}
+                          className={`relative p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 group ${
+                            opponentStyle === 'bot'
+                              ? 'bg-gradient-to-b from-purple-500/15 via-purple-500/5 to-transparent border-purple-500/60 shadow-[0_0_20px_rgba(168,85,247,0.18)] ring-1 ring-purple-500/40'
+                              : 'bg-neutral-900/60 border-white/[0.06] hover:border-white/20 hover:bg-neutral-850/80 text-neutral-400'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className={`p-2 rounded-xl border transition-colors ${
+                              opponentStyle === 'bot'
+                                ? 'bg-purple-500/25 border-purple-400/40 text-purple-300'
+                                : 'bg-neutral-950 border-white/5 text-neutral-400 group-hover:text-white'
+                            }`}>
+                              <Bot className="w-5 h-5" />
+                            </div>
+                            {opponentStyle === 'bot' && (
+                              <span className="bg-purple-400 text-neutral-950 p-0.5 rounded-full font-bold text-[9px] shadow-sm">
+                                <Check className="w-3 h-3 stroke-[3]" />
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <span className={`text-xs font-bold font-display block ${opponentStyle === 'bot' ? 'text-white' : 'text-neutral-300'}`}>
+                              VS AI Bot
+                            </span>
+                            <span className="text-[10px] text-neutral-400 font-sans block mt-0.5 leading-snug">
+                              Instant zero-trust battle
+                            </span>
+                          </div>
+                        </button>
+
+                        {/* Human Selection Card */}
+                        <button
+                          type="button"
+                          onClick={() => setOpponentStyle('player')}
+                          className={`relative p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 group ${
+                            opponentStyle === 'player'
+                              ? 'bg-gradient-to-b from-cyan-500/15 via-cyan-500/5 to-transparent border-cyan-500/60 shadow-[0_0_20px_rgba(6,182,212,0.18)] ring-1 ring-cyan-500/40'
+                              : 'bg-neutral-900/60 border-white/[0.06] hover:border-white/20 hover:bg-neutral-850/80 text-neutral-400'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className={`p-2 rounded-xl border transition-colors ${
+                              opponentStyle === 'player'
+                                ? 'bg-cyan-500/25 border-cyan-400/40 text-cyan-300'
+                                : 'bg-neutral-950 border-white/5 text-neutral-400 group-hover:text-white'
+                            }`}>
+                              <Users className="w-5 h-5" />
+                            </div>
+                            {opponentStyle === 'player' && (
+                              <span className="bg-cyan-400 text-neutral-950 p-0.5 rounded-full font-bold text-[9px] shadow-sm">
+                                <Check className="w-3 h-3 stroke-[3]" />
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <span className={`text-xs font-bold font-display block ${opponentStyle === 'player' ? 'text-white' : 'text-neutral-300'}`}>
+                              Live Duel
+                            </span>
+                            <span className="text-[10px] text-neutral-400 font-sans block mt-0.5 leading-snug">
+                              Challenge players & friends
+                            </span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* ── Ludo Quadrant Mode Selector ── */}
+                    {selectedGame === 'Ludo' && (
+                      <div className="space-y-2 animate-fade-in bg-emerald-500/[0.04] border border-emerald-500/20 p-3.5 rounded-2xl">
+                        <div className="flex justify-between items-center">
+                          <label className="text-[10px] font-mono font-bold text-emerald-300 uppercase tracking-wider block">
+                            Ludo Match Type
+                          </label>
+                          <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/30">
+                            {ludoMode === '2-player' ? '2-Player Mode' : '4-Player Mode'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 p-1 bg-[#070709] rounded-xl border border-white/[0.04]">
+                          <button
+                            type="button"
+                            onClick={() => setLudoMode('2-player')}
+                            className={`py-2 rounded-lg font-bold text-[11px] font-display flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                              ludoMode === '2-player'
+                                ? 'bg-amber-400 text-neutral-950 shadow-[0_0_10px_rgba(245,158,11,0.4)]'
+                                : 'text-neutral-400 hover:text-white'
+                            }`}
+                          >
+                            <UserCheck className="w-3.5 h-3.5" />
+                            2 Players (2 Quadrants)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setLudoMode('4-player')}
+                            className={`py-2 rounded-lg font-bold text-[11px] font-display flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                              ludoMode === '4-player'
+                                ? 'bg-cyan-400 text-neutral-950 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                                : 'text-neutral-400 hover:text-white'
+                            }`}
+                          >
+                            <Users className="w-3.5 h-3.5" />
+                            4 Players (1 Quadrant)
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Bot Configuration Sub-panel ── */}
+                    {opponentStyle === 'bot' && (
+                      <div className="space-y-3 bg-purple-500/[0.03] border border-purple-500/15 p-3.5 rounded-2xl">
+                        <div className="flex justify-between items-center">
+                          <label className="text-[10px] font-mono font-bold text-purple-300 uppercase tracking-wider block">
+                            Bot Mode & Difficulty
+                          </label>
+                          <span className="text-[9px] font-mono text-purple-400">
+                            {botPlayMode === 'practice' ? `Practice (${difficulty.toUpperCase()})` : 'Staked Match'}
+                          </span>
+                        </div>
+
+                        {/* Practice vs Staked pills */}
+                        <div className="grid grid-cols-2 gap-2 p-1 bg-[#070709] rounded-xl border border-white/[0.04]">
+                          <button
+                            type="button"
+                            onClick={() => setBotPlayMode('practice')}
+                            className={`py-2 rounded-lg font-bold text-[11px] font-display transition-all cursor-pointer ${
+                              botPlayMode === 'practice'
+                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                : 'text-neutral-400 hover:text-white'
+                            }`}
+                          >
+                            Practice (0 Stake)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setBotPlayMode('staked')}
+                            className={`py-2 rounded-lg font-bold text-[11px] font-display transition-all cursor-pointer ${
+                              botPlayMode === 'staked'
+                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                : 'text-neutral-400 hover:text-white'
+                            }`}
+                          >
+                            Staked Duel
+                          </button>
+                        </div>
+
+                        {/* Difficulty cards when in practice mode */}
+                        {botPlayMode === 'practice' && (
+                          <div className="grid grid-cols-3 gap-2 font-sans pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setDifficulty('easy')}
+                              className={`py-2 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                                difficulty === 'easy'
+                                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                                  : 'bg-neutral-900/60 border-transparent text-neutral-400 hover:bg-neutral-850 hover:text-neutral-200'
+                              }`}
+                            >
+                              <span className="text-[11px] font-bold font-display">Easy</span>
+                              <span className="text-[8px] font-mono text-emerald-400/80">1.0x Score</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDifficulty('medium')}
+                              className={`py-2 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                                difficulty === 'medium'
+                                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                                  : 'bg-neutral-900/60 border-transparent text-neutral-400 hover:bg-neutral-850 hover:text-neutral-200'
+                              }`}
+                            >
+                              <span className="text-[11px] font-bold font-display">Medium</span>
+                              <span className="text-[8px] font-mono text-amber-400/80">1.5x Score</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDifficulty('hard')}
+                              className={`py-2 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                                difficulty === 'hard'
+                                  ? 'bg-rose-500/15 border-rose-500/45 text-rose-300'
+                                  : 'bg-neutral-900/60 border-transparent text-neutral-400 hover:bg-neutral-850 hover:text-neutral-200'
+                              }`}
+                            >
+                              <span className="text-[11px] font-bold font-display">Hard</span>
+                              <span className="text-[8px] font-mono text-rose-400/80">2.5x Score</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── Human Matchmaking Sub-panel ── */}
+                    {opponentStyle === 'player' && (
+                      <div className="space-y-3 animate-fade-in bg-cyan-500/[0.03] border border-cyan-500/15 p-3.5 rounded-2xl">
+                        <div className="flex justify-between items-center">
+                          <label className="text-[10px] font-mono font-bold text-cyan-300 uppercase tracking-wider block">
+                            Select Online Player
+                          </label>
+                          <span className="text-[9px] font-mono text-cyan-400/80">
+                            {onlinePlayers.length} Available
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-1.5 max-h-36 overflow-y-auto -mx-1 px-1 custom-scrollbar">
+                          {onlinePlayers.map((player) => (
+                            <div
+                              key={player.uid}
+                              onClick={() => setSelectedPlayerUid(player.uid)}
+                              className={`flex items-center gap-2.5 p-2 rounded-xl transition-all cursor-pointer border select-none ${
+                                selectedPlayerUid === player.uid
+                                  ? 'bg-cyan-500/15 border-cyan-500/50 text-cyan-200 shadow-sm'
+                                  : 'bg-neutral-900/50 border-transparent hover:bg-neutral-850 text-neutral-300'
+                              }`}
+                            >
+                              <img src={player.avatar} alt={player.username} className="w-7 h-7 rounded-full object-cover border border-white/10 shrink-0" referrerPolicy="no-referrer" />
+                              <div className="flex-1 min-w-0">
+                                <span className="font-bold text-[11px] block truncate leading-none">{player.username}</span>
+                                <span className="font-mono text-[8px] text-neutral-400 truncate block mt-0.5">Wins: {player.wins} · {player.coins.toLocaleString()}c</span>
+                              </div>
+                              {selectedPlayerUid === player.uid && (
+                                <span className="text-[9px] bg-cyan-400 text-neutral-950 font-bold px-1.5 py-0.5 rounded-md font-mono uppercase shrink-0 flex items-center gap-1">
+                                  <Check className="w-3 h-3 stroke-[3]" />
+                                  Selected
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Direct Invite Link */}
+                        <div className="border-t border-cyan-500/15 pt-3 space-y-1.5">
+                          <span className="text-[10px] font-mono font-bold text-cyan-300 uppercase tracking-wider block flex items-center gap-1">
+                            <Link className="w-3 h-3" /> Direct Invite Link
+                          </span>
+                          <div className="flex gap-1.5">
+                            <input
+                              readOnly
+                              onClick={(e) => (e.target as HTMLInputElement).select()}
+                              value={`${window.location.origin}${window.location.pathname}?friendInvite=true&game=${selectedGame}&stake=${stake}&sender=${encodeURIComponent(userProfile.username)}`}
+                              className="flex-1 min-w-0 bg-black/60 border border-white/10 rounded-lg px-2.5 py-1.5 text-[9px] text-neutral-350 font-mono focus:outline-none selection:bg-cyan-500 selection:text-neutral-950 truncate"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const link = `${window.location.origin}${window.location.pathname}?friendInvite=true&game=${selectedGame}&stake=${stake}&sender=${encodeURIComponent(userProfile.username)}`;
+                                try {
+                                  navigator.clipboard.writeText(link);
+                                } catch (e) {
+                                  console.warn("Clipboard copy failed:", e);
+                                }
+                                alert("📋 Invite link copied!");
+                              }}
+                              className="px-3 bg-cyan-400 hover:bg-cyan-300 active:scale-95 text-neutral-950 rounded-lg text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all shrink-0 shadow-sm"
+                            >
+                              <Copy className="w-3 h-3" />
+                              Copy
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Entry Stake Section ── */}
+                    {!(opponentStyle === 'bot' && botPlayMode === 'practice') && (
+                      <div className="space-y-3 bg-[#070709] border border-white/[0.06] p-4 rounded-2xl">
+                        <div className="flex justify-between items-center">
+                          <label className="text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <Coins className="w-3.5 h-3.5 text-purple-300" />
+                            2. Entry Stake
+                          </label>
+                          <span className="text-[10px] font-mono text-neutral-400">
+                            Balance: <strong className="text-white font-bold">{userProfile.coins.toLocaleString()} 🪙</strong>
+                          </span>
+                        </div>
+
+                        {/* Large stake display with Stepper controls */}
+                        <div className="flex items-center justify-between bg-black/60 border border-white/10 rounded-xl p-2 px-3">
+                          <button
+                            type="button"
+                            onClick={() => setStake(prev => Math.max(50, prev - 50))}
+                            disabled={stake <= 50}
+                            className="w-8 h-8 rounded-lg bg-neutral-900 border border-white/10 flex items-center justify-center text-neutral-300 hover:text-white hover:bg-neutral-800 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all"
+                            aria-label="Decrease stake"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+
+                          <div className="text-center font-mono">
+                            <div className="text-xl sm:text-2xl font-black text-purple-300 tracking-tight flex items-center justify-center gap-1.5">
+                              <span>🪙</span>
+                              <span>{stake.toLocaleString()}</span>
+                            </div>
+                            <span className="text-[9px] text-neutral-500 uppercase tracking-wider block -mt-0.5">Coins per player</span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setStake(prev => Math.min(2000, prev + 50))}
+                            disabled={stake >= 2000}
+                            className="w-8 h-8 rounded-lg bg-neutral-900 border border-white/10 flex items-center justify-center text-neutral-300 hover:text-white hover:bg-neutral-800 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all"
+                            aria-label="Increase stake"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                        
+                        {/* Quick Presets */}
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {[100, 250, 500, 1000].map((val) => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setStake(val)}
+                              className={`py-1.5 text-[10px] font-mono font-bold rounded-xl transition-all border cursor-pointer ${
+                                stake === val
+                                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/50 shadow-sm'
+                                  : 'bg-neutral-900 hover:bg-neutral-850 border-white/[0.04] text-neutral-400 hover:text-white'
+                              }`}
+                            >
+                              {val >= 1000 ? `${val / 1000}k` : val} 🪙
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Fine Tuning Slider */}
+                        <div className="pt-1">
+                          <input 
+                            type="range" 
+                            min="50" 
+                            max="2000" 
+                            step="50"
+                            value={stake} 
+                            onChange={(e) => setStake(Number(e.target.value))}
+                            className="w-full h-1 bg-neutral-900 rounded-lg appearance-none cursor-pointer accent-purple-400"
+                          />
+                          <div className="flex justify-between text-[8px] font-mono text-neutral-500 mt-0.5">
+                            <span>Min: 50🪙</span>
+                            <span>Max: 2,000🪙</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Insufficient Balance Warning ── */}
+                    {isInsufficient && (
+                      <div className="bg-rose-500/10 border border-rose-500/30 p-3 sm:p-3.5 rounded-2xl flex items-center gap-3 text-rose-300 text-xs font-sans animate-shake">
+                        <ShieldAlert className="w-5 h-5 shrink-0 text-rose-400 animate-pulse" />
+                        <div className="flex-1 min-w-0">
+                          <strong className="block font-bold leading-none text-rose-200">Insufficient Coin Balance</strong>
+                          <span className="text-[10px] text-rose-300/90 block mt-0.5">
+                            You have <strong>{userProfile.coins}</strong> coins but need <strong>{actualStake}</strong> coins (short by {shortfall}). Use the "+" button at header to claim faucet coins.
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Match Stake & Payout Summary Card ── */}
+                    <div className="bg-[#070709] rounded-2xl p-3.5 sm:p-4 border border-white/[0.06] space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-neutral-400">Entry Fee (Per Player):</span>
+                        <span className="text-white font-mono font-bold">
+                          -{actualStake.toLocaleString()} 🪙
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-neutral-400">Match Pool:</span>
+                        <span className="text-white font-mono font-bold">
+                          {(actualStake * 2).toLocaleString()} 🪙
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-2 border-t border-white/[0.06]">
+                        <div className="flex items-center gap-1.5">
+                          <strong className="text-white font-black font-display uppercase text-xs tracking-tight">Winner Take Payout</strong>
+                          {opponentStyle === 'bot' && botPlayMode === 'practice' && (
+                            <span className="text-[9px] font-mono bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded border border-purple-500/30">
+                              {getMultiplier()}x Score Boost
+                            </span>
+                          )}
+                        </div>
+                        <strong className="text-emerald-400 font-mono font-bold text-base sm:text-lg">
+                          +{(actualStake * 2).toLocaleString()} 🪙
+                        </strong>
+                      </div>
+                    </div>
+
+                    {/* ── Primary Action Button (CTA) ── */}
+                    <div className="space-y-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleLaunch}
+                        disabled={isInsufficient}
+                        className={`w-full py-4 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 ${
+                          isInsufficient
+                            ? 'bg-neutral-800 text-neutral-500 border border-neutral-700/50 cursor-not-allowed opacity-60'
+                            : 'bg-gradient-to-r from-purple-500 via-purple-700 to-pink-500 hover:from-purple-450 hover:to-pink-450 text-white shadow-[0_8px_25px_rgba(168,85,247,0.25)] hover:shadow-[0_12px_30px_rgba(168,85,247,0.4)] cursor-pointer active:scale-[0.99]'
+                        }`}
+                      >
+                        <Swords className="w-4 h-4 sm:w-5 sm:h-5" />
+                        {isInsufficient ? 'Insufficient Balance to Start' : 'Start Duel'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedGame(null)}
+                        className="w-full py-1.5 text-center text-xs font-mono text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                      >
+                        Cancel Setup
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
