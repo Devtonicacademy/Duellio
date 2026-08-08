@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { DuellioLogo } from './DuellioLogo';
+import { ensureProfileProgression } from '../services/progressionMigration';
 import { 
   auth, 
   googleProvider, 
@@ -85,7 +86,7 @@ export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({
 
       let matched = usersList.find(u => u.uid === firebaseUser.uid || u.email.trim().toLowerCase() === firebaseUser.email?.trim().toLowerCase());
       if (!matched) {
-        const newProfile: UserProfile = {
+        const newProfile: UserProfile = ensureProfileProgression({
           uid: firebaseUser.uid,
           username: firebaseUser.displayName || `Gamer_${firebaseUser.uid.substring(0, 5)}`,
           email: firebaseUser.email || '',
@@ -96,11 +97,12 @@ export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({
           coins: 1000,
           status: 'online',
           favorites: []
-        };
+        });
         usersList.push(newProfile);
         localStorage.setItem('duellio-users', JSON.stringify(usersList));
         onRegisterSuccess(newProfile);
       } else {
+        matched = ensureProfileProgression(matched);
         if (matched.uid !== firebaseUser.uid) {
           matched.uid = firebaseUser.uid;
           localStorage.setItem('duellio-users', JSON.stringify(usersList));
@@ -150,7 +152,7 @@ export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({
 
       let matched = usersList.find(u => u.uid === firebaseUser.uid || u.email.trim().toLowerCase() === firebaseUser.email?.trim().toLowerCase());
       if (!matched) {
-        matched = {
+        matched = ensureProfileProgression({
           uid: firebaseUser.uid,
           username: firebaseUser.displayName || `Gamer_${firebaseUser.uid.substring(0, 5)}`,
           email: firebaseUser.email || emailToAuth,
@@ -161,9 +163,11 @@ export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({
           coins: 1000,
           status: 'online',
           favorites: []
-        };
+        });
         usersList.push(matched);
         localStorage.setItem('duellio-users', JSON.stringify(usersList));
+      } else {
+        matched = ensureProfileProgression(matched);
       }
       onLoginSuccess(matched);
     } catch (err: any) {

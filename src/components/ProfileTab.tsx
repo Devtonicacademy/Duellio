@@ -26,6 +26,8 @@ import {
 import { UserProfile, WalletTransaction } from '../types';
 import { db } from '../firebase';
 import { doc, onSnapshot, query, collection, where } from 'firebase/firestore';
+import { getLevelDetailsFromXP, getRankForLevel } from '../services/progressionService';
+import { ensureProfileProgression } from '../services/progressionMigration';
 
 interface ProfileTabProps {
   userProfile: UserProfile;
@@ -276,14 +278,20 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   const deviceProfiles = allProfiles.filter(p => !p.uid.startsWith('bot_'));
   const isAuthorizedDeviceViewer = isAuthorizedProfileViewer(userProfile);
 
+  const activeProfile = ensureProfileProgression(userProfile);
+  const levelDetails = getLevelDetailsFromXP(activeProfile.xp || 0);
+  const displayLevel = activeProfile.level || levelDetails.level;
+  const displayRank = activeProfile.rank || getRankForLevel(displayLevel).name;
+  const rankObj = getRankForLevel(displayLevel);
+
   return (
     <div className="space-y-6" id="player-profile-view">
       
-      {/* Hero Header Section matches Screenshot 1 and 5 */}
-      <section className="glass-panel p-6 rounded-2xl flex flex-col md:flex-row gap-6 items-center relative overflow-hidden">
+      {/* 🚀 PLAYER IDENTITY HERO BANNER */}
+      <section className="glass-panel p-6 md:p-8 rounded-3xl border border-white/10 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 blur-[90px] rounded-full -mr-32 -mt-32 pointer-events-none"></div>
         
-        {/* Left Side: Circular ELO / Badge indicators */}
+        {/* Left Side: Avatar with Rank & Level Badges */}
         <div className="relative shrink-0">
           <div 
             onClick={() => {
@@ -306,26 +314,32 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 <Camera className="w-5 h-5 text-purple-300" />
                 <span>Change</span>
               </div>
-              <div className="absolute bottom-0 inset-x-0 bg-purple-400/95 text-neutral-950 text-center font-display font-bold text-[9px] py-1 uppercase tracking-wide">
-                ELITE OPS
+              <div 
+                className="absolute bottom-0 inset-x-0 text-center font-display font-bold text-[9px] py-1 uppercase tracking-wide truncate px-1 shadow-md"
+                style={{ backgroundColor: `${rankObj.color}ee`, color: '#09090b' }}
+              >
+                {displayRank}
               </div>
             </div>
           </div>
           
-          <div className="absolute -bottom-3 -right-3 bg-purple-300 text-neutral-950 w-12 h-12 rounded-full flex flex-col items-center justify-center border-4 border-neutral-950 font-display shadow-lg">
-            <span className="text-sm font-extrabold leading-none">42</span>
+          <div 
+            className="absolute -bottom-3 -right-3 w-12 h-12 rounded-full flex flex-col items-center justify-center border-4 border-neutral-950 font-display shadow-lg"
+            style={{ backgroundColor: rankObj.color, color: '#09090b' }}
+          >
+            <span className="text-sm font-extrabold leading-none">{displayLevel}</span>
             <span className="text-[7px] font-bold uppercase tracking-tighter">Level</span>
           </div>
         </div>
 
         {/* Right Side: Primary indicators */}
-        <div className="flex-1 text-center md:text-left space-y-4">
+        <div className="flex-1 text-center md:text-left space-y-4 w-full">
           <div className="flex flex-col md:flex-row items-center gap-3">
             <h1 className="font-display text-2xl font-extrabold text-white tracking-tight uppercase">
               {userProfile.username}
             </h1>
             <span className="bg-purple-500/15 border border-purple-500/35 text-purple-300 px-3 py-0.5 rounded-full font-display text-[9px] font-bold tracking-wider uppercase animate-pulse">
-              PRO MEMBER
+              {displayRank} · LV {displayLevel}
             </span>
 
             <button
@@ -348,6 +362,28 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
           <p className="text-xs md:text-sm text-neutral-400 font-sans max-w-xl leading-relaxed">
             Technical duelist specializing in high-performance board games and ELO matrix manipulation. Currently ranking in the top 0.5% of the global Duellio escrow cycle.
           </p>
+
+          {/* Universal Player Progression Bar */}
+          <div className="bg-white/5 p-4 rounded-2xl border border-purple-500/20 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+              <div className="flex items-center gap-2">
+                <span className="text-purple-400 font-bold font-display uppercase tracking-wider text-[11px]">GLOBAL PROGRESSION</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-neutral-950 font-sans uppercase" style={{ backgroundColor: rankObj.color }}>
+                  {rankObj.badge} {displayRank} · Lv {displayLevel}
+                </span>
+              </div>
+              <div className="text-neutral-400 text-[11px]">
+                <span className="text-cyan-300 font-bold">{levelDetails.currentLevelProgressXP.toLocaleString()}</span> / {levelDetails.nextLevelXPRequirement.toLocaleString()} XP
+                <span className="text-neutral-500 text-[10px] ml-2">(Total: {(activeProfile.xp || 0).toLocaleString()} XP)</span>
+              </div>
+            </div>
+            <div className="w-full bg-neutral-950 rounded-full h-3 overflow-hidden border border-white/10 p-0.5 relative">
+              <div 
+                className="h-full rounded-full bg-gradient-to-r from-purple-500 via-indigo-500 to-cyan-400 transition-all duration-500 shadow-sm"
+                style={{ width: `${levelDetails.progressPercent}%` }}
+              />
+            </div>
+          </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-1 font-mono">
             <div className="bg-white/5 p-3.5 rounded-2xl border border-white/10 hover:border-purple-500/30 transition-all">

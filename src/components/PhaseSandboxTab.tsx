@@ -26,12 +26,14 @@ import {
   Copy,
   Link
 } from 'lucide-react';
-import { UserProfile, ChatMessage, MatchChallenge, WalletTransaction, WhotCard, WhotGameState } from '../types';
+import { UserProfile, ChatMessage, MatchChallenge, WalletTransaction, WhotCard, WhotGameState, GameResultPayload, ProgressionRewardResult } from '../types';
 import { INITIAL_CHAT, getRandomBotResponse } from '../data/simulation';
 import { InteractiveLudoBoard } from './InteractiveLudoBoard';
 import { InteractiveChessBoard } from './InteractiveChessBoard';
 import { InteractiveDraftBoard } from './InteractiveDraftBoard';
 import { InteractiveTicTacToeBoard } from './InteractiveTicTacToeBoard';
+import { LevelUpModal } from './LevelUpModal';
+import { processGameOutcome } from '../services/progressionService';
 import { soundEngine } from '../services/soundEngine';
 import { SoundControls } from './SoundControls';
 import { TicTacToeLogicService } from '../services/ticTacToeLogic';
@@ -226,6 +228,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const [pauseRequest, setPauseRequest] = useState<{ requesterId: string; status: 'pending' | 'accepted' | 'declined' | null } | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [levelUpResult, setLevelUpResult] = useState<ProgressionRewardResult | null>(null);
 
   // 3D Perspective mode
   const [is3DMode, setIs3DMode] = useState<boolean>(true);
@@ -2150,15 +2153,30 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
     let rakeAmount = 0;
     let finalUserPayout = 0;
 
+    const payload: GameResultPayload = {
+      gameId: activeChallenge.gameType,
+      sessionId: activeChallenge.id || `session_${Date.now()}`,
+      outcome: winnerIsMe ? 'win' : 'loss',
+      entryFee: activeChallenge.entryFee,
+      isBotMatch: activeChallenge.opponentType === 'bot',
+      botDifficulty: activeChallenge.botDifficulty
+    };
+
+    let rewardRes: ProgressionRewardResult | null = null;
+
     if (winnerIsMe) {
       rakeAmount = totalPayout > 0 ? Math.floor(totalPayout * rakeRate) : 0;
       finalUserPayout = totalPayout - rakeAmount;
 
-      setUserProfile(prev => ({ 
-        ...prev, 
-        coins: prev.coins + finalUserPayout,
-        wins: prev.wins + 1
-      }));
+      setUserProfile(prev => {
+        const { updatedProfile, result } = processGameOutcome(prev, payload);
+        rewardRes = result;
+        return { 
+          ...updatedProfile, 
+          coins: prev.coins + finalUserPayout,
+          wins: prev.wins + 1
+        };
+      });
       
       if (finalUserPayout > 0) {
         const payoutTx: WalletTransaction = {
@@ -2195,7 +2213,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         setGamePlayLogs(prev => [
           ...prev,
           `--- VICTORY SECURED ---`,
-          `Fabulous! Lead Developer cleared their hand! Match payout verified.`,
+          `Fabulous! Match victory cleared! Match payout verified.`,
           `Rake fee deducted: ${rakeAmount} Coins (10% platform fee).`,
           `Atomic Payout Dispatched: Credited ${finalUserPayout} virtual coins into wallet.`
         ]);
@@ -2203,14 +2221,18 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         setGamePlayLogs(prev => [
           ...prev,
           `--- VICTORY SECURED ---`,
-          `Fabulous! Lead Developer cleared their hand! Free practice match completed.`
+          `Fabulous! Match victory cleared! Free practice match completed.`
         ]);
       }
     } else {
-      setUserProfile(prev => ({ 
-        ...prev, 
-        losses: prev.losses + 1
-      }));
+      setUserProfile(prev => {
+        const { updatedProfile, result } = processGameOutcome(prev, payload);
+        rewardRes = result;
+        return { 
+          ...updatedProfile, 
+          losses: prev.losses + 1
+        };
+      });
 
       // If playing with a bot, the user loses their stake to the house
       const houseEarning = activeChallenge.entryFee;
@@ -2232,14 +2254,25 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
         setGamePlayLogs(prev => [
           ...prev,
           `--- MATCH DEFEAT ---`,
-          `Opponent cleared their hand first. Staked coins claimed by opponent escrow.`
+          `Opponent cleared match condition first. Staked coins claimed by opponent escrow.`
         ]);
       } else {
         setGamePlayLogs(prev => [
           ...prev,
           `--- MATCH DEFEAT ---`,
-          `Opponent cleared their hand first. Free practice match completed.`
+          `Opponent cleared match condition first. Free practice match completed.`
         ]);
+      }
+    }
+
+    if (rewardRes && !(rewardRes as any).alreadyProcessed && (rewardRes as any).xpGained > 0) {
+      const res = rewardRes as ProgressionRewardResult;
+      setGamePlayLogs(prev => [
+        `⭐ Global Progression: +${res.xpGained} XP awarded! (${res.newRank} · Level ${res.newLevel})`,
+        ...prev
+      ]);
+      if (res.isLevelUp || res.isRankUp) {
+        setLevelUpResult(res);
       }
     }
 
@@ -4051,6 +4084,9 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
           </div>
         )}
       </AnimatePresence>
+
+      {/* Level-Up & Rank-Up Celebration Modal */}
+      <LevelUpModal result={levelUpResult} onClose={() => setLevelUpResult(null)} />
     </div>
   );
 };

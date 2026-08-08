@@ -23,6 +23,8 @@ import {
 import { DuellioLogo } from './DuellioLogo';
 import { UserProfile, NotificationItem } from '../types';
 import { SoundControls } from './SoundControls';
+import { getLevelDetailsFromXP, getRankForLevel } from '../services/progressionService';
+import { ensureProfileProgression } from '../services/progressionMigration';
 
 interface HeaderProps {
   activeTab: 'discover' | 'tournaments' | 'lobbies' | 'profile' | 'play-arena' | 'spectate' | 'chat' | 'admin';
@@ -65,6 +67,12 @@ export function Header({
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const desktopDropdownRef = useRef<HTMLDivElement>(null);
   const mobileModalRef = useRef<HTMLDivElement>(null);
+
+  const headerProfile = userProfile ? ensureProfileProgression(userProfile) : null;
+  const headerLevelDetails = headerProfile ? getLevelDetailsFromXP(headerProfile.xp || 0) : null;
+  const headerLevel = headerProfile?.level || headerLevelDetails?.level || 1;
+  const headerRank = headerProfile?.rank || (headerLevelDetails ? getRankForLevel(headerLevel).name : 'Rookie');
+  const headerRankObj = getRankForLevel(headerLevel);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -513,8 +521,9 @@ export function Header({
             <div 
               onClick={() => setActiveTab('profile')}
               className="flex items-center gap-2 2xl:gap-2.5 cursor-pointer bg-neutral-900 hover:bg-neutral-850 py-1 2xl:py-1.5 pl-2 2xl:pl-2.5 pr-3 2xl:pr-4 rounded-full border border-neutral-800 transition-all select-none group shrink-0"
+              title={`${headerRank} · Level ${headerLevel}`}
             >
-              <div className="p-0.5 rounded-full border border-purple-500/60 ring-2 ring-purple-500/20 overflow-hidden w-7 h-7 2xl:w-8 2xl:h-8 shrink-0">
+              <div className="relative p-0.5 rounded-full border border-purple-500/60 ring-2 ring-purple-500/20 overflow-hidden w-7 h-7 2xl:w-8 2xl:h-8 shrink-0">
                 <img 
                   src={userProfile?.avatar || ''} 
                   alt="Me" 
@@ -522,12 +531,25 @@ export function Header({
                 />
               </div>
               <div className="text-left">
-                <span className="block text-[10px] 2xl:text-[11px] text-white font-bold font-display group-hover:text-purple-300 transition-colors leading-none tracking-tight truncate max-w-[65px] 2xl:max-w-[90px]">
-                  {userProfile?.username || ''}
-                </span>
-                <strong className="text-[9px] 2xl:text-[10px] text-purple-300 font-mono leading-none font-bold block mt-0.5">
-                  {(userProfile?.coins || 0).toLocaleString()}
-                </strong>
+                <div className="flex items-center gap-1">
+                  <span className="block text-[10px] 2xl:text-[11px] text-white font-bold font-display group-hover:text-purple-300 transition-colors leading-none tracking-tight truncate max-w-[65px] 2xl:max-w-[85px]">
+                    {userProfile?.username || ''}
+                  </span>
+                  <span 
+                    className="text-[8px] font-mono font-extrabold px-1 rounded uppercase tracking-tighter shrink-0"
+                    style={{ backgroundColor: `${headerRankObj.color}33`, color: headerRankObj.color }}
+                  >
+                    Lv {headerLevel}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <strong className="text-[9px] 2xl:text-[10px] text-amber-300 font-mono leading-none font-bold block">
+                    {(userProfile?.coins || 0).toLocaleString()}
+                  </strong>
+                  <span className="text-[8px] font-mono leading-none text-neutral-400">
+                    · {headerRank}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

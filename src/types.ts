@@ -16,7 +16,39 @@ export interface UserProfile {
   favorites?: string[];
   archived?: string[];
   deactivated?: boolean;
+  xp?: number;
+  level?: number;
+  rank?: string;
+  processedMatches?: string[];
 }
+
+export interface GameResultPayload {
+  gameId: 'Ludo' | 'Chess' | 'Whot' | 'Draft' | 'TicTacToe' | string;
+  sessionId: string;
+  outcome: 'win' | 'loss' | 'draw' | 'placement';
+  placement?: number; // 1st, 2nd, 3rd, 4th (for Ludo / multiplayer)
+  totalPlayers?: number;
+  entryFee?: number;
+  isBotMatch?: boolean;
+  botDifficulty?: 'easy' | 'medium' | 'hard';
+  metadata?: Record<string, any>;
+}
+
+export interface ProgressionRewardResult {
+  xpGained: number;
+  oldXP: number;
+  newXP: number;
+  oldLevel: number;
+  newLevel: number;
+  oldRank: string;
+  newRank: string;
+  isLevelUp: boolean;
+  isRankUp: boolean;
+  currentLevelXP: number;
+  nextLevelXP: number;
+  alreadyProcessed?: boolean;
+}
+
 
 export interface UserReport {
   id: string;

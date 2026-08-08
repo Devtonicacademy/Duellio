@@ -11,6 +11,7 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { sanitizeFirestoreData } from '../utils/firestoreSanitizer';
+import { ensureProfileProgression } from '../services/progressionMigration';
 
 export function useProfiles() {
   const [allProfiles, setAllProfiles] = useState<UserProfile[]>([]);
@@ -23,8 +24,9 @@ export function useProfiles() {
     const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
       const profilesList: UserProfile[] = [];
       snapshot.forEach((docSnap) => {
-        const profile = docSnap.data() as UserProfile;
-        if (!profile.uid || !profile.uid.startsWith('bot_')) {
+        const rawProfile = docSnap.data() as UserProfile;
+        if (!rawProfile.uid || !rawProfile.uid.startsWith('bot_')) {
+          const profile = ensureProfileProgression(rawProfile);
           if (profile.avatar && profile.avatar.includes('googleusercontent.com')) {
             profile.avatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
           }
@@ -53,7 +55,7 @@ export function useProfiles() {
           let activeProfile: UserProfile;
           if (!snap.exists()) {
             // Create a new Firestore document for newly authenticated users
-            activeProfile = {
+            activeProfile = ensureProfileProgression({
               uid: firebaseUser.uid,
               username: firebaseUser.displayName || `Gamer_${firebaseUser.uid.substring(0, 5)}`,
               email: firebaseUser.email || '',
@@ -64,10 +66,10 @@ export function useProfiles() {
               coins: 1000,
               status: 'online',
               favorites: []
-            };
+            });
             await setDoc(userDocRef, activeProfile);
           } else {
-            activeProfile = snap.data() as UserProfile;
+            activeProfile = ensureProfileProgression(snap.data() as UserProfile);
           }
 
           if (activeProfile.avatar && activeProfile.avatar.includes('googleusercontent.com')) {
@@ -81,7 +83,7 @@ export function useProfiles() {
           // Live track changes on the current user's profile
           unsubscribeUserDoc = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
-              const data = docSnap.data() as UserProfile;
+              const data = ensureProfileProgression(docSnap.data() as UserProfile);
               if (data.avatar && data.avatar.includes('googleusercontent.com')) {
                 data.avatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
               }
@@ -192,7 +194,7 @@ export function useProfiles() {
     }
 
     const newUid = `user_${Math.floor(100000 + Math.random() * 900000)}`;
-    const newUser: UserProfile = {
+    const newUser: UserProfile = ensureProfileProgression({
       uid: newUid,
       username,
       email,
@@ -203,7 +205,7 @@ export function useProfiles() {
       coins: 1000, // mandatory 1,000 Starting Coins rule!
       status: 'online',
       favorites: []
-    };
+    });
 
     try {
       await setDoc(doc(db, 'users', newUid), newUser);
