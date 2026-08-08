@@ -910,14 +910,20 @@ export const PlayArenaTab: React.FC<PlayArenaTabProps> = ({
                         type="button"
                         onClick={handleLaunch}
                         disabled={isInsufficient}
-                        className={`w-full py-4 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 ${
+                        className={`w-full py-4 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider sm:tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 relative overflow-hidden group ${
                           isInsufficient
-                            ? 'bg-neutral-800 text-neutral-500 border border-neutral-700/50 cursor-not-allowed opacity-60'
-                            : 'bg-gradient-to-r from-purple-500 via-purple-700 to-pink-500 hover:from-purple-450 hover:to-pink-450 text-white shadow-[0_8px_25px_rgba(168,85,247,0.25)] hover:shadow-[0_12px_30px_rgba(168,85,247,0.4)] cursor-pointer active:scale-[0.99]'
+                            ? 'bg-neutral-900/40 backdrop-blur-md text-neutral-500 border border-neutral-700/40 cursor-not-allowed opacity-50 shadow-none'
+                            : 'bg-gradient-to-r from-purple-600/35 via-purple-500/25 to-pink-600/35 backdrop-blur-xl border border-purple-400/50 text-white shadow-[0_8px_32px_rgba(168,85,247,0.25),inset_0_1px_1px_rgba(255,255,255,0.35)] hover:from-purple-500/50 hover:via-purple-500/40 hover:to-pink-500/50 hover:border-purple-300/80 hover:shadow-[0_12px_40px_rgba(168,85,247,0.45),inset_0_1px_2px_rgba(255,255,255,0.5)] cursor-pointer active:scale-[0.985]'
                         }`}
                       >
-                        <Swords className="w-4 h-4 sm:w-5 sm:h-5" />
-                        {isInsufficient ? 'Insufficient Balance to Start' : 'Start Duel'}
+                        {/* Glass shine overlay transition */}
+                        {!isInsufficient && (
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
+                        )}
+                        <Swords className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:scale-110 ${!isInsufficient ? 'text-purple-300 drop-shadow-[0_0_8px_rgba(235,211,255,0.6)]' : ''}`} />
+                        <span className={!isInsufficient ? 'drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]' : ''}>
+                          {isInsufficient ? 'Insufficient Balance to Start' : 'Start Duel'}
+                        </span>
                       </button>
 
                       <button
