@@ -301,11 +301,11 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
     scene.add(createYardEmblemMesh('green', 11.5, 11.5));
     scene.add(createYardEmblemMesh('gold', 11.5, 2.5));
 
-    // 10. ADD 3D DIRECTIONAL ARROWS ALONG PATH TILES
+    // 10. ADD BLACK 3D DIRECTIONAL ARROWS ALONG PATH TILES
     const arrowGeo = new THREE.ConeGeometry(0.12, 0.28, 3);
-    const arrowMat = new THREE.MeshBasicMaterial({ color: 0xfff0aa, transparent: true, opacity: 0.75 });
+    const arrowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.85 });
 
-    // Render subtle 3D arrows every few steps along PATH_COORDINATES
+    // Render subtle black 3D arrows every few steps along PATH_COORDINATES
     for (let i = 0; i < PATH_COORDINATES.length; i += 3) {
       const [r1, c1] = PATH_COORDINATES[i];
       const [r2, c2] = PATH_COORDINATES[(i + 1) % 52];

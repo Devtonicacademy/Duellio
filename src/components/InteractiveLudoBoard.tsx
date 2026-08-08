@@ -448,7 +448,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
             </h4>
             <ul className="list-disc pl-4 space-y-1 text-amber-200/80 font-mono text-[11px]">
               <li><span className="text-amber-300 font-bold">Independent Movement</span>: Choose which die to play first! Split dice across 2 pieces or move 1 piece sequentially.</li>
-              <li><span className="text-amber-300 font-bold">Yard Exit</span>: Rolling a <strong className="text-amber-400">6</strong> places your piece directly onto your designated starting square. Second die moves separately.</li>
+              <li><span className="text-amber-300 font-bold">Yard Exit</span>: Rolling a <strong className="text-amber-400">6</strong> places your piece 1 space ahead of start. Second die moves separately.</li>
               <li><span className="text-rose-400 font-bold">3 Double-Six Penalty</span>: Rolling 3 consecutive double-6s forfeits turn and rolls back movements!</li>
               <li><span className="text-emerald-300 font-bold">Exact Finish</span>: Tokens require exact die value to enter center home (step 57).</li>
             </ul>
@@ -554,7 +554,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     return <div key={`${r}-${c}`} className="bg-[#FFCC00] border border-[#C79F00]" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
                   }
 
-                  // Track Arms with Directional Arrow Indicators
+                  // Track Arms with BLACK Directional Arrow Indicators
                   const arrowStr = getTrackArrow(r, c);
 
                   if (r <= 5 && c >= 6 && c <= 8) {
@@ -565,7 +565,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                       <div key={`${r}-${c}`} className={`border border-black relative flex items-center justify-center ${isBluePath ? 'bg-[#1B4EAB]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }}>
                         {isBlueStart && <span className="text-[9px] font-black text-white z-10">⬇</span>}
                         {isBlueStar && <Star className="w-3 h-3 text-[#1B4EAB] fill-[#1B4EAB] z-10" />}
-                        {arrowStr && !isBlueStart && !isBlueStar && <span className="text-[7.5px] font-bold text-neutral-400/70 select-none">{arrowStr}</span>}
+                        {arrowStr && !isBlueStart && !isBlueStar && <span className="text-[8.5px] font-black text-black select-none">{arrowStr}</span>}
                       </div>
                     );
                   }
@@ -578,7 +578,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                       <div key={`${r}-${c}`} className={`border border-black relative flex items-center justify-center ${isGreenPath ? 'bg-[#009A44]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }}>
                         {isGreenStart && <span className="text-[9px] font-black text-white z-10">⬅</span>}
                         {isGreenStar && <Star className="w-3 h-3 text-[#009A44] fill-[#009A44] z-10" />}
-                        {arrowStr && !isGreenStart && !isGreenStar && <span className="text-[7.5px] font-bold text-neutral-400/70 select-none">{arrowStr}</span>}
+                        {arrowStr && !isGreenStart && !isGreenStar && <span className="text-[8.5px] font-black text-black select-none">{arrowStr}</span>}
                       </div>
                     );
                   }
@@ -591,7 +591,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                       <div key={`${r}-${c}`} className={`border border-black relative flex items-center justify-center ${isYellowPath ? 'bg-[#FFCC00]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }}>
                         {isYellowStart && <span className="text-[9px] font-black text-black z-10">⬆</span>}
                         {isYellowStar && <Star className="w-3 h-3 text-[#D9A300] fill-[#D9A300] z-10" />}
-                        {arrowStr && !isYellowStart && !isYellowStar && <span className="text-[7.5px] font-bold text-neutral-400/70 select-none">{arrowStr}</span>}
+                        {arrowStr && !isYellowStart && !isYellowStar && <span className="text-[8.5px] font-black text-black select-none">{arrowStr}</span>}
                       </div>
                     );
                   }
@@ -604,13 +604,13 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                       <div key={`${r}-${c}`} className={`border border-black relative flex items-center justify-center ${isRedPath ? 'bg-[#E52521]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }}>
                         {isRedStart && <span className="text-[9px] font-black text-white z-10">➔</span>}
                         {isRedStar && <Star className="w-3 h-3 text-[#E52521] fill-[#E52521] z-10" />}
-                        {arrowStr && !isRedStart && !isRedStar && <span className="text-[7.5px] font-bold text-neutral-400/70 select-none">{arrowStr}</span>}
+                        {arrowStr && !isRedStart && !isRedStar && <span className="text-[8.5px] font-black text-black select-none">{arrowStr}</span>}
                       </div>
                     );
                   }
 
                   return <div key={`${r}-${c}`} className="bg-white border border-black flex items-center justify-center" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
-                    {arrowStr && <span className="text-[7.5px] font-bold text-neutral-400/70 select-none">{arrowStr}</span>}
+                    {arrowStr && <span className="text-[8.5px] font-black text-black select-none">{arrowStr}</span>}
                   </div>;
                 })
               )}

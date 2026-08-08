@@ -319,7 +319,7 @@ export function getLegalMoves(
       if (token.status === 'home') {
         // Independent Rule: Exiting yard requires an independent 6
         if (dieValue === 6) {
-          const toPos = 0; // Placed on starting square (position 0)
+          const toPos = 1; // Placed 1 space ahead of initial starting square (position 1)
           if (!isPathBlockedByOpponent(state, token, -1, toPos, friendlyColors)) {
             let isCap = false;
             const testToken: LudoTokenState = { ...token, position: toPos, status: 'board' };
@@ -499,7 +499,7 @@ export function executeMove(
 
   const logs = [...state.logs];
   if (targetMove.isLeavingBase) {
-    logs.unshift(`[MOVE] ${activeColor.toUpperCase()} used die [${targetMove.dieValue}] to release token ${tokenId.toUpperCase()} to starting square.`);
+    logs.unshift(`[MOVE] ${activeColor.toUpperCase()} used die [${targetMove.dieValue}] to release token ${tokenId.toUpperCase()} to starting position.`);
   } else {
     logs.unshift(`[MOVE] ${activeColor.toUpperCase()} used die [${targetMove.dieValue}] to move token ${tokenId.toUpperCase()} to step ${targetMove.toPosition}.`);
   }
