@@ -506,7 +506,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* Main viewport with Suspense boundary for lazy components */}
-      <main className={`max-w-7xl mx-auto px-4 md:px-8 ${isGameActive ? 'mt-4 md:mt-6' : 'mt-10'}`}>
+      <main className={`max-w-[1536px] mx-auto px-4 md:px-8 ${isGameActive ? 'mt-4 md:mt-6' : 'mt-10'}`}>
         <ErrorBoundary onReset={() => setActiveTab('lobbies')}>
           <Suspense fallback={<LoadingFallback />}>
             <motion.div

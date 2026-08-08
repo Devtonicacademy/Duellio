@@ -24,7 +24,17 @@ import {
   HelpCircle as QuestionIcon,
   Share2,
   Copy,
-  Link
+  Link,
+  Flame,
+  Zap,
+  Crown,
+  Gamepad2,
+  Sparkles,
+  Radio,
+  Clock,
+  MessageSquare,
+  TrendingUp,
+  Activity
 } from 'lucide-react';
 import { UserProfile, ChatMessage, MatchChallenge, WalletTransaction, WhotCard, WhotGameState, GameResultPayload, ProgressionRewardResult } from '../types';
 import { INITIAL_CHAT, getRandomBotResponse } from '../data/simulation';
@@ -226,7 +236,7 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [pauseRequest, setPauseRequest] = useState<{ requesterId: string; status: 'pending' | 'accepted' | 'declined' | null } | null>(null);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => INITIAL_CHAT);
   const [inputMessage, setInputMessage] = useState('');
   const [levelUpResult, setLevelUpResult] = useState<ProgressionRewardResult | null>(null);
 
@@ -1460,73 +1470,99 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
 
   const renderChatPanelContent = () => {
     return (
-      <div className="flex-1 flex flex-col bg-black/30 backdrop-blur-md overflow-hidden h-full">
-        <div className="flex-1 p-4 overflow-y-auto space-y-4">
-          {chatMessages.map((msg) => {
-            const isMe = msg.senderId === userProfile.uid;
-            const msgDate = new Date(msg.timestamp);
-            const timeDisplay = !isNaN(msgDate.getTime()) 
-              ? msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : msg.timestamp || 'Just now';
-            return (
-              <div key={msg.id} className={`flex items-start gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
-                <img 
-                  src={msg.senderAvatar} 
-                  alt={msg.senderName} 
-                  className="w-9 h-9 rounded-full object-cover border border-white/15 shadow-md"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="max-w-[75%] space-y-1">
-                  <div className={`flex items-baseline gap-2 text-[10px] text-neutral-400 font-mono ${isMe ? 'flex-row-reverse' : ''}`}>
-                    <span className="font-bold text-neutral-300">{msg.senderName}</span>
-                    <span>{timeDisplay}</span>
-                  </div>
-                  <div className={`p-3.5 rounded-2xl text-xs leading-relaxed font-sans shadow-md ${
-                    isMe 
-                      ? 'bg-purple-350 text-neutral-950 font-bold rounded-tr-none shadow-[0_0_15px_rgba(235,211,255,0.15)]' 
-                      : 'bg-white/5 text-neutral-100 rounded-tl-none border border-white/10 backdrop-blur-md'
-                  }`}>
-                    {msg.text}
+      <div className="flex-1 flex flex-col bg-neutral-950/60 backdrop-blur-xl overflow-hidden h-full">
+        {/* Chat Header Status */}
+        <div className="px-4 py-2.5 bg-black/40 border-b border-white/5 flex items-center justify-between text-xs backdrop-blur-md">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+            <span className="font-display font-bold text-white text-[11px] uppercase tracking-wider">Live Community Feed</span>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-[10px] text-neutral-400">
+            <Users className="w-3.5 h-3.5 text-purple-400" />
+            <span className="font-bold text-neutral-300">{onlineBots.filter(b => b.status === 'online').length + 1} Online</span>
+          </div>
+        </div>
+
+        <div className="flex-1 p-4 overflow-y-auto space-y-3.5 no-scrollbar">
+          {chatMessages.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 my-auto text-neutral-400">
+              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.15)]">
+                <MessageSquare className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white font-display">Welcome to the Lobby Chat</h4>
+                <p className="text-xs text-neutral-400 max-w-xs mt-1 leading-relaxed">
+                  Start a conversation with other players, discuss tactics, or challenge someone to a live duel!
+                </p>
+              </div>
+            </div>
+          ) : (
+            chatMessages.map((msg) => {
+              const isMe = msg.senderId === userProfile.uid;
+              const msgDate = new Date(msg.timestamp);
+              const timeDisplay = !isNaN(msgDate.getTime()) 
+                ? msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : msg.timestamp || 'Just now';
+              return (
+                <div key={msg.id} className={`flex items-start gap-2.5 ${isMe ? 'flex-row-reverse' : ''}`}>
+                  <img 
+                    src={msg.senderAvatar} 
+                    alt={msg.senderName} 
+                    className="w-8 h-8 rounded-full object-cover border border-white/20 shadow-md shrink-0 mt-0.5"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className={`max-w-[78%] space-y-1 ${isMe ? 'items-end' : 'items-start'}`}>
+                    <div className={`flex items-baseline gap-2 text-[10px] text-neutral-400 font-mono ${isMe ? 'flex-row-reverse' : ''}`}>
+                      <span className="font-bold text-neutral-300 font-sans">{msg.senderName}</span>
+                      <span className="text-neutral-500">{timeDisplay}</span>
+                    </div>
+                    <div className={`p-3 rounded-2xl text-xs leading-relaxed font-sans shadow-md ${
+                      isMe 
+                        ? 'bg-gradient-to-r from-purple-600 to-purple-800 text-white font-medium rounded-tr-none shadow-[0_0_20px_rgba(168,85,247,0.25)] border border-purple-400/30' 
+                        : 'bg-neutral-900/90 text-neutral-100 rounded-tl-none border border-white/10 backdrop-blur-md'
+                    }`}>
+                      {msg.text}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
           
           {isTyping && (
-            <div className="flex items-center gap-2 text-xs text-purple-300 font-mono pl-3.5 animate-pulse">
+            <div className="flex items-center gap-2 text-xs text-purple-300 font-mono pl-2 animate-pulse py-1">
               <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping" />
-              <span>{typingBot} is typing...</span>
+              <span className="text-[11px]">{typingBot} is typing...</span>
             </div>
           )}
           <div ref={messageEndRef} />
         </div>
 
         {/* Emoji Selector Bar */}
-        <div className="px-4 py-2 bg-black/40 border-t border-white/10 flex flex-wrap gap-1.5 justify-start select-none backdrop-blur-md">
+        <div className="px-3.5 py-2 bg-black/50 border-t border-white/10 flex flex-wrap gap-1.5 justify-start select-none backdrop-blur-md">
           {['😂', '😮', '👑', '🔥', '💀', '🧠', '🃏', '♟️', '🎲', '👍', '🎉', '💪'].map((emoji) => (
             <button
               key={emoji}
               type="button"
               onClick={() => setInputMessage(prev => prev + emoji)}
-              className="p-1 px-2 text-xs rounded-xl bg-white/5 border border-white/5 hover:border-purple-500/30 hover:bg-white/10 hover:text-white transition-all cursor-pointer select-none active:scale-90"
+              className="p-1 px-2 text-xs rounded-xl bg-white/5 border border-white/5 hover:border-purple-500/40 hover:bg-purple-500/20 hover:text-white transition-all cursor-pointer select-none active:scale-90"
             >
               {emoji}
             </button>
           ))}
         </div>
 
-        <form onSubmit={handleSendMessage} className="p-3.5 bg-black/60 border-t border-white/10 flex gap-2.5 backdrop-blur-md">
+        <form onSubmit={handleSendMessage} className="p-3 bg-black/70 border-t border-white/10 flex gap-2 backdrop-blur-md">
           <input
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Type your message in lobby chat..."
-            className="flex-1 bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-2xl px-4 py-2.5 text-xs font-sans text-white placeholder:text-neutral-500 outline-none transition-all backdrop-blur-md"
+            placeholder="Send a message to the lobby..."
+            className="flex-1 bg-white/5 border border-white/10 focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/40 rounded-xl px-4 py-2.5 text-xs font-sans text-white placeholder:text-neutral-500 outline-none transition-all"
           />
           <button
             type="submit"
-            className="px-4 py-2.5 bg-purple-350 hover:bg-purple-300 text-neutral-950 rounded-2xl cursor-pointer font-extrabold transition-all shadow-[0_0_15px_rgba(235,211,255,0.2)] hover:scale-105 active:scale-95 flex items-center justify-center"
+            className="px-4 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500 text-white rounded-xl cursor-pointer font-bold transition-all shadow-[0_0_15px_rgba(168,85,247,0.3)] hover:scale-105 active:scale-95 flex items-center justify-center"
           >
             <Send className="w-4 h-4" />
           </button>
@@ -2428,668 +2464,922 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" id="sandbox-root-v2">
-      
-      {/* Profile Sidebar */}
-      {gamePlayStatus === 'none' && (
-        <div className="lg:col-span-1 space-y-4">
-        <div className="glass-card p-6 rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center text-center space-y-4 relative overflow-hidden backdrop-blur-xl group hover:border-purple-500/30 transition-all">
-          <div className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-purple-500/15 via-purple-500/5 to-transparent pointer-events-none" />
+    <div className="w-full space-y-6" id="sandbox-root-v2">
+      {gamePlayStatus === 'none' ? (
+        <div className="w-full space-y-6">
 
-          <div className="relative">
-            <img 
-              src={userProfile.avatar} 
-              alt={userProfile.username} 
-              className="w-20 h-20 rounded-full ring-2 ring-purple-400/60 shadow-[0_0_20px_rgba(168,85,247,0.35)] object-cover group-hover:scale-105 transition-transform duration-300"
-              referrerPolicy="no-referrer"
-            />
-            <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-[#070709] shadow-[0_0_10px_rgba(52,211,153,0.8)] animate-pulse" />
-          </div>
-          <div>
-            <h3 className="font-display font-extrabold text-base text-white tracking-tight">{userProfile.username}</h3>
-            <span className="text-[9px] font-mono font-bold text-purple-300 px-3 py-0.5 bg-purple-500/15 border border-purple-500/30 rounded-full uppercase tracking-wider mt-1 inline-block">
-              ● {userProfile.status}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 w-full border-y border-white/10 py-3.5 text-xs font-mono">
-            <div className="bg-emerald-500/10 border border-emerald-500/20 py-2 rounded-xl">
-              <span className="block font-bold text-emerald-400 text-sm">{userProfile.wins}</span>
-              <span className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider">Wins</span>
-            </div>
-            <div className="bg-rose-500/10 border border-rose-500/20 py-2 rounded-xl">
-              <span className="block font-bold text-rose-400 text-sm">{userProfile.losses}</span>
-              <span className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider">Loss</span>
-            </div>
-            <div className="bg-amber-500/10 border border-amber-500/20 py-2 rounded-xl">
-              <span className="block font-bold text-amber-400 text-sm">{userProfile.draws}</span>
-              <span className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider">Draws</span>
-            </div>
-          </div>
-
-          <div className="w-full flex items-center justify-between bg-black/40 px-4 py-3 rounded-2xl border border-white/10 backdrop-blur-md">
-            <div className="flex items-center gap-2 text-xs text-neutral-300">
-              <Wallet className="w-4 h-4 text-purple-400 animate-pulse" />
-              <span className="font-bold font-display uppercase tracking-wider text-[11px] text-purple-300">Wallet Coins</span>
-            </div>
-            <span className="font-mono text-base font-extrabold text-white tracking-tight">{userProfile.coins.toLocaleString()}</span>
-          </div>
-
-          <button
-            onClick={handleFountainCredit}
-            className="w-full text-xs font-display py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-neutral-950 rounded-xl transition-all cursor-pointer font-black select-none shadow-[0_0_20px_rgba(16,185,129,0.25)] hover:scale-[1.02] active:scale-[0.98] uppercase tracking-wider flex items-center justify-center gap-1.5"
-          >
-            <span>Claim +1,000 Free Coins</span>
-          </button>
-        </div>
-
-        {/* Challenge match info widget */}
-        {gamePlayStatus !== 'none' && (
-          <div className="glass-card p-5 rounded-3xl text-white border border-purple-500/30 shadow-2xl space-y-3 font-mono text-xs backdrop-blur-xl">
-            <div className="flex items-center gap-2">
-              <Swords className="w-4 h-4 text-purple-400 animate-pulse" />
-              <h4 className="text-xs font-bold text-purple-300 font-display uppercase tracking-wider">Escrow Match State</h4>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-neutral-400">
-                <span>Opponent:</span>
-                <span className="font-bold text-white">
-                  {activeChallenge?.senderId === userProfile.uid ? selectedBot?.username : activeChallenge?.senderName}
-                </span>
+          {/* Dynamic Top Ambient Header Banner & Stats Strip */}
+          <div className="glass-card p-4 sm:p-5 rounded-3xl border border-white/10 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600/30 to-cyan-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300 shadow-[0_0_20px_rgba(168,85,247,0.25)] shrink-0">
+                <Gamepad2 className="w-6 h-6 animate-pulse" />
               </div>
-              <div className="flex justify-between text-neutral-400">
-                <span>Staking Pool:</span>
-                <span className="font-bold text-emerald-400">
-                  {Math.floor((activeChallenge?.entryFee || 300) * (1 + (activeChallenge?.rewardMultiplier !== undefined ? activeChallenge.rewardMultiplier : 1.0)))} Units
-                </span>
-              </div>
-              <div className="flex justify-between text-neutral-400 items-center">
-                <span>State Node:</span>
-                <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-[10px] text-purple-300 font-bold border border-purple-500/30 uppercase tracking-wider animate-pulse">
-                  {(gamePlayStatus as string).toUpperCase()}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-        </div>
-      )}
-
-      {/* Main Sandbox Board Area */}
-      <div className={`${gamePlayStatus !== 'none' ? 'lg:col-span-4' : 'lg:col-span-3'} flex flex-col space-y-4`}>
-        
-        {/* If no match is running, show lobby panels */}
-        {gamePlayStatus === 'none' ? (
-          <div className="glass-card rounded-3xl border border-white/10 shadow-2xl flex flex-col h-[530px] overflow-hidden backdrop-blur-xl">
-            <div className="flex justify-between items-center px-4 py-3.5 bg-neutral-950/80 border-b border-white/10 gap-2 overflow-x-auto">
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => setActiveTab('chat')}
-                  className={`px-4 py-2 rounded-xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold ${
-                    activeTab === 'chat' ? 'bg-purple-350 text-neutral-950 shadow-[0_0_15px_rgba(235,211,255,0.25)]' : 'text-neutral-300 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Lobby Chat</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('wallet')}
-                  className={`px-4 py-2 rounded-xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold ${
-                    activeTab === 'wallet' ? 'bg-purple-350 text-neutral-950 shadow-[0_0_15px_rgba(235,211,255,0.25)]' : 'text-neutral-300 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <Wallet className="w-3.5 h-3.5" />
-                  <span>Wallet Ledger</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('presence')}
-                  className={`px-4 py-2 rounded-xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold ${
-                    activeTab === 'presence' ? 'bg-purple-350 text-neutral-950 shadow-[0_0_15px_rgba(235,211,255,0.25)]' : 'text-neutral-300 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <Users className="w-3.5 h-3.5" />
-                  <span>Challengers</span>
-                  <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 text-[10px] font-mono rounded-full border border-purple-500/30">
-                    {onlineBots.filter(b => b.status === 'online').length}
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base sm:text-lg font-black text-white font-display uppercase tracking-wider">Duellio Command Lobby</h2>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    LIVE NETWORK
                   </span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('settings')}
-                  className={`px-4 py-2 rounded-xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold ${
-                    activeTab === 'settings' ? 'bg-purple-350 text-neutral-950 shadow-[0_0_15px_rgba(235,211,255,0.25)]' : 'text-neutral-300 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <span>👑 Admin Settings</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('active-sessions')}
-                  className={`px-4 py-2 rounded-xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold ${
-                    activeTab === 'active-sessions' ? 'bg-purple-350 text-neutral-950 shadow-[0_0_15px_rgba(235,211,255,0.25)]' : 'text-neutral-300 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <Swords className="w-3.5 h-3.5" />
-                  <span>Active Duels</span>
-                  <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 text-[10px] font-mono rounded-full border border-purple-500/30">
-                    {activeSessions.length}
-                  </span>
-                </button>
-              </div>
-              <div className="flex items-center gap-1.5 text-[10px] font-mono text-neutral-300 bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 shrink-0">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                <span className="font-bold">LOBBY ENCRYPTED</span>
+                </div>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  Connect with competitive players, join active stake duels, or launch instant multiplayer matches.
+                </p>
               </div>
             </div>
-            {/* Lobby messages sub-tab */}
-            {activeTab === 'chat' && renderChatPanelContent()}
 
-            {/* Wallet sub-tab */}
-            {activeTab === 'wallet' && (
-              <div className="flex-1 p-5 overflow-y-auto bg-black/20">
-                <div className="space-y-3">
-                  {transactions.map((tx) => (
-                    <div key={tx.id} className="glass-card p-4 rounded-2xl border border-white/10 hover:border-purple-500/30 transition-all flex justify-between items-center">
-                      <div className="space-y-1">
-                        <span className="text-xs font-bold text-white block">{tx.description}</span>
-                        <div className="flex items-center gap-2 text-[10px] font-mono text-neutral-400">
-                          <span>TxID: {tx.id}</span>
-                          <span>•</span>
-                          <span>{tx.timestamp}</span>
-                        </div>
+            <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 shrink-0 font-mono text-xs no-scrollbar">
+              <div className="bg-black/40 border border-white/10 px-3.5 py-2 rounded-2xl flex items-center gap-2">
+                <Users className="w-4 h-4 text-purple-400" />
+                <div>
+                  <span className="block text-[9px] text-neutral-400 uppercase font-bold">Online Now</span>
+                  <span className="font-bold text-white text-xs">{onlineBots.filter(b => b.status === 'online').length + 1} Players</span>
+                </div>
+              </div>
+              <div className="bg-black/40 border border-white/10 px-3.5 py-2 rounded-2xl flex items-center gap-2">
+                <Swords className="w-4 h-4 text-cyan-400" />
+                <div>
+                  <span className="block text-[9px] text-neutral-400 uppercase font-bold">Active Duels</span>
+                  <span className="font-bold text-cyan-300 text-xs">{activeSessions.length} Matches</span>
+                </div>
+              </div>
+              <div className="bg-black/40 border border-white/10 px-3.5 py-2 rounded-2xl flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <div>
+                  <span className="block text-[9px] text-neutral-400 uppercase font-bold">Security</span>
+                  <span className="font-bold text-emerald-300 text-xs">Escrow Active</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3-Column Main Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            {/* LEFT COLUMN: Player Profile & Quick Arena Launcher */}
+            <div className="lg:col-span-4 xl:col-span-3 space-y-5">
+              
+              {/* Player Profile Command Card */}
+              <div className="glass-card p-6 rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center text-center space-y-4 relative overflow-hidden backdrop-blur-xl group hover:border-purple-500/30 transition-all">
+                <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-purple-500/20 via-purple-500/5 to-transparent pointer-events-none" />
+
+                {/* Avatar frame */}
+                <div className="relative mt-2">
+                  <div className="absolute -inset-1.5 rounded-full bg-gradient-to-tr from-purple-500 to-cyan-400 opacity-60 blur-md group-hover:opacity-100 transition-opacity" />
+                  <img 
+                    src={userProfile.avatar} 
+                    alt={userProfile.username} 
+                    className="relative w-20 h-20 rounded-full ring-2 ring-purple-400/80 shadow-[0_0_25px_rgba(168,85,247,0.4)] object-cover group-hover:scale-105 transition-transform duration-300"
+                    referrerPolicy="no-referrer"
+                  />
+                  <span className="absolute bottom-1 right-1 w-4.5 h-4.5 rounded-full bg-emerald-400 border-2 border-[#070709] shadow-[0_0_12px_rgba(52,211,153,0.9)] animate-pulse" />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <h3 className="font-display font-extrabold text-base text-white tracking-tight">{userProfile.username}</h3>
+                    <Crown className="w-4 h-4 text-amber-400 shrink-0" />
+                  </div>
+                  <div className="flex items-center justify-center gap-2 mt-1.5">
+                    <span className="text-[9px] font-mono font-bold text-purple-300 px-3 py-0.5 bg-purple-500/15 border border-purple-500/30 rounded-full uppercase tracking-wider">
+                      ● {userProfile.status}
+                    </span>
+                    <span className="text-[9px] font-mono font-bold text-cyan-300 px-2.5 py-0.5 bg-cyan-500/15 border border-cyan-500/30 rounded-full uppercase tracking-wider">
+                      LVL {Math.floor((userProfile.wins || 0) / 3) + 1}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Clean Player Stats Grid */}
+                <div className="grid grid-cols-3 gap-2 w-full border-y border-white/10 py-3.5 font-mono">
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 py-2 rounded-xl text-center">
+                    <span className="block font-bold text-emerald-400 text-sm font-sans">{userProfile.wins}</span>
+                    <span className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider">Wins</span>
+                  </div>
+                  <div className="bg-rose-500/10 border border-rose-500/20 py-2 rounded-xl text-center">
+                    <span className="block font-bold text-rose-400 text-sm font-sans">{userProfile.losses}</span>
+                    <span className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider">Loss</span>
+                  </div>
+                  <div className="bg-amber-500/10 border border-amber-500/20 py-2 rounded-xl text-center">
+                    <span className="block font-bold text-amber-400 text-sm font-sans">{userProfile.draws}</span>
+                    <span className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider">Draws</span>
+                  </div>
+                </div>
+
+                {/* Wallet Balance Display */}
+                <div className="w-full flex items-center justify-between bg-black/40 px-4 py-3 rounded-2xl border border-white/10 backdrop-blur-md">
+                  <div className="flex items-center gap-2 text-xs text-neutral-300">
+                    <Wallet className="w-4 h-4 text-purple-400 animate-pulse" />
+                    <span className="font-bold font-display uppercase tracking-wider text-[11px] text-purple-300">Wallet Balance</span>
+                  </div>
+                  <span className="font-mono text-base font-extrabold text-white tracking-tight">{userProfile.coins.toLocaleString()} Coins</span>
+                </div>
+
+                {/* Claim Free Coins Reward Button */}
+                <button
+                  onClick={handleFountainCredit}
+                  className="w-full text-xs font-display py-3.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 text-neutral-950 rounded-2xl transition-all cursor-pointer font-black select-none shadow-[0_0_25px_rgba(16,185,129,0.3)] hover:scale-[1.02] active:scale-[0.98] uppercase tracking-wider flex items-center justify-center gap-2 group"
+                >
+                  <Sparkles className="w-4 h-4 text-neutral-950 group-hover:rotate-12 transition-transform" />
+                  <span>Claim +1,000 Free Coins</span>
+                </button>
+              </div>
+
+              {/* Quick Arena Match Launcher Card */}
+              <div className="glass-card p-5 rounded-3xl border border-white/10 shadow-xl space-y-3.5">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <Gamepad2 className="w-4 h-4 text-cyan-400" />
+                    <h4 className="text-xs font-bold text-white font-display uppercase tracking-wider">Quick Game Launch</h4>
+                  </div>
+                  <span className="text-[10px] font-mono text-neutral-400">1-Click Select</span>
+                </div>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {[
+                    { id: 'Chess', label: 'Chess', icon: '♟️' },
+                    { id: 'Whot', label: 'Whot', icon: '🃏' },
+                    { id: 'Ludo', label: 'Ludo', icon: '🎲' },
+                    { id: 'Draft', label: 'Draft', icon: '🎯' },
+                    { id: 'TicTacToe', label: 'TicTac', icon: '❌' }
+                  ].map((game) => (
+                    <button
+                      key={game.id}
+                      onClick={() => {
+                        if (setPreselectedGame) setPreselectedGame(game.id as any);
+                        setActiveTab('presence');
+                      }}
+                      className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white/5 border border-white/10 hover:border-purple-500/50 hover:bg-purple-500/15 text-white transition-all cursor-pointer group active:scale-95"
+                    >
+                      <span className="text-lg group-hover:scale-110 transition-transform">{game.icon}</span>
+                      <span className="text-[9px] font-mono font-bold mt-1 text-neutral-300 group-hover:text-purple-300">{game.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sound Controls Widget */}
+              <div className="glass-card p-4 rounded-3xl border border-white/10 shadow-lg">
+                <SoundControls />
+              </div>
+            </div>
+
+            {/* CENTER COLUMN: Main Lobby Navigation Bar & Feed View */}
+            <div className="lg:col-span-8 xl:col-span-6 space-y-4">
+              
+              {/* Lobby Navigation Bar */}
+              <div className="glass-card rounded-3xl border border-white/10 shadow-2xl p-2.5 flex justify-between items-center gap-2 backdrop-blur-xl overflow-x-auto no-scrollbar">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setActiveTab('chat')}
+                    className={`px-4 py-2.5 rounded-2xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold whitespace-nowrap ${
+                      activeTab === 'chat' 
+                        ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]' 
+                        : 'text-neutral-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Lobby Chat</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('active-sessions')}
+                    className={`px-4 py-2.5 rounded-2xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold whitespace-nowrap ${
+                      activeTab === 'active-sessions' 
+                        ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]' 
+                        : 'text-neutral-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <Swords className="w-3.5 h-3.5" />
+                    <span>Active Duels</span>
+                    <span className="px-1.5 py-0.5 bg-purple-950/80 text-purple-300 text-[10px] font-mono rounded-full border border-purple-500/30">
+                      {activeSessions.length}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('presence')}
+                    className={`px-4 py-2.5 rounded-2xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold whitespace-nowrap ${
+                      activeTab === 'presence' 
+                        ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]' 
+                        : 'text-neutral-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Challengers</span>
+                    <span className="px-1.5 py-0.5 bg-purple-950/80 text-purple-300 text-[10px] font-mono rounded-full border border-purple-500/30">
+                      {onlineBots.filter(b => b.status === 'online').length}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('wallet')}
+                    className={`px-4 py-2.5 rounded-2xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold whitespace-nowrap ${
+                      activeTab === 'wallet' 
+                        ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]' 
+                        : 'text-neutral-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <Wallet className="w-3.5 h-3.5" />
+                    <span>Ledger</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('settings')}
+                    className={`px-4 py-2.5 rounded-2xl text-xs font-display transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider font-bold whitespace-nowrap ${
+                      activeTab === 'settings' 
+                        ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]' 
+                        : 'text-neutral-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <Crown className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Admin</span>
+                  </button>
+                </div>
+
+                <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono text-neutral-300 bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 shrink-0">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                  <span className="font-bold uppercase tracking-wider">SECURE ESCROW</span>
+                </div>
+              </div>
+
+              {/* Selected Tab View Container */}
+              <div className="glass-card rounded-3xl border border-white/10 shadow-2xl flex flex-col h-[580px] sm:h-[620px] overflow-hidden backdrop-blur-xl relative">
+                
+                {/* Lobby messages sub-tab */}
+                {activeTab === 'chat' && renderChatPanelContent()}
+
+                {/* Active Duels sub-tab */}
+                {activeTab === 'active-sessions' && (
+                  <div className="flex-1 p-5 overflow-y-auto bg-neutral-950/60 backdrop-blur-xl text-neutral-200 space-y-6">
+                    <div className="border-b border-white/10 pb-3 flex justify-between items-center">
+                      <div>
+                        <h4 className="font-display font-black text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                          <Swords className="w-4 h-4 text-purple-400" />
+                          Live P2P Duels & Match Lobbies
+                        </h4>
+                        <p className="text-[10px] text-neutral-400 mt-0.5 font-mono">Join waiting lobbies or resume your current active duels.</p>
                       </div>
-                      <div className="flex items-center gap-1.5 font-mono text-xs font-bold">
-                        {tx.type === 'credit' || tx.type === 'win_payout' ? (
-                          <div className="text-emerald-300 flex items-center bg-emerald-500/15 border border-emerald-500/30 px-3 py-1.5 rounded-xl">
-                            <ArrowDownLeft className="w-3.5 h-3.5 mr-1 text-emerald-400" />
-                            +{tx.amount.toLocaleString()}
+                      <span className="px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-[10px] font-mono text-purple-300 font-bold uppercase">
+                        {activeSessions.length} Active
+                      </span>
+                    </div>
+
+                    <div className="space-y-5">
+                      {/* Your Active Sessions */}
+                      <div>
+                        <span className="block text-[11px] font-bold text-purple-300 mb-2.5 uppercase tracking-widest font-display flex items-center gap-1.5">
+                          <Zap className="w-3.5 h-3.5 text-amber-400" />
+                          Your Matches
+                        </span>
+                        {activeSessions.filter(s => s.hostId === userProfile.uid || s.opponentId === userProfile.uid).length === 0 ? (
+                          <p className="text-xs text-neutral-500 font-mono italic p-4 bg-black/40 rounded-2xl border border-white/5">
+                            You have no active matches right now.
+                          </p>
+                        ) : (
+                          <div className="grid grid-cols-1 gap-3">
+                            {activeSessions.filter(s => s.hostId === userProfile.uid || s.opponentId === userProfile.uid).map(s => {
+                              const isHost = s.hostId === userProfile.uid;
+                              const opponentName = isHost ? (s.opponentName || 'Waiting...') : s.hostName;
+                              return (
+                                <div key={s.sessionId} className="bg-neutral-900/80 border border-white/10 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md font-sans hover:border-purple-500/40 transition-all">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-300 font-bold text-sm shrink-0">
+                                      {s.gameType === 'Chess' ? '♟️' : s.gameType === 'Whot' ? '🃏' : s.gameType === 'Ludo' ? '🎲' : s.gameType === 'Draft' ? '🎯' : '❌'}
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="bg-purple-500/20 border border-purple-500/30 px-2 py-0.5 rounded-md text-[9px] font-mono text-purple-300 font-bold uppercase">{s.gameType}</span>
+                                        <span className="text-xs font-bold text-white">vs {opponentName}</span>
+                                      </div>
+                                      <div className="flex items-center gap-3 text-[10px] text-neutral-400 mt-1 font-mono">
+                                        <span>Stakes: <strong className="text-emerald-400">{s.entryFee} Coins</strong></span>
+                                        <span>•</span>
+                                        <span className="capitalize">Status: <strong className={s.status === 'playing' ? 'text-emerald-400 font-bold' : s.status === 'paused' ? 'text-amber-400 font-bold' : 'text-purple-400 font-bold'}>{s.status}</strong></span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      const inviteChallenge: MatchChallenge = {
+                                        id: s.sessionId,
+                                        senderId: s.hostId,
+                                        senderName: s.hostName,
+                                        receiverId: s.opponentId || 'pending',
+                                        gameType: s.gameType,
+                                        entryFee: s.entryFee,
+                                        status: s.status === 'waiting' ? 'pending' : 'accepted',
+                                        timestamp: new Date(s.createdAt).toLocaleTimeString(),
+                                        opponentType: 'player'
+                                      };
+                                      setActiveChallenge(inviteChallenge);
+                                      setGamePlayStatus('playing');
+                                      setLiveGameState(s.gameState);
+                                      _setWhotGameState(s.gameState);
+                                      whotDeckRef.current = s.deck || [];
+                                    }}
+                                    className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer active:scale-95 shrink-0 shadow-md shadow-purple-500/20"
+                                  >
+                                    {s.status === 'waiting' ? 'Rejoin Lobby' : 'Resume Play'}
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Open Game Lobbies */}
+                      <div className="pt-4 border-t border-white/10">
+                        <span className="block text-[11px] font-bold text-cyan-300 mb-2.5 uppercase tracking-widest font-display flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-cyan-400" />
+                          Open Lobbies Across Duellio
+                        </span>
+                        {activeSessions.filter(s => s.status === 'waiting' && s.hostId !== userProfile.uid).length === 0 ? (
+                          <div className="p-8 text-center space-y-3 bg-black/40 rounded-2xl border border-white/5 my-2">
+                            <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mx-auto text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.15)]">
+                              <Swords className="w-6 h-6 animate-pulse" />
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="text-sm font-bold text-white font-display">No Open Duels Right Now</h4>
+                              <p className="text-xs text-neutral-400 max-w-sm mx-auto leading-relaxed">
+                                Nobody is hosting an open duel at this moment. Be the first to challenge a player!
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => setActiveTab('presence')}
+                              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-600/30 uppercase tracking-wider cursor-pointer transition-all active:scale-95 inline-flex items-center gap-1.5 mt-2"
+                            >
+                              <Zap className="w-3.5 h-3.5 text-amber-300" />
+                              <span>Create a Challenge</span>
+                            </button>
                           </div>
                         ) : (
-                          <div className="text-purple-300 flex items-center bg-purple-500/15 border border-purple-500/30 px-3 py-1.5 rounded-xl">
-                            <ArrowUpRight className="w-3.5 h-3.5 mr-1 text-purple-400" />
-                            -{tx.amount.toLocaleString()}
+                          <div className="grid grid-cols-1 gap-3">
+                            {activeSessions.filter(s => s.status === 'waiting' && s.hostId !== userProfile.uid).map(s => (
+                              <div key={s.sessionId} className="bg-neutral-900/80 border border-white/10 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md font-sans hover:border-cyan-500/40 transition-all">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-300 font-bold text-sm shrink-0">
+                                    {s.gameType === 'Chess' ? '♟️' : s.gameType === 'Whot' ? '🃏' : s.gameType === 'Ludo' ? '🎲' : s.gameType === 'Draft' ? '🎯' : '❌'}
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="bg-cyan-500/20 border border-cyan-500/30 px-2 py-0.5 rounded-md text-[9px] font-mono text-cyan-300 font-bold uppercase">{s.gameType}</span>
+                                      <span className="text-xs font-bold text-white">Host: {s.hostName}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-[10px] text-neutral-400 mt-1 font-mono">
+                                      <span>Stakes: <strong className="text-emerald-400">{s.entryFee} Coins</strong></span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    if (userProfile.coins < s.entryFee) {
+                                      alert("You do not have enough coins to join this lobby.");
+                                      return;
+                                    }
+                                    
+                                    const newPlayerHands: any = {
+                                      ...(s.gameState?.playerHands || {}),
+                                      [s.hostId]: s.gameState?.playerHands?.[s.hostId] || [],
+                                      [userProfile.uid]: s.gameState?.playerHands?.[userProfile.uid] || s.gameState?.playerHands?.['guest'] || s.gameState?.playerHands?.[''] || []
+                                    };
+                                    delete newPlayerHands['guest'];
+                                    delete newPlayerHands[''];
+
+                                    const updatedGameState = {
+                                      ...(s.gameState || {}),
+                                      playerIds: [s.hostId, userProfile.uid],
+                                      playerHands: newPlayerHands,
+                                      lastActionMessage: `${userProfile.username} has joined! Match starts now.`
+                                    };
+
+                                    if (s.entryFee > 0) {
+                                      setUserProfile(prev => ({
+                                        ...prev,
+                                        coins: Math.max(0, prev.coins - s.entryFee),
+                                        status: 'in-game'
+                                      }));
+
+                                      const stakeTx: WalletTransaction = {
+                                        id: `escrow_${Date.now()}`,
+                                        type: 'stake_lock',
+                                        amount: s.entryFee,
+                                        description: `Escrow Multiplayer Challenge Lock: ${s.gameType}`,
+                                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                      };
+                                      setTransactions(prev => [stakeTx, ...prev]);
+                                    }
+
+                                    const inviteChallenge: MatchChallenge = {
+                                      id: s.sessionId,
+                                      senderId: s.hostId,
+                                      senderName: s.hostName,
+                                      receiverId: userProfile.uid,
+                                      gameType: s.gameType,
+                                      entryFee: s.entryFee,
+                                      status: 'accepted',
+                                      timestamp: new Date().toLocaleTimeString(),
+                                      opponentType: 'player'
+                                    };
+
+                                    setActiveChallenge(inviteChallenge);
+                                    setGamePlayStatus('playing');
+                                    setLiveGameState(s.gameState && s.gameState.board ? s.gameState : updatedGameState);
+                                    _setWhotGameState(updatedGameState);
+                                    whotDeckRef.current = s.deck || [];
+
+                                    updateDoc(doc(db, 'gameSessions', s.sessionId), {
+                                      opponentId: userProfile.uid,
+                                      opponentName: userProfile.username,
+                                      status: 'playing',
+                                      gameState: updatedGameState,
+                                      updatedAt: Date.now()
+                                    }).catch(console.error);
+
+                                    setGamePlayLogs([
+                                      `[ESCROW LOCK] Atomic escrow write success. STAKE: ${s.entryFee} coins escrowed.`,
+                                      `[MULTIPLAYER] Joined lobby successfully!`
+                                    ]);
+                                  }}
+                                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-neutral-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer active:scale-95 shrink-0 shadow-md shadow-emerald-500/20"
+                                >
+                                  Join & Play
+                                </button>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Online presence challengers list */}
-            {activeTab === 'presence' && (
-              <div className="flex-1 p-4 overflow-y-auto bg-neutral-920/40">
-                
-                {/* PVP Share Invitation Link Generator */}
-                <div className="bg-[#0D0D12] p-5 rounded-2xl border border-purple-500/20 shadow-lg space-y-4.5 mb-6 relative overflow-hidden">
-                  <div className="absolute right-0 top-0 translate-x-[20%] -translate-y-[20%] h-32 w-32 bg-purple-500/10 rounded-full blur-2xl" />
-                  
-                  <div className="flex items-start gap-3 relative">
-                    <div className="p-2.5 bg-purple-500/10 border border-purple-500/30 text-purple-400 rounded-xl shadow-[0_0_15px_rgba(147,51,234,0.15)] mt-0.5">
-                      <Share2 className="w-5 h-5 animate-pulse" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-neutral-100 uppercase tracking-wider font-sans">⚔️ Multiplayer Duel: Play with Friends</h4>
-                      <p className="text-[11px] text-neutral-450 mt-1 max-w-lg leading-relaxed">
-                        Generate a custom staking invitation link and send it to your friend! When they open it on their browser, the smart escrow contract validates the stakes and starts the live match immediately.
-                      </p>
-                    </div>
                   </div>
+                )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 text-xs">
-                    {/* Select Game base */}
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] text-neutral-450 font-mono font-bold uppercase tracking-wider">Configure Arena Option</label>
-                      <div className="grid grid-cols-5 gap-1 font-sans">
-                        {(['Chess', 'Ludo', 'Whot', 'Draft', 'TicTacToe'] as const).map((game) => (
-                          <button
-                            key={game}
-                            onClick={() => setFriendGame(game)}
-                            className={`py-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
-                              friendGame === game
-                                ? 'border-purple-550 bg-purple-500/10 text-purple-300 font-bold'
-                                : 'border-neutral-800 bg-neutral-900 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
-                            }`}
-                          >
-                            {game}
-                          </button>
+                {/* Challengers & PVP Invitation Generator sub-tab */}
+                {activeTab === 'presence' && (
+                  <div className="flex-1 p-5 overflow-y-auto bg-neutral-950/60 backdrop-blur-xl text-neutral-100 space-y-6">
+                    
+                    {/* PVP Invitation Generator Card */}
+                    <div className="bg-[#0D0D12]/90 p-5 rounded-2xl border border-purple-500/30 shadow-xl space-y-4 relative overflow-hidden backdrop-blur-xl">
+                      <div className="absolute right-0 top-0 translate-x-[20%] -translate-y-[20%] h-36 w-36 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
+                      
+                      <div className="flex items-start gap-3 relative z-10">
+                        <div className="p-2.5 bg-purple-500/15 border border-purple-500/30 text-purple-300 rounded-xl shadow-[0_0_15px_rgba(168,85,247,0.2)] mt-0.5 shrink-0">
+                          <Share2 className="w-5 h-5 animate-pulse" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-extrabold text-white uppercase tracking-wider font-display">⚔️ Multiplayer Duel: Challenge Friends</h4>
+                          <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">
+                            Generate a custom staking invite link and share it with your friend. When opened, escrow locks stakes & launches the match!
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 text-xs">
+                        {/* Select Game */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-neutral-400 font-mono font-bold uppercase tracking-wider">Configure Arena</label>
+                          <div className="grid grid-cols-5 gap-1">
+                            {(['Chess', 'Ludo', 'Whot', 'Draft', 'TicTacToe'] as const).map((game) => (
+                              <button
+                                key={game}
+                                onClick={() => setFriendGame(game)}
+                                className={`py-2 text-[11px] font-semibold rounded-xl border transition-all cursor-pointer ${
+                                  friendGame === game
+                                    ? 'border-purple-500 bg-purple-500/20 text-purple-300 font-bold shadow-[0_0_10px_rgba(168,85,247,0.3)]'
+                                    : 'border-white/10 bg-black/40 text-neutral-400 hover:border-white/20 hover:text-white'
+                                }`}
+                              >
+                                {game}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Choose Stake */}
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between items-center text-[10px] text-neutral-400 font-mono font-bold uppercase tracking-wider">
+                            <span>Staking Fee</span>
+                            <span className="text-emerald-400 font-bold font-sans">{friendStake} Coins</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="100"
+                            max="1000"
+                            step="100"
+                            value={friendStake}
+                            onChange={(e) => setFriendStake(Number(e.target.value))}
+                            className="w-full accent-purple-500 bg-black/60 rounded-lg cursor-pointer h-1.5 border border-white/10"
+                          />
+                          <div className="flex justify-between text-[9px] text-neutral-500 font-mono">
+                            <span>100 coins</span>
+                            <span>1000 coins</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Generated Link Panel and Button */}
+                      <div className="flex flex-col sm:flex-row gap-2 pt-1 font-sans">
+                        <div className="flex-1 flex gap-2 items-center bg-black/60 px-3.5 py-2.5 border border-white/10 rounded-xl text-neutral-300 font-mono text-[10px] truncate max-w-full">
+                          <Link className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                          <span className="truncate">
+                            {`${window.location.origin}${window.location.pathname}?friendInvite=true&game=${friendGame}&stake=${friendStake}&sender=${encodeURIComponent(userProfile.username)}`}
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            const generatedLink = `${window.location.origin}${window.location.pathname}?friendInvite=true&game=${friendGame}&stake=${friendStake}&sender=${encodeURIComponent(userProfile.username)}`;
+                            navigator.clipboard.writeText(generatedLink);
+                            setCopiedLink(true);
+                            setTimeout(() => setCopiedLink(false), 2000);
+                          }}
+                          className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-95 shrink-0 ${
+                            copiedLink 
+                              ? 'bg-emerald-500 text-neutral-950 font-black' 
+                              : 'bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-400 hover:to-purple-600 text-white font-bold shadow-md shadow-purple-950/50'
+                          }`}
+                        >
+                          {copiedLink ? (
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              Copied Link!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              Generate & Copy Link
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Online AI & Player Challengers List */}
+                    <div className="space-y-3 pt-2">
+                      <div className="flex justify-between items-center px-0.5 border-b border-white/10 pb-2">
+                        <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-purple-400" />
+                          Available Opponents & AI Challengers
+                        </span>
+                        <span className="text-[10px] bg-white/5 border border-white/10 px-2 py-0.5 rounded-md font-mono text-neutral-400">
+                          Live Simulation
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {onlineBots.map((bot) => (
+                          <div key={bot.uid} className="bg-neutral-900/80 p-4 rounded-2xl border border-white/10 flex justify-between items-center group hover:border-purple-500/40 transition-all shadow-md">
+                            <div className="flex items-center gap-3">
+                              <div className="relative">
+                                <img 
+                                  src={bot.avatar} 
+                                  alt={bot.username} 
+                                  className="w-10 h-10 rounded-full object-cover border border-white/20 shadow-md"
+                                  referrerPolicy="no-referrer"
+                                />
+                                <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#070709] animate-pulse" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-bold text-white">{bot.username}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-[10px] text-neutral-400 mt-0.5 font-mono">
+                                  <span className="flex items-center gap-1 text-emerald-400">
+                                    <Trophy className="w-3 h-3 text-amber-400" />
+                                    W:{bot.wins} L:{bot.losses}
+                                  </span>
+                                  <span>•</span>
+                                  <span className="text-purple-300 font-bold">{bot.coins} Coins</span>
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => openChallengePanel(bot)}
+                              className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-neutral-950 text-xs font-sans font-black rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-md shadow-amber-500/20 active:scale-95"
+                            >
+                              Challenge Match
+                            </button>
+                          </div>
                         ))}
                       </div>
                     </div>
-
-                    {/* Choose Stake */}
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center text-[10px] text-neutral-450 font-mono font-bold uppercase tracking-wider">
-                        <span>Staking Amount</span>
-                        <span className="text-purple-300 font-bold font-sans">{friendStake} Coins</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="100"
-                        max="1000"
-                        step="100"
-                        value={friendStake}
-                        onChange={(e) => setFriendStake(Number(e.target.value))}
-                        className="w-full accent-purple-500 bg-neutral-900 rounded-lg cursor-pointer h-1.5 border border-neutral-800"
-                      />
-                      <div className="flex justify-between text-[9px] text-neutral-500 font-mono">
-                        <span>100 coins</span>
-                        <span>1000 coins</span>
-                      </div>
-                    </div>
                   </div>
+                )}
 
-                  {/* Generated Link Panel and Button */}
-                  <div className="flex flex-col sm:flex-row gap-2 pt-1 font-sans">
-                    <div className="flex-1 flex gap-2 items-center bg-neutral-950 px-3 py-2 border border-neutral-800 text-neutral-350 select-all font-mono text-[10px] truncate max-w-full">
-                      <Link className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                      <span className="truncate">
-                        {`${window.location.origin}${window.location.pathname}?friendInvite=true&game=${friendGame}&stake=${friendStake}&sender=${encodeURIComponent(userProfile.username)}`}
+                {/* Wallet sub-tab */}
+                {activeTab === 'wallet' && (
+                  <div className="flex-1 p-5 overflow-y-auto bg-neutral-950/60 backdrop-blur-xl text-neutral-100">
+                    <div className="border-b border-white/10 pb-3 mb-4 flex justify-between items-center">
+                      <div>
+                        <h4 className="font-display font-black text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                          <Wallet className="w-4 h-4 text-purple-400" />
+                          Wallet Ledger & Transactions
+                        </h4>
+                        <p className="text-[10px] text-neutral-400 mt-0.5 font-mono">Audit atomic escrow stake locks, payouts, and faucet claims.</p>
+                      </div>
+                      <span className="px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-xs font-mono font-extrabold text-purple-300">
+                        {userProfile.coins.toLocaleString()} Coins
                       </span>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        const generatedLink = `${window.location.origin}${window.location.pathname}?friendInvite=true&game=${friendGame}&stake=${friendStake}&sender=${encodeURIComponent(userProfile.username)}`;
-                        navigator.clipboard.writeText(generatedLink);
-                        setCopiedLink(true);
-                        setTimeout(() => setCopiedLink(false), 2000);
-                      }}
-                      className={`px-5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-95 shrink-0 ${
-                        copiedLink 
-                          ? 'bg-emerald-500 text-neutral-950 font-black' 
-                          : 'bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-500 hover:to-purple-700 text-white font-bold shadow-md shadow-purple-950/40'
-                      }`}
-                    >
-                      {copiedLink ? (
-                        <>
-                          <Check className="w-3.5 h-3.5" />
-                          Copied!
-                        </>
+                    <div className="space-y-3">
+                      {transactions.length === 0 ? (
+                        <p className="text-xs text-neutral-500 font-mono italic text-center py-8">No transaction history recorded yet.</p>
                       ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          Generate & Copy Challenge Link
-                        </>
+                        transactions.map((tx) => (
+                          <div key={tx.id} className="glass-card p-4 rounded-2xl border border-white/10 hover:border-purple-500/30 transition-all flex justify-between items-center shadow-md">
+                            <div className="space-y-1">
+                              <span className="text-xs font-bold text-white block">{tx.description}</span>
+                              <div className="flex items-center gap-2 text-[10px] font-mono text-neutral-400">
+                                <span>TxID: {tx.id}</span>
+                                <span>•</span>
+                                <span>{tx.timestamp}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 font-mono text-xs font-bold">
+                              {tx.type === 'credit' || tx.type === 'win_payout' ? (
+                                <div className="text-emerald-300 flex items-center bg-emerald-500/15 border border-emerald-500/30 px-3 py-1.5 rounded-xl">
+                                  <ArrowDownLeft className="w-3.5 h-3.5 mr-1 text-emerald-400" />
+                                  +{tx.amount.toLocaleString()}
+                                </div>
+                              ) : (
+                                <div className="text-purple-300 flex items-center bg-purple-500/15 border border-purple-500/30 px-3 py-1.5 rounded-xl">
+                                  <ArrowUpRight className="w-3.5 h-3.5 mr-1 text-purple-400" />
+                                  -{tx.amount.toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))
                       )}
-                    </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="border-t border-neutral-800/60 my-5 pt-1" />
-                
-                {/* Heading for original bots */}
-                <div className="mb-4 flex justify-between items-center px-0.5">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400">Offline/Online AI Challengers</span>
-                  <span className="text-[10px] bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded-md font-mono text-neutral-500">Live Simulation</span>
+                {/* Admin Settings sub-tab */}
+                {activeTab === 'settings' && (
+                  <div className="flex-1 p-5 overflow-y-auto bg-neutral-950/60 backdrop-blur-xl text-neutral-200 space-y-6">
+                    <div className="border-b border-white/10 pb-3">
+                      <h4 className="font-display font-black text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                        <Crown className="w-4 h-4 text-amber-400" />
+                        Whot Game Admin Configuration
+                      </h4>
+                      <p className="text-[10px] text-neutral-400 mt-0.5 font-mono">Customize active card value rule chains, pickup penalties, and wildcard mechanics.</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Card 14 Force Draw setting */}
+                      <div className="bg-neutral-900/80 p-4 rounded-2xl border border-white/10 space-y-3.5 flex flex-col justify-between">
+                        <div>
+                          <span className="block text-xs font-bold text-white">General Market Rule (Card 14)</span>
+                          <p className="text-[10px] text-neutral-400 mt-1 leading-relaxed">
+                            When enabled, playing card 14 forces the opponent to draw 1 card from the pile immediately.
+                          </p>
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer self-start select-none">
+                          <input 
+                            type="checkbox" 
+                            checked={whotSettings.forcePickOn14} 
+                            onChange={(e) => setWhotSettings(prev => ({ ...prev, forcePickOn14: e.target.checked }))} 
+                            className="rounded border-neutral-700 bg-neutral-800 text-purple-500 focus:ring-0 w-4 h-4 cursor-pointer"
+                          />
+                          <span className="text-xs font-semibold text-neutral-300">Force Opponent to Pick</span>
+                        </label>
+                      </div>
+
+                      {/* Card 2 Defend setting */}
+                      <div className="bg-neutral-900/80 p-4 rounded-2xl border border-white/10 space-y-3.5 flex flex-col justify-between">
+                        <div>
+                          <span className="block text-xs font-bold text-white">Pick Two Defense (Card 2)</span>
+                          <p className="text-[10px] text-neutral-400 mt-1 leading-relaxed">
+                            When enabled, the opponent can defend against a Pick Two (2) by playing another card 2.
+                          </p>
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer self-start select-none">
+                          <input 
+                            type="checkbox" 
+                            checked={whotSettings.defendOn2} 
+                            onChange={(e) => setWhotSettings(prev => ({ ...prev, defendOn2: e.target.checked }))} 
+                            className="rounded border-neutral-700 bg-neutral-800 text-purple-500 focus:ring-0 w-4 h-4 cursor-pointer"
+                          />
+                          <span className="text-xs font-semibold text-neutral-300">Enable Defense with Card 2</span>
+                        </label>
+                      </div>
+
+                      {/* Hold On & Suspension extra turn setting */}
+                      <div className="bg-neutral-900/80 p-4 rounded-2xl border border-white/10 space-y-3.5 flex flex-col justify-between">
+                        <div>
+                          <span className="block text-xs font-bold text-white">Extra Turns Rule (Card 1 & 8)</span>
+                          <p className="text-[10px] text-neutral-400 mt-1 leading-relaxed">
+                            When enabled, playing Hold On (1) or Suspension (8) grants the active player another turn immediately.
+                          </p>
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer self-start select-none">
+                          <input 
+                            type="checkbox" 
+                            checked={whotSettings.playAgainOn1or8} 
+                            onChange={(e) => setWhotSettings(prev => ({ ...prev, playAgainOn1or8: e.target.checked }))} 
+                            className="rounded border-neutral-700 bg-neutral-800 text-purple-500 focus:ring-0 w-4 h-4 cursor-pointer"
+                          />
+                          <span className="text-xs font-semibold text-neutral-300">Grant Play Again on 1 & 8</span>
+                        </label>
+                      </div>
+
+                      {/* Whot 20 wildcard settings */}
+                      <div className="bg-neutral-900/80 p-4 rounded-2xl border border-white/10 space-y-3.5 flex flex-col justify-between">
+                        <div>
+                          <span className="block text-xs font-bold text-white">Whot Wildcards (Card 20)</span>
+                          <p className="text-[10px] text-neutral-400 mt-1 leading-relaxed">
+                            Include Card 20 wildcards in the Whot deck. Disabling this removes wildcard suit claims.
+                          </p>
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer self-start select-none">
+                          <input 
+                            type="checkbox" 
+                            checked={whotSettings.optional20} 
+                            onChange={(e) => setWhotSettings(prev => ({ ...prev, optional20: e.target.checked }))} 
+                            className="rounded border-neutral-700 bg-neutral-800 text-purple-500 focus:ring-0 w-4 h-4 cursor-pointer"
+                          />
+                          <span className="text-xs font-semibold text-neutral-300">Include Card 20 in Deck</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="border-b border-white/10 pb-3 pt-2">
+                      <h4 className="font-display font-black text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                        <Users className="w-4 h-4 text-purple-400" />
+                        User Directory & Administration
+                      </h4>
+                      <p className="text-[10px] text-neutral-400 mt-0.5 font-mono">Manage registered users, deactivate login sessions, or purge profiles from the database.</p>
+                    </div>
+
+                    <div className="space-y-3">
+                      {allProfiles.filter(p => p.uid !== userProfile.uid).length === 0 ? (
+                        <div className="text-center py-6 bg-black/40 rounded-2xl border border-white/5">
+                          <p className="text-xs text-neutral-400 font-mono">No other registered users found in directory.</p>
+                        </div>
+                      ) : (
+                        allProfiles
+                          .filter(p => p.uid !== userProfile.uid)
+                          .map((profile) => (
+                            <div key={profile.uid} className="bg-neutral-900/80 p-4 rounded-2xl border border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all hover:border-purple-500/30">
+                              <div className="flex items-center gap-3">
+                                <img 
+                                  src={profile.avatar} 
+                                  alt={profile.username} 
+                                  className="w-10 h-10 rounded-full object-cover border border-white/20"
+                                  referrerPolicy="no-referrer"
+                                />
+                                <div>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-bold text-white">{profile.username}</span>
+                                    {profile.deactivated ? (
+                                      <span className="text-[8px] bg-rose-950/80 text-rose-400 border border-rose-800/40 px-1.5 py-0.5 rounded font-mono font-bold uppercase">DEACTIVATED</span>
+                                    ) : (
+                                      <span className={`w-2.5 h-2.5 rounded-full border border-neutral-900 ${profile.status === 'online' ? 'bg-emerald-400 animate-pulse' : profile.status === 'in-game' ? 'bg-purple-400 animate-ping' : 'bg-neutral-600'}`} />
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-[10px] text-neutral-400 mt-0.5 font-mono">
+                                    <span>{profile.email}</span>
+                                    <span className="hidden sm:inline">•</span>
+                                    <span className="text-emerald-400 font-bold">Coins: {profile.coins}</span>
+                                    <span className="hidden sm:inline">•</span>
+                                    <span>W: {profile.wins} / L: {profile.losses}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 self-end sm:self-auto">
+                                <button
+                                  onClick={() => {
+                                    if (handleToggleDeactivate) {
+                                      handleToggleDeactivate(profile.uid, !profile.deactivated);
+                                    }
+                                  }}
+                                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer select-none ${
+                                    profile.deactivated
+                                      ? 'bg-emerald-500 hover:bg-emerald-400 text-neutral-950'
+                                      : 'bg-white/10 hover:bg-white/20 text-neutral-200 border border-white/10'
+                                  }`}
+                                >
+                                  {profile.deactivated ? 'Activate' : 'Deactivate'}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm(`⚠️ Are you sure you want to permanently delete "${profile.username}"?`)) {
+                                      if (handleDeleteProfile) {
+                                        handleDeleteProfile(profile.uid);
+                                      }
+                                    }
+                                  }}
+                                  className="px-3.5 py-1.5 bg-rose-500/20 hover:bg-rose-500 border border-rose-500/30 hover:border-rose-500 text-rose-300 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer select-none"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: Social Presence & Activity Hub (Fixes Empty Space!) */}
+            <div className="lg:col-span-12 xl:col-span-3 space-y-5">
+              
+              {/* Social Presence Panel */}
+              <div className="glass-card p-5 rounded-3xl border border-white/10 shadow-xl space-y-4">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+                    <h4 className="text-xs font-bold text-white font-display uppercase tracking-wider">Social Presence</h4>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-purple-300 px-2 py-0.5 bg-purple-500/20 rounded-full border border-purple-500/30">
+                    {onlineBots.filter(b => b.status === 'online').length + 1} ONLINE
+                  </span>
                 </div>
 
                 <div className="space-y-3">
+                  {/* User self in list */}
+                  <div className="p-3 bg-purple-500/10 rounded-2xl border border-purple-500/25 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="relative">
+                        <img src={userProfile.avatar} alt={userProfile.username} className="w-8 h-8 rounded-full object-cover border border-purple-400/50" referrerPolicy="no-referrer" />
+                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-[#070709]" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-white block leading-tight">{userProfile.username} (You)</span>
+                        <span className="text-[9px] font-mono text-purple-300 font-bold uppercase">Ready for match</span>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-mono font-bold uppercase border border-emerald-500/30">
+                      ACTIVE
+                    </span>
+                  </div>
+
+                  {/* Other online players */}
                   {onlineBots.map((bot) => (
-                    <div key={bot.uid} className="bg-neutral-900 p-4 rounded-xl border border-neutral-800 shadow-sm flex justify-between items-center group hover:border-neutral-700 transition-all">
-                      <div className="flex items-center gap-3">
-                        <img 
-                          src={bot.avatar} 
-                          alt={bot.username} 
-                          className="w-10 h-10 rounded-full object-cover border border-neutral-800"
-                          referrerPolicy="no-referrer"
-                        />
+                    <div key={bot.uid} className="p-3 bg-black/40 hover:bg-white/5 rounded-2xl border border-white/5 hover:border-white/15 transition-all flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="relative">
+                          <img src={bot.avatar} alt={bot.username} className="w-8 h-8 rounded-full object-cover border border-white/10" referrerPolicy="no-referrer" />
+                          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-[#070709]" />
+                        </div>
                         <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-semibold text-neutral-200">{bot.username}</span>
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-neutral-900 animate-pulse" />
-                          </div>
-                          <div className="flex items-center gap-2 text-[10px] text-neutral-450 mt-0.5 font-mono">
-                            <span className="flex items-center gap-0.5">
-                              <Trophy className="w-3 h-3 text-amber-400" />
-                              W:{bot.wins} L:{bot.losses}
-                            </span>
-                          </div>
+                          <span className="text-xs font-bold text-neutral-200 block leading-tight">{bot.username}</span>
+                          <span className="text-[9px] font-mono text-neutral-400 font-bold">{bot.wins} Wins • {bot.coins} Coins</span>
                         </div>
                       </div>
                       <button
                         onClick={() => openChallengePanel(bot)}
-                        className="px-3.5 py-1.5 bg-amber-400 hover:bg-amber-500 hover:scale-105 text-neutral-950 text-xs font-sans font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap shadow-sm"
+                        className="px-2.5 py-1 bg-amber-400 hover:bg-amber-500 text-neutral-950 text-[10px] font-bold rounded-lg transition-all cursor-pointer active:scale-95 uppercase tracking-wider"
                       >
-                        Challenge Match
+                        Duel
                       </button>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
 
-            {/* Admin Settings sub-tab */}
-            {activeTab === 'settings' && (
-              <div className="flex-1 p-5 overflow-y-auto bg-neutral-920/40 text-neutral-200 space-y-6">
-                <div className="border-b border-neutral-800 pb-3">
-                  <h4 className="font-display font-black text-sm text-white uppercase tracking-wider">👑 Whot Game Admin Configuration</h4>
-                  <p className="text-[10px] text-neutral-400 mt-0.5 font-mono">Customize active card value rule chains, pickup penalties, and wildcard mechanics.</p>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Card 14 Force Draw setting */}
-                  <div className="bg-neutral-900/60 p-4 rounded-xl border border-neutral-800 space-y-3.5 flex flex-col justify-between">
-                    <div>
-                      <span className="block text-xs font-bold text-neutral-100">General Market Rule (Card 14)</span>
-                      <p className="text-[10px] text-neutral-450 mt-1 leading-relaxed">
-                        When enabled, playing card 14 forces the opponent to draw 1 card from the pile immediately.
-                      </p>
-                    </div>
-                    <label className="flex items-center gap-2 cursor-pointer self-start select-none">
-                      <input 
-                        type="checkbox" 
-                        checked={whotSettings.forcePickOn14} 
-                        onChange={(e) => setWhotSettings(prev => ({ ...prev, forcePickOn14: e.target.checked }))} 
-                        className="rounded border-neutral-700 bg-neutral-800 text-amber-500 focus:ring-0 focus:ring-offset-0 w-4 h-4 cursor-pointer"
-                      />
-                      <span className="text-xs font-semibold">Force Opponent to Pick</span>
-                    </label>
+              {/* Platform Leaderboard Snapshot */}
+              <div className="glass-card p-5 rounded-3xl border border-white/10 shadow-xl space-y-4">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                    <h4 className="text-xs font-bold text-white font-display uppercase tracking-wider">Top Champions</h4>
                   </div>
-
-                  {/* Card 2 Defend setting */}
-                  <div className="bg-neutral-900/60 p-4 rounded-xl border border-neutral-800 space-y-3.5 flex flex-col justify-between">
-                    <div>
-                      <span className="block text-xs font-bold text-neutral-100">Pick Two Defense (Card 2)</span>
-                      <p className="text-[10px] text-neutral-450 mt-1 leading-relaxed">
-                        When enabled, the opponent can defend against a Pick Two (2) by playing another card 2, avoiding drawing and passing turn back.
-                      </p>
-                    </div>
-                    <label className="flex items-center gap-2 cursor-pointer self-start select-none">
-                      <input 
-                        type="checkbox" 
-                        checked={whotSettings.defendOn2} 
-                        onChange={(e) => setWhotSettings(prev => ({ ...prev, defendOn2: e.target.checked }))} 
-                        className="rounded border-neutral-700 bg-neutral-800 text-amber-500 focus:ring-0 focus:ring-offset-0 w-4 h-4 cursor-pointer"
-                      />
-                      <span className="text-xs font-semibold">Enable Defense with Card 2</span>
-                    </label>
-                  </div>
-
-                  {/* Hold On & Suspension extra turn setting */}
-                  <div className="bg-neutral-900/60 p-4 rounded-xl border border-neutral-800 space-y-3.5 flex flex-col justify-between">
-                    <div>
-                      <span className="block text-xs font-bold text-neutral-100">Extra Turns Rule (Card 1 & 8)</span>
-                      <p className="text-[10px] text-neutral-450 mt-1 leading-relaxed">
-                        When enabled, playing Hold On (1) or Suspension (8) grants the active player another turn immediately.
-                      </p>
-                    </div>
-                    <label className="flex items-center gap-2 cursor-pointer self-start select-none">
-                      <input 
-                        type="checkbox" 
-                        checked={whotSettings.playAgainOn1or8} 
-                        onChange={(e) => setWhotSettings(prev => ({ ...prev, playAgainOn1or8: e.target.checked }))} 
-                        className="rounded border-neutral-700 bg-neutral-800 text-amber-500 focus:ring-0 focus:ring-offset-0 w-4 h-4 cursor-pointer"
-                      />
-                      <span className="text-xs font-semibold">Grant Play Again on 1 & 8</span>
-                    </label>
-                  </div>
-
-                  {/* Whot 20 wildcard settings */}
-                  <div className="bg-neutral-900/60 p-4 rounded-xl border border-neutral-800 space-y-3.5 flex flex-col justify-between">
-                    <div>
-                      <span className="block text-xs font-bold text-neutral-100">Whot Wildcards (Card 20)</span>
-                      <p className="text-[10px] text-neutral-450 mt-1 leading-relaxed">
-                        Include Card 20 wildcards in the Whot deck. Disabling this removes wildcard suit claims from the game.
-                      </p>
-                    </div>
-                    <label className="flex items-center gap-2 cursor-pointer self-start select-none">
-                      <input 
-                        type="checkbox" 
-                        checked={whotSettings.optional20} 
-                        onChange={(e) => setWhotSettings(prev => ({ ...prev, optional20: e.target.checked }))} 
-                        className="rounded border-neutral-700 bg-neutral-800 text-amber-500 focus:ring-0 focus:ring-offset-0 w-4 h-4 cursor-pointer"
-                      />
-                      <span className="text-xs font-semibold">Include Card 20 in Deck</span>
-                    </label>
-                  </div>
+                  <span className="text-[10px] font-mono text-neutral-400">Weekly Rank</span>
                 </div>
 
-                <div className="border-b border-neutral-800 pb-3 pt-4">
-                  <h4 className="font-display font-black text-sm text-white uppercase tracking-wider flex items-center gap-2">
-                    👥 User Directory & Administration
-                  </h4>
-                  <p className="text-[10px] text-neutral-450 mt-0.5 font-mono">Manage registered users, deactivate login sessions, or purge profiles from the database.</p>
-                </div>
-
-                <div className="space-y-3">
-                  {allProfiles.filter(p => p.uid !== userProfile.uid).length === 0 ? (
-                    <div className="text-center py-6 bg-neutral-900/40 rounded-xl border border-neutral-800/80">
-                      <p className="text-xs text-neutral-450 font-mono">No other registered users found in directory.</p>
-                    </div>
-                  ) : (
-                    allProfiles
-                      .filter(p => p.uid !== userProfile.uid)
-                      .map((profile) => (
-                        <div key={profile.uid} className="bg-neutral-900/60 p-4 rounded-xl border border-neutral-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all">
-                          <div className="flex items-center gap-3">
-                            <img 
-                              src={profile.avatar} 
-                              alt={profile.username} 
-                              className="w-10 h-10 rounded-full object-cover border border-neutral-800"
-                              referrerPolicy="no-referrer"
-                            />
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-semibold text-neutral-200">{profile.username}</span>
-                                {profile.deactivated ? (
-                                  <span className="text-[8px] bg-red-950/80 text-red-400 border border-red-800/40 px-1.5 py-0.5 rounded font-mono font-bold uppercase">DEACTIVATED</span>
-                                ) : (
-                                  <span className={`w-2.5 h-2.5 rounded-full border border-neutral-900 ${profile.status === 'online' ? 'bg-emerald-500 animate-pulse' : profile.status === 'in-game' ? 'bg-purple-500 animate-ping' : 'bg-neutral-600'}`} />
-                                )}
-                              </div>
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-[10px] text-neutral-450 mt-0.5 font-mono">
-                                <span>{profile.email}</span>
-                                <span className="hidden sm:inline">•</span>
-                                <span className="flex items-center gap-0.5">Coins: {profile.coins}</span>
-                                <span className="hidden sm:inline">•</span>
-                                <span>W: {profile.wins} / L: {profile.losses}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 self-end sm:self-auto">
-                            <button
-                              onClick={() => {
-                                if (handleToggleDeactivate) {
-                                  handleToggleDeactivate(profile.uid, !profile.deactivated);
-                                }
-                              }}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
-                                profile.deactivated
-                                  ? 'bg-emerald-500 hover:bg-emerald-600 text-neutral-950'
-                                  : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-750'
-                              }`}
-                            >
-                              {profile.deactivated ? 'Activate' : 'Deactivate'}
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (confirm(`⚠️ Are you sure you want to permanently delete the profile for "${profile.username}"? This action is irreversible.`)) {
-                                  if (handleDeleteProfile) {
-                                    handleDeleteProfile(profile.uid);
-                                  }
-                                }
-                              }}
-                              className="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 hover:border-rose-500 text-rose-300 hover:text-white rounded-lg text-xs font-bold transition-all cursor-pointer select-none"
-                            >
-                              Delete
-                            </button>
-                          </div>
+                <div className="space-y-2.5">
+                  {[
+                    { rank: '#1', name: 'Elena_ChessGrandmaster', wins: 1205, coins: 24500, avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
+                    { rank: '#2', name: 'Chidi_LudoKing', wins: 589, coins: 10200, avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80', color: 'text-slate-300 bg-slate-500/10 border-slate-500/30' },
+                    { rank: '#3', name: 'Dotun_WhotMaster', wins: 412, coins: 4500, avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80', color: 'text-amber-600 bg-amber-700/10 border-amber-700/30' }
+                  ].map((leader) => (
+                    <div key={leader.rank} className="p-3 bg-black/40 rounded-2xl border border-white/5 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <span className={`w-6 h-6 rounded-lg font-mono font-black text-xs flex items-center justify-center border ${leader.color}`}>
+                          {leader.rank}
+                        </span>
+                        <img src={leader.avatar} alt={leader.name} className="w-7 h-7 rounded-full object-cover border border-white/10" referrerPolicy="no-referrer" />
+                        <div>
+                          <span className="text-xs font-bold text-white block leading-tight truncate max-w-[110px]">{leader.name}</span>
+                          <span className="text-[9px] font-mono text-emerald-400 font-bold">{leader.wins} Wins</span>
                         </div>
-                      ))
-                  )}
+                      </div>
+                      <span className="text-[10px] font-mono font-bold text-neutral-300">{leader.coins.toLocaleString()}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            )}
 
-            {/* Active Sessions sub-tab */}
-            {activeTab === 'active-sessions' && (
-              <div className="flex-1 p-5 overflow-y-auto bg-neutral-920/40 text-neutral-200 space-y-6">
-                <div className="border-b border-neutral-800 pb-3 flex justify-between items-center">
-                  <div>
-                    <h4 className="font-display font-black text-sm text-white uppercase tracking-wider">⚔️ Active P2P Game Lobbies</h4>
-                    <p className="text-[10px] text-neutral-450 mt-0.5 font-mono">Join waiting lobbies or resume your current active duels.</p>
-                  </div>
-                </div>
+            </div>
 
-                <div className="space-y-4">
-                  {/* Your Active Sessions */}
-                  <div>
-                    <span className="block text-xs font-bold text-neutral-400 mb-2 uppercase tracking-widest font-display">Your Matches</span>
-                    {activeSessions.filter(s => s.hostId === userProfile.uid || s.opponentId === userProfile.uid).length === 0 ? (
-                      <p className="text-xs text-neutral-500 font-mono italic p-3 bg-neutral-900/40 rounded-xl border border-neutral-800">You have no active matches.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 gap-3">
-                        {activeSessions.filter(s => s.hostId === userProfile.uid || s.opponentId === userProfile.uid).map(s => {
-                          const isHost = s.hostId === userProfile.uid;
-                          const opponentName = isHost ? (s.opponentName || 'Waiting...') : s.hostName;
-                          return (
-                            <div key={s.sessionId} className="bg-neutral-900 border border-neutral-800 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md font-sans">
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded text-[9px] font-mono text-purple-300 font-bold uppercase">{s.gameType}</span>
-                                  <span className="text-xs font-bold text-white">vs {opponentName}</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-[10px] text-neutral-450 mt-1 font-mono">
-                                  <span>Stakes: {s.entryFee} Coins</span>
-                                  <span>•</span>
-                                  <span className="capitalize">Status: <strong className={s.status === 'playing' ? 'text-emerald-400 font-bold' : s.status === 'paused' ? 'text-amber-400 font-bold' : 'text-purple-400 font-bold'}>{s.status}</strong></span>
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => {
-                                  const inviteChallenge: MatchChallenge = {
-                                    id: s.sessionId,
-                                    senderId: s.hostId,
-                                    senderName: s.hostName,
-                                    receiverId: s.opponentId || 'pending',
-                                    gameType: s.gameType,
-                                    entryFee: s.entryFee,
-                                    status: s.status === 'waiting' ? 'pending' : 'accepted',
-                                    timestamp: new Date(s.createdAt).toLocaleTimeString(),
-                                    opponentType: 'player'
-                                  };
-                                  setActiveChallenge(inviteChallenge);
-                                  setGamePlayStatus('playing');
-                                  setLiveGameState(s.gameState);
-                                  _setWhotGameState(s.gameState);
-                                  whotDeckRef.current = s.deck || [];
-                                }}
-                                className="px-3.5 py-1.5 bg-purple-500 hover:bg-purple-600 text-neutral-950 hover:text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 shrink-0"
-                              >
-                                {s.status === 'waiting' ? 'Rejoin Lobby' : 'Resume Play'}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Open Game Lobbies */}
-                  <div className="pt-4 border-t border-neutral-800">
-                    <span className="block text-xs font-bold text-neutral-400 mb-2 uppercase tracking-widest font-display">Open Lobbies</span>
-                    {activeSessions.filter(s => s.status === 'waiting' && s.hostId !== userProfile.uid).length === 0 ? (
-                      <p className="text-xs text-neutral-500 font-mono italic p-3 bg-neutral-900/40 rounded-xl border border-neutral-800">No open lobbies available right now.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 gap-3">
-                        {activeSessions.filter(s => s.status === 'waiting' && s.hostId !== userProfile.uid).map(s => (
-                          <div key={s.sessionId} className="bg-neutral-900 border border-neutral-800 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md font-sans">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded text-[9px] font-mono text-purple-300 font-bold uppercase">{s.gameType}</span>
-                                <span className="text-xs font-bold text-white">Host: {s.hostName}</span>
-                              </div>
-                              <div className="flex items-center gap-3 text-[10px] text-neutral-450 mt-1 font-mono">
-                                <span>Stakes: {s.entryFee} Coins</span>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => {
-                                if (userProfile.coins < s.entryFee) {
-                                  alert("You do not have enough coins to join this lobby.");
-                                  return;
-                                }
-                                
-                                // Join session
-                                const newPlayerHands: any = {
-                                  ...(s.gameState?.playerHands || {}),
-                                  [s.hostId]: s.gameState?.playerHands?.[s.hostId] || [],
-                                  [userProfile.uid]: s.gameState?.playerHands?.[userProfile.uid] || s.gameState?.playerHands?.['guest'] || s.gameState?.playerHands?.[''] || []
-                                };
-                                delete newPlayerHands['guest'];
-                                delete newPlayerHands[''];
-
-                                const updatedGameState = {
-                                  ...(s.gameState || {}),
-                                  playerIds: [s.hostId, userProfile.uid],
-                                  playerHands: newPlayerHands,
-                                  lastActionMessage: `${userProfile.username} has joined! Match starts now.`
-                                };
-
-                                // Deduct entry fee
-                                if (s.entryFee > 0) {
-                                  setUserProfile(prev => ({
-                                    ...prev,
-                                    coins: Math.max(0, prev.coins - s.entryFee),
-                                    status: 'in-game'
-                                  }));
-
-                                  const stakeTx: WalletTransaction = {
-                                    id: `escrow_${Date.now()}`,
-                                    type: 'stake_lock',
-                                    amount: s.entryFee,
-                                    description: `Escrow Multiplayer Challenge Lock: ${s.gameType}`,
-                                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                  };
-                                  setTransactions(prev => [stakeTx, ...prev]);
-                                }
-
-                                const inviteChallenge: MatchChallenge = {
-                                  id: s.sessionId,
-                                  senderId: s.hostId,
-                                  senderName: s.hostName,
-                                  receiverId: userProfile.uid,
-                                  gameType: s.gameType,
-                                  entryFee: s.entryFee,
-                                  status: 'accepted',
-                                  timestamp: new Date().toLocaleTimeString(),
-                                  opponentType: 'player'
-                                };
-
-                                setActiveChallenge(inviteChallenge);
-                                setGamePlayStatus('playing');
-                                setLiveGameState(s.gameState && s.gameState.board ? s.gameState : updatedGameState);
-                                _setWhotGameState(updatedGameState);
-                                whotDeckRef.current = s.deck || [];
-
-                                updateDoc(doc(db, 'gameSessions', s.sessionId), {
-                                  opponentId: userProfile.uid,
-                                  opponentName: userProfile.username,
-                                  status: 'playing',
-                                  gameState: updatedGameState,
-                                  updatedAt: Date.now()
-                                }).catch(console.error);
-
-                                setGamePlayLogs([
-                                  `[ESCROW LOCK] Atomic escrow write success. STAKE: ${s.entryFee} coins escrowed.`,
-                                  `[MULTIPLAYER] Joined lobby successfully!`
-                                ]);
-                              }}
-                              className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-neutral-950 hover:text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 shrink-0"
-                            >
-                              Join & Play
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
-        ) : activeChallenge && activeChallenge.status === 'pending' && activeChallenge.senderId === userProfile.uid ? (
+
+        </div>
+      ) : activeChallenge && activeChallenge.status === 'pending' && activeChallenge.senderId === userProfile.uid ? (
           /* Dedicated Host Lobby Matchmaking Waiting Room */
           <div className="bg-neutral-950/95 border-2 border-purple-500/40 rounded-3xl p-8 sm:p-12 max-w-2xl mx-auto shadow-[0_0_50px_rgba(168,85,247,0.25)] backdrop-blur-2xl text-center space-y-6 my-6 font-sans">
             {/* Animated Radar Swords Icon */}
@@ -3944,7 +4234,6 @@ export const PhaseSandboxTab: React.FC<PhaseSandboxTabProps> = ({
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
 
       {/* Manual Challenge dialog overlay modal */}
       {showChallengeModal && selectedBot && (
