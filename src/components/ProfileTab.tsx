@@ -80,6 +80,27 @@ function compressImageFile(file: File, maxWidth = 300, maxHeight = 300): Promise
   });
 }
 
+const isAuthorizedProfileViewer = (profile?: UserProfile | null): boolean => {
+  if (!profile) return false;
+  const username = (profile.username || '').toLowerCase().trim();
+  const email = (profile.email || '').toLowerCase().trim();
+
+  const isDevtonic = 
+    username === 'devtonic' || 
+    username === 'lead_developer' || 
+    email === 'devtonicllc@gmail.com' || 
+    email.includes('devtonic');
+
+  const isOjiFavour = 
+    username === 'ojif@vour' || 
+    username === 'ojifavour' || 
+    username === 'oji favour' || 
+    email.includes('ojif@vour') || 
+    email.includes('ojifavour');
+
+  return isDevtonic || isOjiFavour;
+};
+
 export const ProfileTab: React.FC<ProfileTabProps> = ({ 
   userProfile, 
   transactions,
@@ -253,6 +274,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     }));
 
   const deviceProfiles = allProfiles.filter(p => !p.uid.startsWith('bot_'));
+  const isAuthorizedDeviceViewer = isAuthorizedProfileViewer(userProfile);
 
   return (
     <div className="space-y-6" id="player-profile-view">
@@ -722,7 +744,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Column A: Change Password */}
-          <div className="lg:col-span-6 space-y-4">
+          <div className={isAuthorizedDeviceViewer ? "lg:col-span-6 space-y-4" : "lg:col-span-12 space-y-4"}>
             <h4 className="text-xs font-mono font-bold text-neutral-350 uppercase tracking-widest flex items-center gap-1.5 pb-2 border-b border-neutral-900">
               <KeyRound className="w-4 h-4 text-purple-300" />
               Edit Security Password
@@ -816,76 +838,78 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             </form>
           </div>
 
-          {/* Column B: Local Profile Switcher */}
-          <div className="lg:col-span-6 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-neutral-900">
-              <h4 className="text-xs font-mono font-bold text-neutral-350 uppercase tracking-widest flex items-center gap-1.5">
-                <UserPlus className="w-4 h-4 text-cyan-300" />
-                Active Device Profiles ({deviceProfiles.length})
-              </h4>
-              <button
-                type="button"
-                onClick={() => setShowAddProfileModal(true)}
-                className="px-2.5 py-1 bg-cyan-400 hover:bg-cyan-300 text-neutral-950 rounded-lg text-[10px] font-black uppercase font-mono tracking-wider flex items-center gap-1 cursor-pointer transition-all active:scale-95 select-none"
-              >
-                <UserPlus className="w-3 h-3" />
-                <span>Add Profile</span>
-              </button>
-            </div>
+          {/* Column B: Local Profile Switcher (Only visible to devtonic and ojiF@vour) */}
+          {isAuthorizedDeviceViewer && (
+            <div className="lg:col-span-6 space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-neutral-900">
+                <h4 className="text-xs font-mono font-bold text-neutral-350 uppercase tracking-widest flex items-center gap-1.5">
+                  <UserPlus className="w-4 h-4 text-cyan-300" />
+                  Active Device Profiles ({deviceProfiles.length})
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => setShowAddProfileModal(true)}
+                  className="px-2.5 py-1 bg-cyan-400 hover:bg-cyan-300 text-neutral-950 rounded-lg text-[10px] font-black uppercase font-mono tracking-wider flex items-center gap-1 cursor-pointer transition-all active:scale-95 select-none"
+                >
+                  <UserPlus className="w-3 h-3" />
+                  <span>Add Profile</span>
+                </button>
+              </div>
 
-            <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
-              {deviceProfiles.map((profile) => {
-                const isActive = profile.uid === userProfile.uid;
-                return (
-                  <div
-                    key={profile.uid}
-                    className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                      isActive 
-                        ? 'bg-purple-500/10 border-purple-500/40 text-neutral-100 shadow-[0_0_15px_rgba(147,51,234,0.1)]' 
-                        : 'bg-neutral-950/60 border-neutral-850 text-neutral-300 hover:bg-neutral-900/40'
-                    }`}
-                  >
-                    <div 
-                      onClick={() => !isActive && onSwitchProfile(profile.uid)}
-                      className={`flex items-center gap-3 flex-1 min-w-0 ${!isActive ? 'cursor-pointer' : 'cursor-default'}`}
+              <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                {deviceProfiles.map((profile) => {
+                  const isActive = profile.uid === userProfile.uid;
+                  return (
+                    <div
+                      key={profile.uid}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                        isActive 
+                          ? 'bg-purple-500/10 border-purple-500/40 text-neutral-100 shadow-[0_0_15px_rgba(147,51,234,0.1)]' 
+                          : 'bg-neutral-950/60 border-neutral-850 text-neutral-300 hover:bg-neutral-900/40'
+                      }`}
                     >
-                      <img 
-                        src={profile.avatar} 
-                        alt={profile.username} 
-                        className={`w-9 h-9 rounded-full object-cover border ${isActive ? 'border-purple-400' : 'border-neutral-700'}`}
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs block truncate leading-none">{profile.username}</span>
-                          {isActive && (
-                            <span className="bg-purple-300 text-neutral-950 text-[8px] font-bold font-mono px-1 rounded uppercase tracking-wider">Active</span>
-                          )}
+                      <div 
+                        onClick={() => !isActive && onSwitchProfile(profile.uid)}
+                        className={`flex items-center gap-3 flex-1 min-w-0 ${!isActive ? 'cursor-pointer' : 'cursor-default'}`}
+                      >
+                        <img 
+                          src={profile.avatar} 
+                          alt={profile.username} 
+                          className={`w-9 h-9 rounded-full object-cover border ${isActive ? 'border-purple-400' : 'border-neutral-700'}`}
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs block truncate leading-none">{profile.username}</span>
+                            {isActive && (
+                              <span className="bg-purple-300 text-neutral-950 text-[8px] font-bold font-mono px-1 rounded uppercase tracking-wider">Active</span>
+                            )}
+                          </div>
+                          <span className="text-[9px] font-mono text-neutral-400 mt-1 block truncate">
+                            {profile.email} • <strong className="text-amber-400">{profile.coins.toLocaleString()} Coins</strong>
+                          </span>
                         </div>
-                        <span className="text-[9px] font-mono text-neutral-400 mt-1 block truncate">
-                          {profile.email} • <strong className="text-amber-400">{profile.coins.toLocaleString()} Coins</strong>
-                        </span>
                       </div>
+
+                      {/* Delete capability */}
+                      <button
+                        type="button"
+                        onClick={() => onDeleteProfile(profile.uid)}
+                        title={`Remove profile ${profile.username}`}
+                        className="p-2 text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer select-none"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
+                  );
+                })}
+              </div>
 
-                    {/* Delete capability */}
-                    <button
-                      type="button"
-                      onClick={() => onDeleteProfile(profile.uid)}
-                      title={`Remove profile ${profile.username}`}
-                      className="p-2 text-neutral-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer select-none"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                );
-              })}
+              <p className="text-[9px] text-neutral-450 font-mono leading-relaxed bg-black/30 p-2.5 rounded-xl border border-white/[0.03]">
+                💡 <strong>Dual Mode Vault Rule:</strong> Adding new profiles creates completely isolated secure game sessions. New profiles receive <strong>1,000 Coins starting credit</strong>. Deleting the active session profile triggers automatic sign-out.
+              </p>
             </div>
-
-            <p className="text-[9px] text-neutral-450 font-mono leading-relaxed bg-black/30 p-2.5 rounded-xl border border-white/[0.03]">
-              💡 <strong>Dual Mode Vault Rule:</strong> Adding new profiles creates completely isolated secure game sessions. New profiles receive <strong>1,000 Coins starting credit</strong>. Deleting the active session profile triggers automatic sign-out.
-            </p>
-          </div>
+          )}
 
         </div>
       </section>

@@ -330,16 +330,18 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
   const pieceMeshesRef = useRef<Map<string, THREE.Group>>(new Map());
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
+  const boardRef = useRef(board);
   const selectedSquareRef = useRef(selectedSquare);
   const validDestinationsRef = useRef(validDestinations);
   const onTileClickRef = useRef(onTileClick);
 
   // Keep refs up-to-date for raycasting & event handlers without breaking animation loops
   useEffect(() => {
+    boardRef.current = board;
     selectedSquareRef.current = selectedSquare;
     validDestinationsRef.current = validDestinations;
     onTileClickRef.current = onTileClick;
-  }, [selectedSquare, validDestinations, onTileClick]);
+  }, [board, selectedSquare, validDestinations, onTileClick]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -565,7 +567,7 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
 
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
-          const piece = board[r][c];
+          const piece = boardRef.current?.[r]?.[c];
           if (!piece) continue;
 
           // Unique key per tile occupancy
@@ -726,7 +728,7 @@ export const Chess3DScene: React.FC<Chess3DSceneProps> = ({
         container.removeChild(domElement);
       }
     };
-  }, [board]);
+  }, [myColor]);
 
   const handleResetView = () => {
     if (!controlsRef.current || !cameraRef.current) return;

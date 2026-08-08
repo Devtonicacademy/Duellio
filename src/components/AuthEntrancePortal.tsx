@@ -412,33 +412,7 @@ export const AuthEntrancePortal: React.FC<AuthEntrancePortalProps> = ({
                   </button>
                 </form>
 
-                {/* Quick Swapper if device has saved sessions */}
-                {(() => {
-                  const deviceProfiles = allProfiles.filter(p => !p.uid.startsWith('bot_'));
-                  return deviceProfiles.length > 0 && (
-                    <div className="border-t border-white/[0.04] pt-5 space-y-3.5">
-                      <span className="block text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-widest">
-                        Saved Active Device Profiles
-                      </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-40 overflow-y-auto pr-1">
-                        {deviceProfiles.map((p) => (
-                          <div
-                            key={p.uid}
-                            onClick={() => handleQuickLogin(p)}
-                            className="flex items-center gap-3 p-2.5 rounded-2xl bg-[#0F0F13] border border-white/[0.03] hover:border-purple-500/25 transition-all cursor-pointer group"
-                          >
-                            <img src={p.avatar} alt={p.username} className="w-8 h-8 rounded-full object-cover border border-white/5" />
-                            <div className="min-w-0 flex-1 text-left">
-                              <span className="font-bold text-xs text-neutral-200 group-hover:text-purple-300 block truncate leading-none">{p.username}</span>
-                              <strong className="text-[9px] text-amber-400 font-mono block mt-1 leading-none">{p.coins.toLocaleString()} Coins</strong>
-                            </div>
-                            <span className="text-[9px] text-neutral-500 group-hover:text-neutral-300">Unlock →</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
+
               </motion.div>
             ) : (
               <motion.div
