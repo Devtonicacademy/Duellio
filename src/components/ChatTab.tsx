@@ -1028,29 +1028,53 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         
         {/* State: No Chat Selected */}
         {!activeChat ? (
-          <div className="flex flex-col items-center justify-center p-8 text-center max-w-md">
-            <div className="w-16 h-16 bg-gradient-to-tr from-purple-500/10 to-indigo-500/10 border border-purple-500/25 rounded-2xl flex items-center justify-center mb-5 shadow-[0_0_30px_rgba(147,51,234,0.1)]">
-              <MessageSquare className="w-8 h-8 text-purple-400 animate-bounce" />
+          <div className="flex flex-col items-center justify-center p-8 text-center max-w-lg mx-auto space-y-5">
+            <div className="relative">
+              <div className="w-20 h-20 bg-gradient-to-tr from-purple-500/20 via-cyan-500/10 to-transparent border border-purple-500/30 rounded-3xl flex items-center justify-center shadow-2xl shadow-purple-500/20 relative z-10">
+                <MessageSquare className="w-10 h-10 text-purple-400" />
+              </div>
+              <span className="absolute -top-2 -right-2 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 p-1.5 rounded-full text-[10px] shadow-md z-20">
+                <Sparkles className="w-3.5 h-3.5" />
+              </span>
             </div>
-            <h3 className="text-lg font-black text-white font-display uppercase tracking-wider">Start a Gaming Chat</h3>
-            <p className="text-xs text-neutral-400 mt-2 leading-relaxed">
-              Select an active conversation, join one of the game room matrix channels, or tap the "+" icon to lookup players.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-2.5 justify-center">
+
+            <div className="space-y-2">
+              <span className="bg-purple-500/10 border border-purple-500/20 px-3 py-1 rounded-full text-[10px] font-mono text-purple-300 font-bold uppercase tracking-wider">
+                COMMUNICATION MATRIX HUB
+              </span>
+              <h3 className="text-xl font-black text-white font-display uppercase tracking-tight">
+                Duellio Gaming Messenger
+              </h3>
+              <p className="text-xs text-neutral-400 leading-relaxed max-w-md mx-auto">
+                Select an active conversation from the sidebar, join a public game matrix channel, or start a new direct challenge message with an online player.
+              </p>
+            </div>
+
+            <div className="pt-2 flex flex-wrap gap-3 justify-center">
               <button
                 type="button"
                 onClick={() => setShowAddFriendModal(true)}
-                className="px-3.5 py-2 rounded-xl bg-purple-350 hover:bg-purple-400 text-neutral-950 font-display text-[10px] uppercase font-black tracking-wider transition-all cursor-pointer flex items-center gap-1 shadow-lg shadow-purple-500/10"
+                className="px-4 py-2.5 rounded-2xl bg-[#ebd3ff] hover:bg-[#dfbeff] text-neutral-950 font-display text-[10px] uppercase font-black tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-lg shadow-purple-500/20 active:scale-95"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Friend Chat</span>
+                <Plus className="w-4 h-4 stroke-[2.5px]" />
+                <span>+ Start Friend Chat</span>
               </button>
+              
               <button
                 type="button"
-                onClick={() => setFilterMode('groups')}
-                className="px-3.5 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 text-purple-400 font-mono text-[10px] uppercase font-bold transition-all cursor-pointer"
+                onClick={() => {
+                  setFilterMode('groups');
+                  setActiveChat({
+                    id: GAME_GROUPS[0].id,
+                    name: GAME_GROUPS[0].name,
+                    avatar: GAME_GROUPS[0].avatar,
+                    isGroup: true
+                  });
+                }}
+                className="px-4 py-2.5 rounded-2xl bg-neutral-900 hover:bg-neutral-850 border border-white/10 text-white font-mono text-[10px] uppercase font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-md active:scale-95"
               >
-                Game Room Channels
+                <Gamepad2 className="w-4 h-4 text-purple-400" />
+                <span>♟️ Join Chess Lounge</span>
               </button>
             </div>
           </div>

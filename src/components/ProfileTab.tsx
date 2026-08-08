@@ -288,8 +288,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     <div className="space-y-6" id="player-profile-view">
       
       {/* 🚀 PLAYER IDENTITY HERO BANNER */}
-      <section className="glass-panel p-6 md:p-8 rounded-3xl border border-white/10 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 blur-[90px] rounded-full -mr-32 -mt-32 pointer-events-none"></div>
+      <section className="glass-command-card p-6 md:p-8 rounded-3xl border border-white/[0.06] flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 relative overflow-hidden shadow-2xl">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-purple-500/10 via-cyan-500/5 to-transparent blur-3xl pointer-events-none" />
         
         {/* Left Side: Avatar with Rank & Level Badges */}
         <div className="relative shrink-0">
@@ -301,10 +301,10 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
               setEditMsg(null);
               setShowEditProfileModal(true);
             }}
-            className="w-32 h-32 md:w-36 md:h-36 rounded-2xl overflow-hidden border-2 border-purple-500/30 neon-glow-purple p-1 bg-neutral-900 shadow-xl cursor-pointer group relative"
+            className="w-32 h-32 md:w-36 md:h-36 rounded-3xl overflow-hidden border-2 border-purple-500/40 p-1 bg-neutral-950 shadow-2xl shadow-purple-500/20 cursor-pointer group relative"
             title="Click to edit profile avatar"
           >
-            <div className="w-full h-full rounded-xl overflow-hidden relative">
+            <div className="w-full h-full rounded-2xl overflow-hidden relative">
               <img 
                 alt="Player Avatar" 
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
@@ -315,7 +315,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 <span>Change</span>
               </div>
               <div 
-                className="absolute bottom-0 inset-x-0 text-center font-display font-bold text-[9px] py-1 uppercase tracking-wide truncate px-1 shadow-md"
+                className="absolute bottom-0 inset-x-0 text-center font-display font-black text-[9px] py-1 uppercase tracking-widest truncate px-1 shadow-md"
                 style={{ backgroundColor: `${rankObj.color}ee`, color: '#09090b' }}
               >
                 {displayRank}
@@ -324,22 +324,23 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
           </div>
           
           <div 
-            className="absolute -bottom-3 -right-3 w-12 h-12 rounded-full flex flex-col items-center justify-center border-4 border-neutral-950 font-display shadow-lg"
+            className="absolute -bottom-2.5 -right-2.5 w-11 h-11 rounded-2xl flex flex-col items-center justify-center border-2 border-neutral-950 font-display shadow-lg"
             style={{ backgroundColor: rankObj.color, color: '#09090b' }}
           >
-            <span className="text-sm font-extrabold leading-none">{displayLevel}</span>
-            <span className="text-[7px] font-bold uppercase tracking-tighter">Level</span>
+            <span className="text-xs font-extrabold leading-none">{displayLevel}</span>
+            <span className="text-[7px] font-bold uppercase tracking-tighter">LVL</span>
           </div>
         </div>
 
         {/* Right Side: Primary indicators */}
         <div className="flex-1 text-center md:text-left space-y-4 w-full">
           <div className="flex flex-col md:flex-row items-center gap-3">
-            <h1 className="font-display text-2xl font-extrabold text-white tracking-tight uppercase">
+            <h1 className="font-display text-2xl font-black text-white tracking-tight uppercase">
               {userProfile.username}
             </h1>
-            <span className="bg-purple-500/15 border border-purple-500/35 text-purple-300 px-3 py-0.5 rounded-full font-display text-[9px] font-bold tracking-wider uppercase animate-pulse">
-              {displayRank} · LV {displayLevel}
+            <span className="bg-purple-500/15 border border-purple-500/35 text-purple-300 px-3 py-1 rounded-full font-display text-[9px] font-bold tracking-wider uppercase flex items-center gap-1.5 shadow-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              {displayRank} · LVL {displayLevel}
             </span>
 
             <button
@@ -351,7 +352,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 setEditMsg(null);
                 setShowEditProfileModal(true);
               }}
-              className="flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-full transition-all cursor-pointer font-sans text-xs font-bold shrink-0 select-none shadow-sm hover:border-purple-500/50"
+              className="flex items-center gap-1.5 px-3.5 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-full transition-all cursor-pointer font-sans text-xs font-bold shrink-0 select-none shadow-sm hover:border-purple-500/50"
               title="Edit Profile Username & Avatar"
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -364,47 +365,48 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
           </p>
 
           {/* Universal Player Progression Bar */}
-          <div className="bg-white/5 p-4 rounded-2xl border border-purple-500/20 space-y-2">
+          <div className="bg-neutral-950/60 p-4 rounded-2xl border border-purple-500/20 space-y-2.5 shadow-inner">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
               <div className="flex items-center gap-2">
-                <span className="text-purple-400 font-bold font-display uppercase tracking-wider text-[11px]">GLOBAL PROGRESSION</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-neutral-950 font-sans uppercase" style={{ backgroundColor: rankObj.color }}>
+                <span className="text-purple-400 font-black font-display uppercase tracking-wider text-[11px]">GLOBAL PROGRESSION</span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black text-neutral-950 font-sans uppercase" style={{ backgroundColor: rankObj.color }}>
                   {rankObj.badge} {displayRank} · Lv {displayLevel}
                 </span>
               </div>
-              <div className="text-neutral-400 text-[11px]">
-                <span className="text-cyan-300 font-bold">{levelDetails.currentLevelProgressXP.toLocaleString()}</span> / {levelDetails.nextLevelXPRequirement.toLocaleString()} XP
+              <div className="text-neutral-400 text-[11px] font-bold">
+                <span className="text-cyan-300">{levelDetails.currentLevelProgressXP.toLocaleString()}</span> / {levelDetails.nextLevelXPRequirement.toLocaleString()} XP
                 <span className="text-neutral-500 text-[10px] ml-2">(Total: {(activeProfile.xp || 0).toLocaleString()} XP)</span>
               </div>
             </div>
             <div className="w-full bg-neutral-950 rounded-full h-3 overflow-hidden border border-white/10 p-0.5 relative">
               <div 
-                className="h-full rounded-full bg-gradient-to-r from-purple-500 via-indigo-500 to-cyan-400 transition-all duration-500 shadow-sm"
+                className="h-full rounded-full bg-gradient-to-r from-purple-500 via-cyan-400 to-emerald-400 transition-all duration-500 shadow-sm"
                 style={{ width: `${levelDetails.progressPercent}%` }}
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-1 font-mono">
-            <div className="bg-white/5 p-3.5 rounded-2xl border border-white/10 hover:border-purple-500/30 transition-all">
-              <span className="text-neutral-400 text-[9px] font-bold block uppercase tracking-wider">TOTAL MATCH WINS</span>
-              <span className="text-xl font-extrabold text-emerald-400 font-display block mt-1">{userProfile.wins}</span>
+          {/* 4-Card Cohesive Stat Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 pt-1 font-mono">
+            <div className="bg-neutral-950/60 p-4 rounded-2xl border border-emerald-500/20 hover:border-emerald-500/40 transition-all shadow-md">
+              <span className="text-neutral-400 text-[9px] font-bold block uppercase tracking-wider">MATCH WINS</span>
+              <span className="text-xl font-black text-emerald-400 font-display block mt-1">{userProfile.wins} WINS</span>
             </div>
-            <div className="bg-white/5 p-3.5 rounded-2xl border border-white/10 hover:border-purple-500/30 transition-all">
+            <div className="bg-neutral-950/60 p-4 rounded-2xl border border-rose-500/20 hover:border-rose-500/40 transition-all shadow-md">
               <span className="text-neutral-400 text-[9px] font-bold block uppercase tracking-wider">LOSSES / DRAWS</span>
-              <span className="text-xl font-extrabold text-rose-400 font-display block mt-1">{userProfile.losses} / {userProfile.draws}</span>
+              <span className="text-xl font-black text-rose-400 font-display block mt-1">{userProfile.losses} / {userProfile.draws}</span>
             </div>
-            <div className="bg-white/5 p-3.5 rounded-2xl border border-white/10 hover:border-purple-500/30 transition-all">
+            <div className="bg-neutral-950/60 p-4 rounded-2xl border border-cyan-500/20 hover:border-cyan-500/40 transition-all shadow-md">
               <span className="text-neutral-400 text-[9px] font-bold block uppercase tracking-wider">VICTORY RATE</span>
-              <span className="text-xl font-extrabold text-purple-300 font-display block mt-1">
+              <span className="text-xl font-black text-cyan-300 font-display block mt-1">
                 {userProfile.wins + userProfile.losses > 0 
                   ? Math.round((userProfile.wins / (userProfile.wins + userProfile.losses)) * 100) 
                   : 100}%
               </span>
             </div>
-            <div className="bg-white/5 p-3.5 rounded-2xl border border-white/10 hover:border-purple-500/30 transition-all">
+            <div className="bg-neutral-950/60 p-4 rounded-2xl border border-amber-500/20 hover:border-amber-500/40 transition-all shadow-md">
               <span className="text-neutral-400 text-[9px] font-bold block uppercase tracking-wider">WALLET COINS</span>
-              <span className="text-xl font-extrabold text-amber-300 font-display block mt-1">{userProfile.coins.toLocaleString()}</span>
+              <span className="text-xl font-black text-amber-300 font-display block mt-1">{userProfile.coins.toLocaleString()} 🪙</span>
             </div>
           </div>
         </div>

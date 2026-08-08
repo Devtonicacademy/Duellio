@@ -11,7 +11,10 @@ import {
   Check, 
   ShieldCheck, 
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  Radio,
+  Activity,
+  ArrowRight
 } from 'lucide-react';
 import { UserProfile, WalletTransaction } from '../types';
 
@@ -217,136 +220,184 @@ export const SpectateTab: React.FC<SpectateTabProps> = ({
     }, 1500);
   };
 
-  return (
-    <div className="space-y-8" id="spectate-dashboard">
-      
-      {/* Title Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/[0.06] pb-6">
-        <div>
-          <span className="bg-pink-500/10 border border-pink-500/20 px-3 py-1 rounded-full text-[10px] font-mono text-pink-400 font-bold uppercase tracking-wider">
-            Live Esports Arena & Staking Hub
-          </span>
-          <h1 className="text-3xl font-black text-white tracking-tight font-display mt-2 flex items-center gap-2">
-            <Tv className="w-8 h-8 text-pink-400" />
-            Spectator & Live Betting
-          </h1>
-          <p className="text-xs text-neutral-400 mt-1 max-w-xl">
-            Watch live duels happening in real-time, analyze performance odds, and stake virtual coins on top players.
-          </p>
-        </div>
+  const getGameIcon = (type: string) => {
+    switch (type) {
+      case 'Chess': return '♟️';
+      case 'Ludo': return '🎲';
+      case 'Whot': return '🃏';
+      case 'Draft': return '🎯';
+      default: return '❌';
+    }
+  };
 
-        {/* Winner Stays On (King of the Hill) Live Indicator */}
-        <div className="bg-[#120B14] border border-pink-500/20 p-3 px-5 rounded-2xl flex items-center gap-3.5 shadow-md">
-          <div className="bg-pink-500/20 p-2.5 rounded-xl border border-pink-500/35">
-            <Flame className="w-5 h-5 text-pink-300 animate-pulse" />
+  return (
+    <div className="space-y-6" id="spectate-dashboard">
+      
+      {/* Dynamic Network Spectator Header */}
+      <div className="glass-command-card p-6 border border-white/[0.06] rounded-3xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-pink-500/10 via-purple-500/5 to-transparent blur-3xl pointer-events-none" />
+        
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative z-10">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="bg-pink-500/10 border border-pink-500/25 px-3 py-1 rounded-full text-[10px] font-mono text-pink-300 font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                <Radio className="w-3 h-3 text-pink-400 animate-pulse" />
+                LIVE ESPORTS ARENA & STAKING HUB
+              </span>
+              <span className="bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                {liveMatches.length} MATCHES STREAMING
+              </span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-display flex items-center gap-3">
+              <div className="p-2.5 bg-pink-500/15 border border-pink-500/30 rounded-2xl text-pink-400 shadow-md">
+                <Tv className="w-6 h-6 sm:w-7 sm:h-7" />
+              </div>
+              Spectator & Live Betting
+            </h1>
+            <p className="text-xs text-neutral-400 max-w-xl leading-relaxed">
+              Watch real-time P2P competitive gaming duels, analyze live odds multiplier curves, and stake virtual coins on top platform gladiators.
+            </p>
           </div>
-          <div>
-            <span className="block text-[9px] font-mono text-pink-400 uppercase tracking-widest leading-none">KING OF THE HILL</span>
-            <strong className="text-sm font-bold text-white tracking-tight mt-0.5 block">
-              Sipho_Grandmaster (9 Wins)
-            </strong>
+
+          {/* King of the Hill Spotlight Header Pill */}
+          <div className="w-full lg:w-auto bg-[#120B14] border border-pink-500/30 p-3.5 px-5 rounded-2xl flex items-center justify-between lg:justify-start gap-4 shadow-lg shrink-0">
+            <div className="flex items-center gap-3.5">
+              <div className="bg-pink-500/20 p-2.5 rounded-xl border border-pink-500/40 text-pink-300">
+                <Flame className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <span className="block text-[9px] font-mono text-pink-400 uppercase tracking-widest font-black leading-none">KING OF THE HILL</span>
+                <strong className="text-xs sm:text-sm font-bold text-white tracking-tight mt-1 block">
+                  Sipho_Grandmaster
+                </strong>
+                <span className="text-[10px] font-mono text-pink-300 font-bold">🔥 9 Win Streak</span>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 bg-pink-500/20 text-pink-300 border border-pink-500/30 rounded-lg text-[9px] font-mono font-bold uppercase shrink-0">
+              REIGNING
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left Columns: Live matches or Live Spectator screen */}
+        {/* Left Columns: Live matches stream or matches feed */}
         <div className="lg:col-span-8 space-y-6">
           
           <AnimatePresence mode="wait">
             {selectedMatch ? (
-              /* ACTIVE STREAM SIMULATION */
+              /* ACTIVE STREAM BROADCAST VIEW */
               <motion.div
                 key="active-stream"
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
-                className="bg-[#0B0B0F]/90 border border-white/[0.06] rounded-3xl p-6 space-y-6 shadow-xl"
+                className="glass-command-card border border-white/[0.06] rounded-3xl p-6 space-y-6 shadow-2xl relative"
               >
                 <div className="flex justify-between items-center border-b border-white/[0.06] pb-4">
                   <button 
                     onClick={() => setSelectedMatch(null)}
-                    className="text-xs text-neutral-450 hover:text-white font-mono flex items-center gap-1 cursor-pointer"
+                    className="text-xs text-neutral-400 hover:text-white font-mono flex items-center gap-1.5 cursor-pointer px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-800 transition-all hover:bg-neutral-850"
                   >
                     ← Back to Matches
                   </button>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/30 px-3 py-1 rounded-full">
                     <span className="h-2 w-2 rounded-full bg-rose-500 animate-ping" />
-                    <span className="text-xs font-mono font-bold text-rose-400 uppercase">LIVE STREAMING</span>
+                    <span className="text-[10px] font-mono font-black text-rose-400 uppercase tracking-widest">LIVE BROADCAST</span>
                   </div>
                 </div>
 
-                {/* Match Up Header */}
-                <div className="grid grid-cols-3 items-center text-center py-4 bg-neutral-950/40 rounded-2xl border border-white/5">
+                {/* Match Up Gladiator Header */}
+                <div className="grid grid-cols-3 items-center text-center py-5 px-4 bg-neutral-950/60 rounded-2xl border border-white/5 shadow-inner">
                   <div className="space-y-2">
-                    <img src={selectedMatch.playerA.avatar} alt="P1" className="w-16 h-16 rounded-full mx-auto object-cover border-2 border-purple-500" />
-                    <h3 className="text-sm font-black text-white">{selectedMatch.playerA.username}</h3>
-                    <span className="text-[10px] text-purple-300 font-mono">Odds: {selectedMatch.playerA.odds}x</span>
-                  </div>
-                  <div>
-                    <span className="text-xs font-mono text-neutral-500 uppercase block">vs</span>
-                    <span className="text-lg font-bold text-pink-400 font-display block">{selectedMatch.gameType}</span>
-                    <span className="text-[10px] bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded text-neutral-400 mt-2 inline-block">
-                      Pool: {selectedMatch.pool} 🪙
+                    <div className="relative inline-block">
+                      <img src={selectedMatch.playerA.avatar} alt="P1" className="w-16 h-16 rounded-full mx-auto object-cover border-2 border-purple-500 shadow-lg shadow-purple-500/20" />
+                      <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-emerald-400 border-2 border-neutral-950" />
+                    </div>
+                    <h3 className="text-sm font-black text-white font-display truncate max-w-[120px] mx-auto">{selectedMatch.playerA.username}</h3>
+                    <span className="text-[10px] text-purple-300 font-mono font-bold bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full inline-block">
+                      {selectedMatch.playerA.odds}x Payout
                     </span>
                   </div>
+
+                  <div className="space-y-1">
+                    <span className="text-xl">{getGameIcon(selectedMatch.gameType)}</span>
+                    <span className="text-lg font-black text-pink-400 font-display block tracking-wider uppercase">{selectedMatch.gameType}</span>
+                    <span className="text-[10px] bg-neutral-900 border border-white/10 px-2.5 py-1 rounded-full text-neutral-300 font-mono font-bold inline-block">
+                      Pool: {selectedMatch.pool.toLocaleString()} 🪙
+                    </span>
+                  </div>
+
                   <div className="space-y-2">
-                    <img src={selectedMatch.playerB.avatar} alt="P2" className="w-16 h-16 rounded-full mx-auto object-cover border-2 border-pink-500" />
-                    <h3 className="text-sm font-black text-white">{selectedMatch.playerB.username}</h3>
-                    <span className="text-[10px] text-pink-300 font-mono">Odds: {selectedMatch.playerB.odds}x</span>
+                    <div className="relative inline-block">
+                      <img src={selectedMatch.playerB.avatar} alt="P2" className="w-16 h-16 rounded-full mx-auto object-cover border-2 border-pink-500 shadow-lg shadow-pink-500/20" />
+                      <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-emerald-400 border-2 border-neutral-950" />
+                    </div>
+                    <h3 className="text-sm font-black text-white font-display truncate max-w-[120px] mx-auto">{selectedMatch.playerB.username}</h3>
+                    <span className="text-[10px] text-pink-300 font-mono font-bold bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded-full inline-block">
+                      {selectedMatch.playerB.odds}x Payout
+                    </span>
                   </div>
                 </div>
 
                 {/* Simulated Game Action Logs */}
                 <div className="space-y-3 bg-[#070709] border border-white/[0.04] p-4.5 rounded-2xl font-mono">
-                  <div className="flex justify-between items-center text-[10px] text-neutral-450 uppercase font-bold tracking-wider">
-                    <span>Live Match Logs</span>
-                    <span>{selectedMatch.spectators} watching</span>
+                  <div className="flex justify-between items-center text-[10px] text-neutral-400 uppercase font-bold tracking-wider">
+                    <span className="flex items-center gap-1.5 text-purple-400 font-mono">
+                      <Activity className="w-3.5 h-3.5" />
+                      Verified Game Node Stream
+                    </span>
+                    <span className="text-neutral-450 font-mono">👁️ {selectedMatch.spectators} watching</span>
                   </div>
                   
                   <div className="space-y-2 max-h-40 overflow-y-auto pt-2 text-xs">
                     {selectedMatch.logs.map((log, index) => (
-                      <div key={index} className="text-neutral-350 py-1 border-b border-white/[0.02] flex justify-between items-center">
+                      <div key={index} className="text-neutral-300 py-1.5 border-b border-white/[0.02] flex justify-between items-center font-mono text-[11px]">
                         <span>{log}</span>
-                        <span className="text-[8px] text-neutral-600">Verified Node</span>
+                        <span className="text-[8px] text-neutral-500 font-mono bg-white/5 px-1.5 py-0.5 rounded">Node Sync</span>
                       </div>
                     ))}
                   </div>
 
-                  <p className="text-[11px] text-emerald-400 leading-normal pt-2 flex items-center gap-1.5 border-t border-white/[0.05]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <p className="text-[11px] text-emerald-400 leading-normal pt-2 flex items-center gap-2 border-t border-white/[0.05] font-mono">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                     <span>State Check: {selectedMatch.status}</span>
                   </p>
                 </div>
 
                 {/* Placing Bets UI */}
                 <div className="border-t border-white/[0.06] pt-6 space-y-4">
-                  <h4 className="text-sm font-bold text-neutral-200 font-display">Place Stake Bet on Winner</h4>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-neutral-300 font-display flex items-center gap-2">
+                    <Coins className="w-4 h-4 text-amber-400" />
+                    Stake Virtual Coins on Duel Winner
+                  </h4>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       onClick={() => setSelectedWinner('A')}
-                      className={`p-4 rounded-xl border text-center transition-all cursor-pointer ${
+                      className={`p-4 rounded-2xl border text-center transition-all cursor-pointer ${
                         selectedWinner === 'A' 
-                          ? 'bg-purple-500/10 border-purple-500 text-purple-300 font-bold' 
-                          : 'bg-[#0B0B0E] border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                          ? 'bg-purple-500/15 border-purple-500 text-purple-300 font-bold shadow-lg shadow-purple-500/10 ring-1 ring-purple-500/50' 
+                          : 'bg-neutral-900/80 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-white'
                       }`}
                     >
-                      <span className="block text-xs uppercase tracking-wide opacity-80">Back Player A</span>
-                      <strong className="text-base font-display">{selectedMatch.playerA.username}</strong>
+                      <span className="block text-[10px] uppercase font-mono tracking-wider text-purple-400">Back Player A ({selectedMatch.playerA.odds}x)</span>
+                      <strong className="text-sm font-display block mt-1">{selectedMatch.playerA.username}</strong>
                     </button>
 
                     <button
                       onClick={() => setSelectedWinner('B')}
-                      className={`p-4 rounded-xl border text-center transition-all cursor-pointer ${
+                      className={`p-4 rounded-2xl border text-center transition-all cursor-pointer ${
                         selectedWinner === 'B' 
-                          ? 'bg-pink-500/10 border-pink-500 text-pink-300 font-bold' 
-                          : 'bg-[#0B0B0E] border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                          ? 'bg-pink-500/15 border-pink-500 text-pink-300 font-bold shadow-lg shadow-pink-500/10 ring-1 ring-pink-500/50' 
+                          : 'bg-neutral-900/80 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-white'
                       }`}
                     >
-                      <span className="block text-xs uppercase tracking-wide opacity-80">Back Player B</span>
-                      <strong className="text-base font-display">{selectedMatch.playerB.username}</strong>
+                      <span className="block text-[10px] uppercase font-mono tracking-wider text-pink-400">Back Player B ({selectedMatch.playerB.odds}x)</span>
+                      <strong className="text-sm font-display block mt-1">{selectedMatch.playerB.username}</strong>
                     </button>
                   </div>
 
@@ -357,16 +408,16 @@ export const SpectateTab: React.FC<SpectateTabProps> = ({
                       className="space-y-4 pt-2"
                     >
                       {/* Stake Picker */}
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-neutral-400">Bet Amount:</span>
+                      <div className="flex justify-between items-center text-xs bg-neutral-950/60 p-3 rounded-2xl border border-white/5">
+                        <span className="text-neutral-400 font-mono font-bold">Select Wager Stake:</span>
                         <div className="flex gap-2">
                           {[100, 200, 500, 1000].map(amt => (
                             <button
                               key={amt}
                               onClick={() => setBetAmount(amt)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all border ${
+                              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all border cursor-pointer ${
                                 betAmount === amt 
-                                  ? 'bg-pink-500/20 text-pink-300 border-pink-500/40' 
+                                  ? 'bg-pink-500/20 text-pink-300 border-pink-500/40 shadow-sm' 
                                   : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700'
                               }`}
                             >
@@ -379,9 +430,9 @@ export const SpectateTab: React.FC<SpectateTabProps> = ({
                       <button
                         onClick={handlePlaceBet}
                         disabled={betPlaced}
-                        className="w-full py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-pink-700 hover:from-purple-500 hover:to-pink-500 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
+                        className="w-full py-3.5 bg-[#ebd3ff] hover:bg-[#dfbeff] text-neutral-950 font-extrabold text-xs uppercase tracking-widest rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 active:scale-[0.99]"
                       >
-                        {betPlaced ? 'Locking bet...' : `Confirm Bet: Stake ${betAmount} Coins`}
+                        {betPlaced ? 'Locking Wager Stake...' : `Confirm Bet: Stake ${betAmount.toLocaleString()} Coins`}
                       </button>
                     </motion.div>
                   )}
@@ -389,7 +440,7 @@ export const SpectateTab: React.FC<SpectateTabProps> = ({
 
               </motion.div>
             ) : (
-              /* LIVE MATCHES LIST */
+              /* LIVE MATCHES FEED LIST */
               <motion.div
                 key="matches-list"
                 initial={{ opacity: 0, y: -15 }}
@@ -398,88 +449,128 @@ export const SpectateTab: React.FC<SpectateTabProps> = ({
                 className="space-y-4"
               >
                 <div className="flex justify-between items-center">
-                  <h2 className="text-sm font-bold text-neutral-400 uppercase tracking-wider font-display">
-                    Active Cyber Duels
+                  <h2 className="text-xs font-black text-neutral-400 uppercase tracking-widest font-display flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-purple-400" />
+                    Active Cyber Duels Feed
                   </h2>
-                  <span className="text-[10px] bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded font-mono text-neutral-500">
-                    Real-time match feed
+                  <span className="text-[10px] bg-neutral-900 border border-neutral-800 px-3 py-1 rounded-full font-mono text-neutral-400 font-bold">
+                    ● Real-time Match Stream
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {liveMatches.map((match) => (
-                    <div 
-                      key={match.id}
-                      className="bg-[#0B0B0E]/60 border border-white/[0.05] hover:border-purple-500/30 p-5 rounded-2xl transition-all flex flex-col justify-between space-y-4 shadow-md group"
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-950/40 border border-purple-500/20 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                          {match.gameType}
-                        </span>
-                        <span className="text-[10px] text-neutral-400 font-mono">
-                          👁️ {match.spectators} Spectators
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs py-2 border-y border-white/[0.03]">
-                        <div className="flex items-center gap-2">
-                          <img src={match.playerA.avatar} alt="A" className="w-8 h-8 rounded-full object-cover" />
-                          <span className="text-white font-bold max-w-[100px] truncate">{match.playerA.username}</span>
-                        </div>
-                        <span className="text-[10px] text-neutral-500 font-mono">vs</span>
-                        <div className="flex items-center gap-2 text-right">
-                          <span className="text-white font-bold max-w-[100px] truncate">{match.playerB.username}</span>
-                          <img src={match.playerB.avatar} alt="B" className="w-8 h-8 rounded-full object-cover" />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-center pt-1">
-                        <div className="text-[10px] font-mono text-neutral-500">
-                          <span className="block">Total Pool</span>
-                          <span className="text-white font-bold">{match.pool.toLocaleString()} Coins</span>
-                        </div>
-                        <button
-                          onClick={() => setSelectedMatch(match)}
-                          className="px-4 py-2 bg-purple-350 hover:bg-purple-300 text-neutral-950 text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-1"
-                        >
-                          Spectate & Bet
-                        </button>
-                      </div>
+                {liveMatches.length === 0 ? (
+                  /* Elegant Empty State when no active matches */
+                  <div className="glass-command-card p-12 text-center rounded-3xl border border-white/[0.06] space-y-4">
+                    <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-full w-16 h-16 mx-auto flex items-center justify-center text-purple-400">
+                      <Tv className="w-8 h-8" />
                     </div>
-                  ))}
-                </div>
+                    <h3 className="text-lg font-black text-white font-display">NO LIVE DUELS</h3>
+                    <p className="text-xs text-neutral-400 max-w-sm mx-auto">
+                      The esports arena is quiet right now. Check back soon or challenge someone in the lobby to start a live broadcast.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {liveMatches.map((match) => (
+                      <div 
+                        key={match.id}
+                        className="glass-command-card hover:border-purple-500/40 p-5 rounded-3xl transition-all flex flex-col justify-between space-y-4 shadow-lg group relative overflow-hidden"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5">
+                            <span>{getGameIcon(match.gameType)}</span>
+                            <span>{match.gameType}</span>
+                          </span>
+                          <span className="text-[10px] text-neutral-400 font-mono font-bold flex items-center gap-1">
+                            👁️ {match.spectators} Spectators
+                          </span>
+                        </div>
+
+                        {/* Versus Matchup Bar */}
+                        <div className="flex items-center justify-between text-xs py-3 px-3 bg-neutral-950/60 rounded-2xl border border-white/5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="relative">
+                              <img src={match.playerA.avatar} alt="A" className="w-9 h-9 rounded-full object-cover border border-purple-500/50" />
+                              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 border border-neutral-950" />
+                            </div>
+                            <div>
+                              <span className="text-white font-bold text-xs block max-w-[90px] truncate">{match.playerA.username}</span>
+                              <span className="text-[9px] text-purple-300 font-mono">{match.playerA.odds}x</span>
+                            </div>
+                          </div>
+
+                          <span className="text-[10px] text-neutral-500 font-mono font-black uppercase px-2 py-0.5 bg-neutral-900 border border-neutral-800 rounded">
+                            VS
+                          </span>
+
+                          <div className="flex items-center gap-2.5 text-right">
+                            <div>
+                              <span className="text-white font-bold text-xs block max-w-[90px] truncate">{match.playerB.username}</span>
+                              <span className="text-[9px] text-pink-300 font-mono">{match.playerB.odds}x</span>
+                            </div>
+                            <div className="relative">
+                              <img src={match.playerB.avatar} alt="B" className="w-9 h-9 rounded-full object-cover border border-pink-500/50" />
+                              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 border border-neutral-950" />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-1">
+                          <div className="text-[10px] font-mono">
+                            <span className="block text-neutral-400 font-bold uppercase text-[9px]">Total Pool</span>
+                            <span className="text-emerald-400 font-bold text-xs">{match.pool.toLocaleString()} 🪙</span>
+                          </div>
+                          <button
+                            onClick={() => setSelectedMatch(match)}
+                            className="px-4 py-2.5 bg-[#ebd3ff] hover:bg-[#dfbeff] text-neutral-950 text-[10px] font-extrabold uppercase tracking-wider rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-purple-500/10 active:scale-95"
+                          >
+                            Spectate & Bet
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Winner Stays On (King of the Hill) active table info card */}
-          <div className="glass-card rounded-3xl p-6 border border-white/[0.06] space-y-4 shadow-xl">
-            <h3 className="text-sm font-bold text-neutral-200 font-display flex items-center gap-2">
-              <Flame className="w-4 h-4 text-pink-400" />
-              King of the Hill Tables
-            </h3>
+          {/* King of the Hill Arena Section Card */}
+          <div className="glass-command-card rounded-3xl p-6 border border-pink-500/20 space-y-4 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/5 rounded-full blur-2xl pointer-events-none" />
             
-            <div className="bg-neutral-950/40 rounded-2xl border border-white/5 p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex justify-between items-center border-b border-white/[0.06] pb-3">
+              <h3 className="text-xs font-black text-white uppercase tracking-widest font-display flex items-center gap-2">
+                <Flame className="w-4 h-4 text-pink-400 animate-pulse" />
+                King of the Hill Tables
+              </h3>
+              <span className="text-[10px] bg-pink-500/10 border border-pink-500/20 px-2.5 py-0.5 rounded-full text-pink-300 font-mono font-bold uppercase">
+                WINNER STAYS ON
+              </span>
+            </div>
+            
+            <div className="bg-neutral-950/60 rounded-2xl border border-white/5 p-4 flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=120&q=80" alt="King" className="w-16 h-16 rounded-full object-cover border-2 border-pink-500" />
-                  <span className="absolute -top-2 -right-2 bg-pink-500 text-white rounded-full p-1 text-[8px] font-bold shadow-md">👑 King</span>
+                  <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=120&q=80" alt="King" className="w-14 h-14 rounded-full object-cover border-2 border-pink-500 shadow-md shadow-pink-500/30" />
+                  <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider shadow-md">👑 King</span>
                 </div>
                 <div>
-                  <h4 className="text-sm font-extrabold text-white">Sipho_Grandmaster</h4>
-                  <div className="flex gap-2 text-[10px] text-neutral-450 mt-1 font-mono">
-                    <span className="bg-pink-950/40 text-pink-300 border border-pink-500/20 px-2 py-0.5 rounded">Current Streak: 9 Wins</span>
-                    <span className="bg-neutral-900 px-2 py-0.5 rounded">Total Coins Won: 18,000</span>
+                  <h4 className="text-sm font-extrabold text-white font-display">Sipho_Grandmaster</h4>
+                  <div className="flex flex-wrap gap-2 text-[10px] text-neutral-400 mt-1 font-mono">
+                    <span className="bg-pink-500/10 text-pink-300 border border-pink-500/20 px-2 py-0.5 rounded-full font-bold">🔥 9 Wins Streak</span>
+                    <span className="bg-neutral-900 border border-white/5 px-2 py-0.5 rounded-full">Total Won: 18,000 🪙</span>
                   </div>
                 </div>
               </div>
 
               <div className="text-center md:text-right shrink-0">
-                <span className="block text-[10px] font-mono text-neutral-500 uppercase">Current Table Pool</span>
-                <strong className="text-xl font-bold font-mono text-pink-400">2,000 Coins</strong>
+                <span className="block text-[9px] font-mono text-neutral-400 uppercase font-bold">Current Table Pool</span>
+                <strong className="text-lg font-black font-mono text-pink-400">2,000 Coins</strong>
                 <button
                   onClick={() => alert("Challenging the King is locked until the current match concludes!")}
-                  className="mt-2 block w-full md:w-auto px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-[10px] uppercase tracking-wider rounded-xl cursor-pointer"
+                  className="mt-2 block w-full md:w-auto px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white font-bold text-[10px] uppercase tracking-wider rounded-xl cursor-pointer transition-all active:scale-95 shadow-md shadow-pink-600/20"
                 >
                   Queue Challenge
                 </button>
@@ -489,28 +580,28 @@ export const SpectateTab: React.FC<SpectateTabProps> = ({
           
         </div>
 
-        {/* Right Column: Hyper-Local Leaderboards */}
+        {/* Right Column: Neighborhood Wars Regional Panel */}
         <div className="lg:col-span-4 space-y-6">
           
-          <div className="bg-[#0B0B0F]/90 border border-white/[0.06] rounded-3xl p-6 shadow-xl space-y-6">
+          <div className="glass-command-card rounded-3xl p-6 shadow-xl space-y-5 border border-white/[0.06]">
             <div className="border-b border-white/[0.06] pb-4">
-              <h2 className="text-base font-black text-white tracking-tight font-display flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-pink-400" />
+              <h2 className="text-sm font-black text-white tracking-tight font-display flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-pink-400" />
                 Neighborhood Wars
               </h2>
               <p className="text-xs text-neutral-400 mt-1">Regional rankings & top dueling zones across emerging markets.</p>
             </div>
 
             {/* Region Selector tabs */}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
               {LOCAL_LEADERBOARDS.map((regionData, idx) => (
                 <button
                   key={regionData.region}
                   onClick={() => setActiveLeaderboardIdx(idx)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold font-sans transition-all whitespace-nowrap cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-xl text-[10px] font-bold font-sans transition-all whitespace-nowrap cursor-pointer border ${
                     activeLeaderboardIdx === idx 
-                      ? 'bg-pink-500/20 text-pink-300 border border-pink-500/35' 
-                      : 'bg-neutral-900 border border-neutral-850 text-neutral-400 hover:text-neutral-200'
+                      ? 'bg-pink-500/20 text-pink-300 border-pink-500/40 shadow-sm' 
+                      : 'bg-neutral-900 border-neutral-850 text-neutral-400 hover:text-white hover:border-neutral-700'
                   }`}
                 >
                   {regionData.region.split(',')[0]}
@@ -519,16 +610,16 @@ export const SpectateTab: React.FC<SpectateTabProps> = ({
             </div>
 
             {/* Selected Region Leaderboard details */}
-            <div className="space-y-4 pt-2">
-              <span className="text-[9px] font-mono text-neutral-500 uppercase block">
-                Top players in {LOCAL_LEADERBOARDS[activeLeaderboardIdx].region}:
+            <div className="space-y-3 pt-1">
+              <span className="text-[10px] font-mono text-neutral-400 font-bold uppercase block">
+                Top gladiators in {LOCAL_LEADERBOARDS[activeLeaderboardIdx].region}:
               </span>
               
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {LOCAL_LEADERBOARDS[activeLeaderboardIdx].players.map((player) => (
                   <div 
                     key={player.name}
-                    className="flex items-center justify-between p-3 bg-neutral-950/40 rounded-xl border border-white/5 hover:border-pink-500/25 transition-all"
+                    className="flex items-center justify-between p-3 bg-neutral-950/60 rounded-2xl border border-white/5 hover:border-pink-500/30 transition-all"
                   >
                     <div className="flex items-center gap-3">
                       <span className={`w-5 font-mono text-xs font-black ${
@@ -538,8 +629,8 @@ export const SpectateTab: React.FC<SpectateTabProps> = ({
                       </span>
                       <img src={player.avatar} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-white/10" />
                       <div>
-                        <span className="font-bold text-xs text-white block truncate leading-none">{player.name}</span>
-                        <span className="text-[9px] text-neutral-500 font-mono mt-1 block">Wins: {player.wins}</span>
+                        <span className="font-bold text-xs text-white block truncate max-w-[110px] leading-tight">{player.name}</span>
+                        <span className="text-[9px] text-neutral-400 font-mono block mt-0.5">{player.wins} Wins</span>
                       </div>
                     </div>
 
@@ -551,8 +642,8 @@ export const SpectateTab: React.FC<SpectateTabProps> = ({
               </div>
             </div>
 
-            <div className="bg-[#070709] rounded-2xl p-4 border border-white/[0.04] text-[10px] text-neutral-450 leading-relaxed font-sans flex items-start gap-2">
-              <span className="shrink-0 text-pink-400">📍</span>
+            <div className="bg-[#070709] rounded-2xl p-3.5 border border-white/[0.04] text-[10px] text-neutral-400 leading-relaxed font-sans flex items-start gap-2">
+              <span className="shrink-0 text-pink-400 mt-0.5">📍</span>
               <p>Your current location is detected. Join tournaments to earn points for your neighborhood board and unlock local reward multipliers!</p>
             </div>
           </div>
