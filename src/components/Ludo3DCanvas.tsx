@@ -29,10 +29,6 @@ interface Ludo3DCanvasProps {
 export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
   tokens,
   activePlayer,
-  diceRollValue,
-  secondDiceValue,
-  isRolling,
-  isUserTurn,
   playableTokenIds,
   onSelectToken,
   view3D
@@ -42,11 +38,8 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const pawnsMapRef = useRef<Map<string, THREE.Group>>(new Map());
-  const dice1Ref = useRef<THREE.Group | null>(null);
-  const dice2Ref = useRef<THREE.Group | null>(null);
   const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
   const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2());
-  const isRollingRef = useRef<boolean>(isRolling);
 
   // 3D Camera Orbit & Pan State
   const cameraAngleRef = useRef({ theta: 0, phi: Math.PI / 3.4, radius: 21 });
@@ -58,27 +51,6 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
   const touchStartDistRef = useRef<number | null>(null);
 
   const [zoomLevel, setZoomLevel] = useState<number>(21);
-  const diceRollValueRef = useRef<number>(diceRollValue);
-  const secondDiceValueRef = useRef<number>(secondDiceValue);
-
-  // Sync props to mutable refs for animation loop
-  useEffect(() => {
-    isRollingRef.current = isRolling;
-    diceRollValueRef.current = diceRollValue;
-    secondDiceValueRef.current = secondDiceValue;
-  }, [isRolling, diceRollValue, secondDiceValue]);
-
-  const getDiceRotation = (val: number): [number, number, number] => {
-    switch (val) {
-      case 1: return [0, 0, 0];
-      case 2: return [-Math.PI / 2, 0, 0];
-      case 3: return [0, 0, -Math.PI / 2];
-      case 4: return [0, 0, Math.PI / 2];
-      case 5: return [Math.PI / 2, 0, 0];
-      case 6: return [Math.PI, 0, 0];
-      default: return [0, 0, 0];
-    }
-  };
 
   // Convert 15x15 board cell [row, col] to 3D scene world coordinates [x, y, z]
   const cellToWorld = (row: number, col: number, heightOffset = 0.35): [number, number, number] => {
@@ -210,7 +182,8 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
     scene.add(tableMesh);
 
     // 6. ELEVATED BEVELED MATTE BLACK BOARD SLAB
-    const boardWidth = 15 * 0.62 + 0.5;
+    const tileSize = 0.62;
+    const boardWidth = 15 * tileSize + 0.5;
     const boardGeo = new THREE.BoxGeometry(boardWidth, 0.5, boardWidth);
     const boardMat = new THREE.MeshPhysicalMaterial({
       color: 0x0f141e,
@@ -226,7 +199,6 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
     scene.add(boardMesh);
 
     // 7. BUILD 15x15 GRID TILES & RECESSED HOME BASE TRAYS
-    const tileSize = 0.62;
     const boardOffset = (15 * tileSize) / 2 - tileSize / 2;
 
     const tileBaseGeo = new THREE.BoxGeometry(tileSize * 0.94, 0.08, tileSize * 0.94);
@@ -271,100 +243,92 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
     centerMesh.receiveShadow = true;
     scene.add(centerMesh);
 
-    // 9. CREATE TRANSLUCENT ACRYLIC GLASS DICE WITH ALL 6 FACES
-    const createSixSidedDiceMesh = (x: number, z: number): THREE.Group => {
+    // 9. ADD 3D THEMATIC CREST EMBLEMS TO THE 4 PLAYER YARDS
+    const createYardEmblemMesh = (color: PlayerColor, centerRow: number, centerCol: number) => {
       const group = new THREE.Group();
-      const diceGeo = new THREE.BoxGeometry(0.75, 0.75, 0.75);
-      const diceMat = new THREE.MeshPhysicalMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.98,
-        roughness: 0.08,
-        metalness: 0.05,
-        transmission: 0.45,
-        thickness: 0.8,
-        clearcoat: 1.0
-      });
-      const diceBody = new THREE.Mesh(diceGeo, diceMat);
-      diceBody.castShadow = true;
-      diceBody.receiveShadow = true;
-      group.add(diceBody);
+      const [ex, ey, ez] = cellToWorld(centerRow, centerCol, 0.32);
 
-      const pipGeo = new THREE.SphereGeometry(0.065, 12, 12);
-      const pipMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
-
-      const addPip = (px: number, py: number, pz: number) => {
-        const pip = new THREE.Mesh(pipGeo, pipMat);
-        pip.position.set(px, py, pz);
-        group.add(pip);
+      const ringColorMap: Record<PlayerColor, number> = {
+        red: 0xff4444,
+        blue: 0x4488ff,
+        green: 0x33cc66,
+        gold: 0xffe066
       };
+      const ringHex = ringColorMap[color];
 
-      const S = 0.38; // Face surface distance
-      const O = 0.18; // Pip offset on face
+      // Outer metallic emblem disk
+      const diskGeo = new THREE.CylinderGeometry(0.85, 0.85, 0.04, 32);
+      const diskMat = new THREE.MeshStandardMaterial({
+        color: 0x111115,
+        metalness: 0.8,
+        roughness: 0.2
+      });
+      const diskMesh = new THREE.Mesh(diskGeo, diskMat);
+      diskMesh.receiveShadow = true;
+      group.add(diskMesh);
 
-      // Face 1 (+Y Top Face): 1 center pip
-      addPip(0, S, 0);
+      // Inner color ring
+      const ringGeo = new THREE.TorusGeometry(0.72, 0.05, 16, 32);
+      const ringMat = new THREE.MeshStandardMaterial({
+        color: ringHex,
+        metalness: 0.6,
+        roughness: 0.3,
+        emissive: ringHex,
+        emissiveIntensity: 0.2
+      });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = Math.PI / 2;
+      ringMesh.position.y = 0.025;
+      group.add(ringMesh);
 
-      // Face 6 (-Y Bottom Face): 6 pips (2 rows of 3)
-      addPip(-O, -S, -O); addPip(0, -S, -O); addPip(O, -S, -O);
-      addPip(-O, -S, O);  addPip(0, -S, O);  addPip(O, -S, O);
+      // Center Star Crest
+      const starGeo = new THREE.ConeGeometry(0.35, 0.12, 5);
+      const starMat = new THREE.MeshStandardMaterial({
+        color: ringHex,
+        metalness: 0.7,
+        roughness: 0.2
+      });
+      const starMesh = new THREE.Mesh(starGeo, starMat);
+      starMesh.position.y = 0.07;
+      group.add(starMesh);
 
-      // Face 2 (+Z Front Face): 2 diagonal pips
-      addPip(-O, O, S);   addPip(O, -O, S);
-
-      // Face 5 (-Z Back Face): 5 pips (4 corners + center)
-      addPip(-O, O, -S);  addPip(O, O, -S);  addPip(0, 0, -S);
-      addPip(-O, -O, -S); addPip(O, -O, -S);
-
-      // Face 3 (-X Left Face): 3 diagonal pips
-      addPip(-S, O, -O);  addPip(-S, 0, 0);  addPip(-S, -O, O);
-
-      // Face 4 (+X Right Face): 4 corner pips
-      addPip(S, O, -O);   addPip(S, O, O);
-      addPip(S, -O, -O);  addPip(S, -O, O);
-
-      group.position.set(x, 0.7, z);
+      group.position.set(ex, ey, ez);
       return group;
     };
 
-    const d1 = createSixSidedDiceMesh(1.4, 1.4);
-    const d2 = createSixSidedDiceMesh(2.2, 0.8);
-    scene.add(d1);
-    scene.add(d2);
-    dice1Ref.current = d1;
-    dice2Ref.current = d2;
+    scene.add(createYardEmblemMesh('red', 2.5, 2.5));
+    scene.add(createYardEmblemMesh('blue', 2.5, 11.5));
+    scene.add(createYardEmblemMesh('green', 11.5, 11.5));
+    scene.add(createYardEmblemMesh('gold', 11.5, 2.5));
 
-    // 10. ANIMATION LOOP
+    // 10. ADD 3D DIRECTIONAL ARROWS ALONG PATH TILES
+    const arrowGeo = new THREE.ConeGeometry(0.12, 0.28, 3);
+    const arrowMat = new THREE.MeshBasicMaterial({ color: 0xfff0aa, transparent: true, opacity: 0.75 });
+
+    // Render subtle 3D arrows every few steps along PATH_COORDINATES
+    for (let i = 0; i < PATH_COORDINATES.length; i += 3) {
+      const [r1, c1] = PATH_COORDINATES[i];
+      const [r2, c2] = PATH_COORDINATES[(i + 1) % 52];
+
+      const [x, y, z] = cellToWorld(r1, c1, 0.33);
+
+      const arrowMesh = new THREE.Mesh(arrowGeo, arrowMat);
+      arrowMesh.position.set(x, y, z);
+      arrowMesh.rotation.x = Math.PI / 2;
+
+      // Rotate arrow towards next coordinate vector
+      const dx = c2 - c1;
+      const dz = r2 - r1;
+      const angle = Math.atan2(dx, dz);
+      arrowMesh.rotation.z = angle;
+
+      scene.add(arrowMesh);
+    }
+
+    // 11. ANIMATION LOOP
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
-
-      if (isRollingRef.current) {
-        if (dice1Ref.current) {
-          dice1Ref.current.rotation.x += 0.25;
-          dice1Ref.current.rotation.y += 0.35;
-          dice1Ref.current.rotation.z += 0.15;
-          dice1Ref.current.position.y = 0.7 + Math.abs(Math.sin(Date.now() * 0.02)) * 0.8;
-        }
-        if (dice2Ref.current) {
-          dice2Ref.current.rotation.x += 0.3;
-          dice2Ref.current.rotation.y += 0.2;
-          dice2Ref.current.rotation.z += 0.25;
-          dice2Ref.current.position.y = 0.7 + Math.abs(Math.cos(Date.now() * 0.02)) * 0.8;
-        }
-      } else {
-        if (dice1Ref.current) {
-          dice1Ref.current.position.y = 0.7;
-          const [rx, ry, rz] = getDiceRotation(diceRollValueRef.current);
-          dice1Ref.current.rotation.set(rx, ry, rz);
-        }
-        if (dice2Ref.current) {
-          dice2Ref.current.position.y = 0.7;
-          const [rx, ry, rz] = getDiceRotation(secondDiceValueRef.current);
-          dice2Ref.current.rotation.set(rx, ry, rz);
-        }
-      }
-
       if (rendererRef.current && sceneRef.current && cameraRef.current) {
         rendererRef.current.render(sceneRef.current, cameraRef.current);
       }
@@ -372,7 +336,7 @@ export const Ludo3DCanvas: React.FC<Ludo3DCanvasProps> = ({
 
     animate();
 
-    // 11. WHEEL (ZOOM) & EVENT LISTENERS
+    // 12. WHEEL (ZOOM) & EVENT LISTENERS
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       cameraAngleRef.current.radius += e.deltaY * 0.012;

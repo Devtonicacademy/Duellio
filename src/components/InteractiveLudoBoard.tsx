@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, HelpCircle, Eye, EyeOff, Sparkles, Star, Users, UserCheck, CheckCircle2, RotateCcw, ArrowRight, Trophy, AlertTriangle, Award } from 'lucide-react';
+import { ShieldCheck, HelpCircle, Eye, EyeOff, Sparkles, Star, RotateCcw, ArrowRight, Trophy, AlertTriangle, Crown, Shield, Flame, Compass } from 'lucide-react';
 import {
   createInitialGameState,
   handleDiceRoll,
@@ -364,6 +364,36 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
     }
   };
 
+  // Directional arrow helper for 2D track grid
+  const getTrackArrow = (r: number, c: number): string | null => {
+    // Red Start & Walkway (r=6, c=0..5) -> Right ➔
+    if (r === 6 && c >= 0 && c <= 4) return '➔';
+    // Left arm going UP (c=6, r=5..1) -> Up ⬆
+    if (c === 6 && r >= 1 && r <= 5) return '⬆';
+    // Top cross (r=0, c=6..7) -> Right ➔
+    if (r === 0 && (c === 6 || c === 7)) return '➔';
+    // Top arm going DOWN (c=8, r=0..5) -> Down ⬇
+    if (c === 8 && r >= 0 && r <= 4) return '⬇';
+    // Right arm going RIGHT (r=6, c=9..13) -> Right ➔
+    if (r === 6 && c >= 9 && c <= 13) return '➔';
+    // Right cross (c=14, r=6..7) -> Down ⬇
+    if (c === 14 && (r === 6 || r === 7)) return '⬇';
+    // Right arm going LEFT (r=8, c=14..10) -> Left ⬅
+    if (r === 8 && c >= 10 && c <= 14) return '⬅';
+    // Bottom arm going DOWN (c=8, r=9..13) -> Down ⬇
+    if (c === 8 && r >= 9 && r <= 13) return '⬇';
+    // Bottom cross (r=14, c=8..7) -> Left ⬅
+    if (r === 14 && (c === 7 || c === 8)) return '⬅';
+    // Bottom arm going UP (c=6, r=14..10) -> Up ⬆
+    if (c === 6 && r >= 10 && r <= 14) return '⬆';
+    // Left arm going LEFT (r=8, c=5..1) -> Left ⬅
+    if (r === 8 && c >= 1 && c <= 5) return '⬅';
+    // Left cross (c=0, r=8..7) -> Up ⬆
+    if (c === 0 && (r === 7 || r === 8)) return '⬆';
+
+    return null;
+  };
+
   return (
     <div className="relative min-h-[540px] sm:min-h-[660px] bg-[radial-gradient(ellipse_at_center,#3b2216_0%,#180d07_100%)] rounded-2xl sm:rounded-3xl overflow-hidden border border-[#543422] p-1 sm:p-3 font-sans flex flex-col justify-between shadow-[0_30px_90px_rgba(0,0,0,0.95)] select-none">
       
@@ -418,7 +448,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
             </h4>
             <ul className="list-disc pl-4 space-y-1 text-amber-200/80 font-mono text-[11px]">
               <li><span className="text-amber-300 font-bold">Independent Movement</span>: Choose which die to play first! Split dice across 2 pieces or move 1 piece sequentially.</li>
-              <li><span className="text-amber-300 font-bold">Base Exit</span>: A die value of <strong className="text-amber-400">6</strong> brings a piece onto starting square. Second die is played separately.</li>
+              <li><span className="text-amber-300 font-bold">Yard Exit</span>: Rolling a <strong className="text-amber-400">6</strong> places your piece directly onto your designated starting square. Second die moves separately.</li>
               <li><span className="text-rose-400 font-bold">3 Double-Six Penalty</span>: Rolling 3 consecutive double-6s forfeits turn and rolls back movements!</li>
               <li><span className="text-emerald-300 font-bold">Exact Finish</span>: Tokens require exact die value to enter center home (step 57).</li>
             </ul>
@@ -446,9 +476,9 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
             />
           </div>
         ) : (
-          /* 2D CRISP GRID BOARD VIEW (100% VISIBLE PAWNS) */
+          /* 2D CRISP GRID BOARD VIEW (UNOBSTRUCTED PLAYABLE BOARD) */
           <div className="relative w-[340px] h-[340px] sm:w-[435px] sm:h-[435px] bg-[#1a212d] rounded-[32px] border-[4px] border-[#0f141e] p-[3px] shadow-2xl ludo-board-container-2d">
-            <div className="grid grid-cols-15 grid-rows-15 w-full h-full bg-black gap-[1px] rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-15 grid-rows-15 w-full h-full bg-black gap-[1px] rounded-2xl overflow-hidden relative">
               {Array.from({ length: 15 }).map((_, r) =>
                 Array.from({ length: 15 }).map((_, c) => {
                   // Center 3x3 Home Box (rows 6..8, cols 6..8)
@@ -478,7 +508,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                       const isCircle = (r === 1 && c === 1) || (r === 1 && c === 3) || (r === 3 && c === 1) || (r === 3 && c === 3);
                       return (
                         <div key={`${r}-${c}`} className="relative bg-[#E52521] border border-[#A01010] flex items-center justify-center shadow-inner" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
-                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#E52521] border-2 border-[#A01010] shadow-md" />}
+                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#E52521] border-2 border-[#A01010] shadow-md z-20" />}
                         </div>
                       );
                     }
@@ -491,7 +521,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                       const isCircle = (r === 1 && c === 10) || (r === 1 && c === 12) || (r === 3 && c === 10) || (r === 3 && c === 12);
                       return (
                         <div key={`${r}-${c}`} className="relative bg-[#1B4EAB] border border-[#0F357A] flex items-center justify-center shadow-inner" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
-                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#1B4EAB] border-2 border-[#0F357A] shadow-md" />}
+                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#1B4EAB] border-2 border-[#0F357A] shadow-md z-20" />}
                         </div>
                       );
                     }
@@ -504,7 +534,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                       const isCircle = (r === 10 && c === 10) || (r === 10 && c === 12) || (r === 3 && c === 10) || (r === 3 && c === 12);
                       return (
                         <div key={`${r}-${c}`} className="relative bg-[#009A44] border border-[#00612B] flex items-center justify-center shadow-inner" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
-                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#009A44] border-2 border-[#00612B] shadow-md" />}
+                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#009A44] border-2 border-[#00612B] shadow-md z-20" />}
                         </div>
                       );
                     }
@@ -517,22 +547,25 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                       const isCircle = (r === 10 && c === 1) || (r === 10 && c === 3) || (r === 12 && c === 1) || (r === 12 && c === 3);
                       return (
                         <div key={`${r}-${c}`} className="relative bg-[#FFCC00] border border-[#C79F00] flex items-center justify-center shadow-inner" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
-                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#FFCC00] border-2 border-[#C79F00] shadow-md" />}
+                          {isCircle && <div className="w-[72%] h-[72%] rounded-full bg-[#FFCC00] border-2 border-[#C79F00] shadow-md z-20" />}
                         </div>
                       );
                     }
                     return <div key={`${r}-${c}`} className="bg-[#FFCC00] border border-[#C79F00]" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
                   }
 
-                  // Path Arms
+                  // Track Arms with Directional Arrow Indicators
+                  const arrowStr = getTrackArrow(r, c);
+
                   if (r <= 5 && c >= 6 && c <= 8) {
                     const isBluePath = (c === 7 && r >= 1) || (r === 0 && (c === 7 || c === 8));
                     const isBlueStart = r === 0 && c === 8;
                     const isBlueStar = r === 1 && c === 6;
                     return (
                       <div key={`${r}-${c}`} className={`border border-black relative flex items-center justify-center ${isBluePath ? 'bg-[#1B4EAB]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }}>
-                        {isBlueStart && <span className="text-[8px] font-black text-white">⬇</span>}
-                        {isBlueStar && <Star className="w-3 h-3 text-[#1B4EAB] fill-[#1B4EAB]" />}
+                        {isBlueStart && <span className="text-[9px] font-black text-white z-10">⬇</span>}
+                        {isBlueStar && <Star className="w-3 h-3 text-[#1B4EAB] fill-[#1B4EAB] z-10" />}
+                        {arrowStr && !isBlueStart && !isBlueStar && <span className="text-[7.5px] font-bold text-neutral-400/70 select-none">{arrowStr}</span>}
                       </div>
                     );
                   }
@@ -543,8 +576,9 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     const isGreenStar = r === 6 && c === 13;
                     return (
                       <div key={`${r}-${c}`} className={`border border-black relative flex items-center justify-center ${isGreenPath ? 'bg-[#009A44]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }}>
-                        {isGreenStart && <span className="text-[8px] font-black text-white">⬅</span>}
-                        {isGreenStar && <Star className="w-3 h-3 text-[#009A44] fill-[#009A44]" />}
+                        {isGreenStart && <span className="text-[9px] font-black text-white z-10">⬅</span>}
+                        {isGreenStar && <Star className="w-3 h-3 text-[#009A44] fill-[#009A44] z-10" />}
+                        {arrowStr && !isGreenStart && !isGreenStar && <span className="text-[7.5px] font-bold text-neutral-400/70 select-none">{arrowStr}</span>}
                       </div>
                     );
                   }
@@ -555,8 +589,9 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     const isYellowStar = r === 13 && c === 8;
                     return (
                       <div key={`${r}-${c}`} className={`border border-black relative flex items-center justify-center ${isYellowPath ? 'bg-[#FFCC00]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }}>
-                        {isYellowStart && <span className="text-[8px] font-black text-black">⬆</span>}
-                        {isYellowStar && <Star className="w-3 h-3 text-[#D9A300] fill-[#D9A300]" />}
+                        {isYellowStart && <span className="text-[9px] font-black text-black z-10">⬆</span>}
+                        {isYellowStar && <Star className="w-3 h-3 text-[#D9A300] fill-[#D9A300] z-10" />}
+                        {arrowStr && !isYellowStart && !isYellowStar && <span className="text-[7.5px] font-bold text-neutral-400/70 select-none">{arrowStr}</span>}
                       </div>
                     );
                   }
@@ -567,15 +602,32 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     const isRedStar = r === 8 && c === 1;
                     return (
                       <div key={`${r}-${c}`} className={`border border-black relative flex items-center justify-center ${isRedPath ? 'bg-[#E52521]' : 'bg-white'}`} style={{ gridRow: r + 1, gridColumn: c + 1 }}>
-                        {isRedStart && <span className="text-[8px] font-black text-white">➔</span>}
-                        {isRedStar && <Star className="w-3 h-3 text-[#E52521] fill-[#E52521]" />}
+                        {isRedStart && <span className="text-[9px] font-black text-white z-10">➔</span>}
+                        {isRedStar && <Star className="w-3 h-3 text-[#E52521] fill-[#E52521] z-10" />}
+                        {arrowStr && !isRedStart && !isRedStar && <span className="text-[7.5px] font-bold text-neutral-400/70 select-none">{arrowStr}</span>}
                       </div>
                     );
                   }
 
-                  return <div key={`${r}-${c}`} className="bg-white border border-black" style={{ gridRow: r + 1, gridColumn: c + 1 }} />;
+                  return <div key={`${r}-${c}`} className="bg-white border border-black flex items-center justify-center" style={{ gridRow: r + 1, gridColumn: c + 1 }}>
+                    {arrowStr && <span className="text-[7.5px] font-bold text-neutral-400/70 select-none">{arrowStr}</span>}
+                  </div>;
                 })
               )}
+
+              {/* 2D THEMATIC CREST EMBLEMS OVERLAY FOR THE 4 PLAYER YARDS */}
+              <div className="absolute top-[8%] left-[8%] w-[26%] h-[26%] pointer-events-none flex items-center justify-center opacity-30 z-10">
+                <Flame className="w-16 h-16 text-rose-300 drop-shadow-md" />
+              </div>
+              <div className="absolute top-[8%] right-[8%] w-[26%] h-[26%] pointer-events-none flex items-center justify-center opacity-30 z-10">
+                <Shield className="w-16 h-16 text-blue-300 drop-shadow-md" />
+              </div>
+              <div className="absolute bottom-[8%] right-[8%] w-[26%] h-[26%] pointer-events-none flex items-center justify-center opacity-30 z-10">
+                <Crown className="w-16 h-16 text-emerald-300 drop-shadow-md" />
+              </div>
+              <div className="absolute bottom-[8%] left-[8%] w-[26%] h-[26%] pointer-events-none flex items-center justify-center opacity-30 z-10">
+                <Star className="w-16 h-16 text-yellow-300 drop-shadow-md" />
+              </div>
 
               {/* Render 2D Visible Pawns */}
               {engineState.tokens.map((token) => {
@@ -598,17 +650,11 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                 );
               })}
             </div>
-
-            {/* 2D VIEW ACRYLIC GLASS DICE */}
-            <div className="absolute bottom-3 right-3 z-40 flex items-center gap-2 pointer-events-none drop-shadow-xl">
-              <SemiTranslucentWhiteDice value={diceRollValue} isRolling={isRolling} />
-              <SemiTranslucentWhiteDice value={secondDiceValue} isRolling={isRolling} />
-            </div>
           </div>
         )}
       </div>
 
-      {/* ACTION CONTROLS & HUD */}
+      {/* ACTION CONTROLS & ADJACENT DICE HUD (OFF THE PLAYABLE BOARD) */}
       <div className="relative sm:absolute sm:bottom-4 sm:left-4 mx-auto mt-2 sm:mt-0 w-full max-w-[340px] sm:w-auto bg-[#180e08]/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-amber-500/30 flex flex-col gap-2 shadow-[0_15px_30px_rgba(0,0,0,0.5)] z-30">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -624,11 +670,16 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
           </span>
         </div>
 
-        {/* Independent Dice Selection HUD when rolled */}
-        {hasRolled && isUserTurn(activePlayer) && engineState.dicePool.length > 0 && (
-          <div className="flex items-center justify-between gap-2 p-1.5 bg-[#0f0905] rounded-xl border border-amber-500/30">
-            <span className="text-[9px] font-mono font-bold text-amber-400 uppercase">SELECT DIE:</span>
-            <div className="flex items-center gap-2">
+        {/* RELOCATED ACRYLIC GLASS DICE CONTROL CONTAINER (ADJACENT TO BOARD) */}
+        <div className="flex items-center justify-between gap-3 p-2 bg-[#0f0905] rounded-xl border border-amber-500/30 shadow-inner">
+          <div className="flex items-center gap-2">
+            <SemiTranslucentWhiteDice value={diceRollValue} isRolling={isRolling} />
+            <SemiTranslucentWhiteDice value={secondDiceValue} isRolling={isRolling} />
+          </div>
+
+          {/* Independent Die Selector Buttons when rolled */}
+          {hasRolled && isUserTurn(activePlayer) && engineState.dicePool.length > 0 ? (
+            <div className="flex items-center gap-1.5">
               {engineState.dicePool.map((die) => {
                 const isSelected = selectedDieId === die.id;
                 const dieMoves = getLegalMoves(engineState, activePlayer, die.id);
@@ -640,7 +691,7 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     type="button"
                     disabled={die.used || !isUsable}
                     onClick={() => setSelectedDieId(die.id)}
-                    className={`px-3 py-1 rounded-lg font-mono font-black text-xs transition-all flex items-center gap-1 cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg font-mono font-black text-xs transition-all flex items-center gap-1 cursor-pointer ${
                       die.used
                         ? 'bg-neutral-850 text-neutral-600 border border-neutral-800 line-through cursor-not-allowed opacity-50'
                         : isSelected
@@ -651,13 +702,16 @@ export const InteractiveLudoBoard: React.FC<InteractiveLudoBoardProps> = ({
                     }`}
                   >
                     <span>🎲 {die.value}</span>
-                    {die.used ? <span className="text-[8px]">(USED)</span> : !isUsable ? <span className="text-[8px]">(NO MOVES)</span> : null}
                   </button>
                 );
               })}
             </div>
-          </div>
-        )}
+          ) : (
+            <span className="text-[9.5px] font-mono text-amber-400/80 font-bold uppercase">
+              {isRolling ? 'ROLLING...' : 'DICE READY'}
+            </span>
+          )}
+        </div>
 
         {/* Dynamic Quadrant Filter Selector in 2-Player mode */}
         {playerMode === '2-player' && isUserTurn(activePlayer) && hasRolled && (
@@ -928,27 +982,27 @@ const SemiTranslucentWhiteDice: React.FC<{ value: number, isRolling: boolean }> 
   };
 
   return (
-    <div className="w-8 h-8 sm:w-9 sm:h-9" style={{ perspective: '300px' }}>
+    <div className="w-7 h-7 sm:w-8 sm:h-8" style={{ perspective: '300px' }}>
       <div 
         className="relative w-full h-full transition-transform duration-700" 
         style={{ ...style, transformStyle: 'preserve-3d' }}
       >
-        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'translateZ(16px)', backfaceVisibility: 'hidden' }}>
           {renderDots(5)}
         </div>
-        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(180deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(180deg) translateZ(16px)', backfaceVisibility: 'hidden' }}>
           {renderDots(2)}
         </div>
-        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateX(90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateX(90deg) translateZ(16px)', backfaceVisibility: 'hidden' }}>
           {renderDots(3)}
         </div>
-        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateX(-90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateX(-90deg) translateZ(16px)', backfaceVisibility: 'hidden' }}>
           {renderDots(4)}
         </div>
-        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(-90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(-90deg) translateZ(16px)', backfaceVisibility: 'hidden' }}>
           {renderDots(1)}
         </div>
-        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(90deg) translateZ(18px)', backfaceVisibility: 'hidden' }}>
+        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm border-2 border-slate-300 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.6),0_0_12px_rgba(255,255,255,0.6)] flex items-center justify-center backface-hidden" style={{ transform: 'rotateY(90deg) translateZ(16px)', backfaceVisibility: 'hidden' }}>
           {renderDots(6)}
         </div>
       </div>
